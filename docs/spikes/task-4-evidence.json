@@ -1,0 +1,104 @@
+{
+  "observedAt": "2026-10-20T11:32:44.205Z",
+  "cliHelp": {
+    "available": false,
+    "exitCode": null,
+    "error": "ENOENT"
+  },
+  "liveAccount": {
+    "result": "NOT_RUN",
+    "reason": "CLI_NOT_FOUND"
+  },
+  "liveCases": [
+    {
+      "name": "text-question",
+      "result": "NOT_RUN"
+    },
+    {
+      "name": "record-summary",
+      "result": "NOT_RUN"
+    },
+    {
+      "name": "allowed-attachment",
+      "result": "NOT_RUN"
+    }
+  ],
+  "externalInferenceCalls": 0,
+  "rows": [
+    {
+      "name": "unverified-support",
+      "provenance": "CONTROLLED",
+      "state": "WAIT_SUPPORT",
+      "attempts": 0,
+      "calls": []
+    },
+    {
+      "name": "known-limit",
+      "provenance": "CONTROLLED",
+      "state": "WAIT_LIMIT",
+      "attempts": 0,
+      "calls": []
+    },
+    {
+      "name": "known-auth-expired",
+      "provenance": "CONTROLLED",
+      "state": "WAIT_AUTH",
+      "attempts": 0,
+      "calls": []
+    },
+    {
+      "name": "response-limit",
+      "provenance": "CONTROLLED",
+      "state": "WAIT_LIMIT",
+      "attempts": 1,
+      "calls": [
+        "controlled-subscription-adapter"
+      ]
+    },
+    {
+      "name": "response-auth",
+      "provenance": "CONTROLLED",
+      "state": "WAIT_AUTH",
+      "attempts": 1,
+      "calls": [
+        "controlled-subscription-adapter"
+      ]
+    },
+    {
+      "name": "response-input",
+      "provenance": "CONTROLLED",
+      "state": "UNSUPPORTED_INPUT",
+      "attempts": 1,
+      "calls": [
+        "controlled-subscription-adapter"
+      ]
+    },
+    {
+      "name": "response-unavailable",
+      "provenance": "CONTROLLED",
+      "state": "WAIT_RETRY",
+      "attempts": 1,
+      "calls": [
+        "controlled-subscription-adapter"
+      ]
+    },
+    {
+      "name": "response-lost",
+      "provenance": "CONTROLLED",
+      "state": "WAIT_RECONCILIATION",
+      "attempts": 1,
+      "calls": [
+        "controlled-subscription-adapter"
+      ]
+    },
+    {
+      "name": "completed",
+      "provenance": "CONTROLLED",
+      "state": "SUCCEEDED",
+      "attempts": 1,
+      "calls": [
+        "controlled-subscription-adapter"
+      ]
+    }
+  ]
+}
