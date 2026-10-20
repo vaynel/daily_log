@@ -1,0 +1,2 @@
+STATE_HASH_FAILED: EACCES: permission denied, open '/tmp/video-audit/assets/name with spaces.txt'
+PRECONDITION FAILED: cannot hash all inputs and previous result

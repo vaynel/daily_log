@@ -1,0 +1,6 @@
+Tue Oct 20 11:47:43 UTC 2026
+model name	: Intel(R) N100
+200000 100000
+3221225472
+ffmpeg version 5.1.9-0+deb12u1 Copyright (c) 2000-2026 the FFmpeg developers
+1.88 2.99 2.99 2/1447 1309

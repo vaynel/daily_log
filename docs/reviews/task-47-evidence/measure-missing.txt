@@ -1,0 +1,21 @@
+date_utc=2026-10-20T11:46:28Z
+cpu= Intel(R) N100
+cgroup_cpu_max=200000 100000 cgroup_memory_max=3221225472
+scripts/video-spike/measure.sh: 9: ffmpeg: not found
+ffmpeg=
+loadavg_before=2.98 3.45 3.12
+cgroup_memory_peak_before=500887552
+du: cannot access 'data/qa5/missing/assets': No such file or directory
+du_assets_bytes=
+file:///workspace/scripts/video-spike/render.mjs:89
+  if (!existsSync(join(assets, 'narration.wav'))) throw new Error('run prepare first');
+                                                        ^
+
+Error: run prepare first
+    at render (file:///workspace/scripts/video-spike/render.mjs:89:57)
+    at file:///workspace/scripts/video-spike/render.mjs:140:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+
+Node.js v22.23.3
