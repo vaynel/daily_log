@@ -1,21 +1,42 @@
+baseline state hash=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6
 == T1 abort (SIGKILL after 8s)
+{
  "exit": null,
  "signal": "SIGKILL",
+ "wallSeconds": 8.053,
+ "maxRssKB": null,
+ "userSec": null,
+ "sysSec": null,
+ "tmpDirBytesAtEnd": 270878,
+ "ffmpegStderrTail": "",
  "published": false,
  "previousResultSha256Before": "ebecf326b8d53aa69ebfdae3b7bf3f0c3f5d9d6f5164272d812a2058a4857e9d",
  "previousResultSha256After": "ebecf326b8d53aa69ebfdae3b7bf3f0c3f5d9d6f5164272d812a2058a4857e9d"
---- abort: state hash before=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6 after=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6
-RESULT abort: PRESERVED (inputs+previous sample unchanged)
+}
+exit=1 (non-zero, expected)
+cause matched: "signal": *"SIGKILL"
+state hash before=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6 after=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6
+RESULT T1 abort (SIGKILL after 8s): PRESERVED
 tmp dir cleaned
 == T2 missing font
 {"exit":3,"published":false,"error":"FONT_MISSING_OR_NO_HANGUL","fontfile":"/nonexistent/font.ttc"}
---- missing-font: state hash before=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6 after=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6
-RESULT missing-font: PRESERVED (inputs+previous sample unchanged)
+exit=3 (non-zero, expected)
+cause matched: FONT_MISSING_OR_NO_HANGUL
+state hash before=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6 after=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6
+RESULT T2 missing font: PRESERVED
 tmp dir cleaned
-== T3 disk-full simulation (RLIMIT_FSIZE 512KB => EFBIG on write, not real ENOSPC)
- "exit": 1,
+== T3 disk-full simulation (RLIMIT_FSIZE 512KB => EFBIG, not real ENOSPC)
+.54,
+ "sysSec": 0.36,
+ "tmpDirBytesAtEnd": 270830,
  "ffmpegStderrTail": "eaved_write_frame(): File too large\n    Last message repeated 3 times\nError writing trailer of /workspace/scripts/video-spike/out/.tmp-render/sample.mp4: File too large\nError closing file /workspace/scripts/video-spike/out/.tmp-render/sample.mp4: File too large\nCommand exited with non-zero status 1\n",
  "published": false,
---- fsize-limit: state hash before=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6 after=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6
-RESULT fsize-limit: PRESERVED (inputs+previous sample unchanged)
+ "previousResultSha256Before": "ebecf326b8d53aa69ebfdae3b7bf3f0c3f5d9d6f5164272d812a2058a4857e9d",
+ "previousResultSha256After": "ebecf326b8d53aa69ebfdae3b7bf3f0c3f5d9d6f5164272d812a2058a4857e9d"
+}
+exit=1 (non-zero, expected)
+cause matched: File too large
+state hash before=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6 after=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6
+RESULT T3 disk-full simulation (RLIMIT_FSIZE 512KB => EFBIG, not real ENOSPC): PRESERVED
 tmp dir cleaned
+OVERALL: PASS (3/3 cases failed for the injected cause and preserved state)

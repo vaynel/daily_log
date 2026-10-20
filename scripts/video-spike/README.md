@@ -18,3 +18,5 @@ sh scripts/video-spike/failure-tests.sh scripts/video-spike/out              # �
 - 한계: 호스트에 다른 러너가 병렬 실행 중(loadavg 3.2~4.9)이라 조용한 단독 값이 아니다. cgroup memory.peak는 리셋 불가(누적)라 maxRSS를 사용. 1080x1920·실제 사진 변환·실제 한국어 음색은 미측정.
 - 실패 시험(모두 이전 결과 sha·입력 에셋 hash 보존, 임시 폴더 정리): SIGKILL 중단, 폰트 누락(preflight exit 3), RLIMIT_FSIZE 512KB(EFBIG; 실제 ENOSPC가 아닌 모의).
 - 발견: 존재하지 않는 `fontfile`이면 ffmpeg drawtext가 **오류 없이 exit 0**으로 끝나 이전 결과를 덮어썼다. 그래서 렌더 전 `preflightFont()`가 폰트 존재·한글 글리프를 확인한다.
+
+종료 코드: `measure.sh`는 렌더의 종료 코드를 그대로 반환한다(렌더 실패 → non-zero). `failure-tests.sh`는 입력·이전 결과·폰트가 없으면 시험 전제 실패(exit 2), 각 케이스가 주입한 원인(SIGKILL / FONT_MISSING_OR_NO_HANGUL / File too large)으로 실패하지 않거나 상태 hash가 바뀌거나 tmp가 남으면 exit 1, 전부 충족할 때만 exit 0.
