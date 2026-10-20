@@ -1,0 +1,28 @@
+{
+  "name": "daily-log",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "workspaces": ["apps/server", "apps/web"],
+  "scripts": {
+    "dev:server": "npm run dev -w apps/server",
+    "dev:worker": "npm run dev:worker -w apps/server",
+    "dev:web": "npm run dev -w apps/web",
+    "db:migrate": "npm run db:migrate -w apps/server",
+    "db:seed": "npm run db:seed -w apps/server",
+    "lint": "eslint .",
+    "typecheck": "npm run typecheck -ws",
+    "test": "npm run test -ws --if-present",
+    "build": "npm run build -ws",
+    "check": "npm run lint && npm run typecheck && npm test && npm run build",
+    "scan:secrets": "node scripts/scan-secrets.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "globals": "^16.0.0",
+    "typescript": "^5.9.0",
+    "typescript-eslint": "^8.0.0"
+  }
+}
