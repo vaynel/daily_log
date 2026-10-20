@@ -1,0 +1,10 @@
+{
+  "name": "Daily Log 알림 시험",
+  "short_name": "알림 시험",
+  "start_url": "/push-test.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2457c5",
+  "icons": [{ "src": "/push-test-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

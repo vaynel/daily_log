@@ -3,8 +3,13 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "engines": { "node": ">=22" },
-  "workspaces": ["apps/server", "apps/web"],
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "apps/server",
+    "apps/web"
+  ],
   "scripts": {
     "dev:server": "npm run dev -w apps/server",
     "dev:worker": "npm run dev:worker -w apps/server",
@@ -16,7 +21,9 @@
     "test": "npm run test -ws --if-present",
     "build": "npm run build -ws",
     "check": "npm run lint && npm run typecheck && npm test && npm run build",
-    "scan:secrets": "node scripts/scan-secrets.mjs"
+    "scan:secrets": "node scripts/scan-secrets.mjs",
+    "push:init": "npm run push:init -w apps/server --",
+    "push:harness": "npm run push:harness -w apps/server"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

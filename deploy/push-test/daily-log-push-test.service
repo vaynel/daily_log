@@ -1,0 +1,19 @@
+[Unit]
+Description=Daily Log push test server (TASK-51, 시험 전용)
+After=network.target
+
+[Service]
+User=dailylog
+WorkingDirectory=/opt/daily-log
+EnvironmentFile=/etc/daily-log/push-test.env
+ExecStart=/usr/bin/node apps/server/dist/main.js
+Restart=on-failure
+# 설정 오류(종료 코드 78)는 재시작해도 해결되지 않으므로 재시작하지 않는다
+RestartPreventExitStatus=78
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/daily-log
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

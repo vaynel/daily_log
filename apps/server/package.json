@@ -12,15 +12,20 @@
     "db:seed": "tsx src/db/seed.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "build": "tsc -p tsconfig.build.json && node ../../scripts/copy-migrations.mjs"
+    "build": "tsc -p tsconfig.build.json && node ../../scripts/copy-migrations.mjs",
+    "push:init": "tsx src/push/init.ts",
+    "push:fake": "tsx src/push/fake-service.ts",
+    "push:harness": "tsx src/push/harness.ts"
   },
   "dependencies": {
     "fastify": "^5.0.0",
-    "pg": "^8.0.0"
+    "pg": "^8.0.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@types/pg": "^8.0.0",
+    "@types/web-push": "^3.6.4",
     "tsx": "^4.0.0",
     "vitest": "^3.0.0"
   }
