@@ -2,7 +2,10 @@
 import { spawnSync } from 'node:child_process';
 import { runProRequest } from '../apps/server/dist/spikes/pro-request.js';
 
-const cli = spawnSync('codex', ['--help'], { timeout: 5000, stdio: 'ignore' });
+// Accept a literal executable + argument vector (e.g. node /opt/codex/bin/codex.js).
+// Do not use a shell or silently try another executable.
+const [executable = 'codex', ...prefixArgs] = process.argv.slice(2);
+const cli = spawnSync(executable, [...prefixArgs, '--help'], { timeout: 5000, stdio: 'ignore' });
 const input = { kind: 'text', text: '합성 기록: 오늘 책을 10분 읽었다.' };
 const ready = { support: 'verified', auth: 'valid', quota: 'available' };
 const rows = [];

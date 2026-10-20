@@ -1,13 +1,13 @@
 {
-  "observedAt": "2026-10-20T11:32:44.205Z",
+  "observedAt": "2026-10-20T11:43:30.263Z",
   "cliHelp": {
-    "available": false,
-    "exitCode": null,
-    "error": "ENOENT"
+    "available": true,
+    "exitCode": 0,
+    "error": null
   },
   "liveAccount": {
     "result": "NOT_RUN",
-    "reason": "CLI_NOT_FOUND"
+    "reason": "VERIFIED_PRODUCT_AUTH_NOT_AVAILABLE"
   },
   "liveCases": [
     {

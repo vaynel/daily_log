@@ -1,7 +1,7 @@
 # TASK-4: Pro 연동 지원과 한도 대기 검증
 
 검증일: 2026-10-20 UTC. 기준 commit: `0962c94ba0ce34200ba1105ddcac9f566be0c336`.
-작업 브랜치: `task-4-pro-spike`. 판정: **PARTIAL / BLOCKED**.
+재시험 seed: `85c51ca30d998eff25038ca3c72d930d65854650` (이전 제출 보존). 격리 `/workspace`에서 작업. 판정: **PARTIAL / BLOCKED**.
 
 ## 결정
 
@@ -22,18 +22,23 @@ Wiki 07/09 및 F04 원문 조회 도구가 없어 원문 미열람. 고정 Task 
 
 ## 실제 관측과 최소 요청 시험표
 
-실제 shell `codex --help`: exit 127, `command not found`.
-Node `spawnSync('codex', ['--help'])`: `ENOENT`, exitCode null. 두 표현은 같은 실행 파일 부재를 뜻한다.
-버전, CLI 옵션, 구독 유형, 잔량, 계정 권한은 확인하지 못했다. 별도 CLI 설치나 인증 파일 탐색으로 개발 임시 인증을 우회하지 않았다.
+이전 `codex --help` exit 127 / `spawnSync('codex')` ENOENT는 **PATH 탐색 실패**였다. CLI 자체 미설치라는 이전 해석을 정정한다.
+이번 `node /opt/codex/bin/codex.js --version`은 `codex-cli 0.157.1`, `--help`와 `exec --help`는 exit 0이다.
+`login status`는 ChatGPT 로그인을 보고했다(원문은 출력·보관하지 않고 인증 방식만 분류). Pro 등급·계정 잔량·제품 SIWC 권한은 확인하지 않았다.
+CODEX_HOME은 현재 격리 세션 값을 유지했고 인증 파일·토큰을 읽거나 복사하지 않았다. 모델을 지정·교체하지 않았다.
 
-| 시험 | 합성 입력/기대 | 결과 | 사유 |
+[실제 요청 증거](task-4-live-evidence.json)는 **개발 세션**의 기존 로그인으로 실행한 합성 요청이다. 각 건에서 exit 0, `turn.completed`, 기대 내용 일치, 도구 호출 0을 확인했다. 개인 원문이나 응답 원문 대신 불리언 판정만 남겼다.
+
+| 시험 | 합성 입력/내용 검증 | 개발 세션 결과 | 제품 SIWC 결과 |
 |---|---|---|---|
-| 텍스트 질문 | 오늘 독서에 관해 질문 1개 | NOT_RUN | 실행 가능한 CLI·검증된 제품 인증 없음 |
-| 기록 정리 | 오늘 책을 10분 읽었다 → 사실 1개 요약 | NOT_RUN | 동일 |
-| 허용 첨부 해석 | 단색 PNG → 색상 설명 | NOT_RUN | 동일; 모델별 첨부 지원도 미확인 |
-| 실제 한도 오류 | 자연 관측 시 대기 | NOT_RUN | 한도 고의 소진하지 않음 |
-| 실제 인증 만료/재연결 | 공식 재인증 후 같은 경로 확인 | NOT_RUN | 인증 폐기·복사하지 않음 |
-| 오디오/비디오·전사 | 이 구독 경로에 전송 | 미지원(공식 문서) / 요청 NOT_RUN | 위 Preview limitations |
+| 텍스트 질문 | 오늘 책을 10분 읽었다 → 책에 관한 질문과 물음표 | PASS | NOT_RUN: 제품용 동의·권한 미검증 |
+| 기록 정리 | 동일 기록에서 읽은 시간 숫자 10 추출 | PASS (최소 사실 추출만) | NOT_RUN: 동일 |
+| 허용 첨부 해석 | 합성 32×32 단색 PNG → red | PASS | NOT_RUN: 동일 |
+| 실제 한도 오류 | 자연 관측 시 대기 | NOT_RUN: 한도를 고의 소진하지 않음 | NOT_RUN |
+| 실제 인증 만료/재연결 | 공식 재인증 후 같은 경로 확인 | NOT_RUN: 인증을 폐기하지 않음 | NOT_RUN |
+| 오디오/비디오·전사 | 이 구독 경로에 전송 | 미지원(공식 SIWC 문서) / 요청 NOT_RUN | NOT_RUN |
+
+최초 이미지 명령은 `-i`의 가변 인자가 뒤의 프롬프트까지 소비하여 추론 전 exit 1(stdout 0 bytes)로 종료됐다. `--`로 프롬프트를 분리한 뒤 3종 시험을 수행했다. 중간 별도 `Reply only OK` smoke 명령은 exit 0이었으나 내용 판정을 보관하지 않아 위 3종 증거로 세지 않는다. 총 exec 실행은 5회(시작 전 실패 1, smoke 1, 본 시험 3). 이는 CLI 실행 수이며 제공자 청구 로그나 내부 HTTP 시도 횟수가 아니다.
 
 ## 구현 및 통제 시험
 
@@ -49,16 +54,26 @@ Node `spawnSync('codex', ['--help'])`: `ENOENT`, exitCode null. 두 표현은 �
 
 [실행 증거 JSON](task-4-evidence.json)은 `scripts/pro-spike.mjs`가 생성했다. CONTROLLED는 합성 어댑터이며 실제 OpenAI 응답이 아니다. 호출 배열은 이 경계의 어댑터 호출만 센다. externalInferenceCalls=0은 이 오프라인 실행의 구조상 외부 추론이 없다는 뜻이며 제공자 청구 로그를 조회했다는 뜻이 아니다.
 
+오프라인 JSON의 `liveAccount: NOT_RUN`은 그 **오프라인 실행에서** 실제 요청을 하지 않았다는 뜻이다. 실제 개발 세션 관측은 별도의 LIVE_DEVELOPMENT_SESSION JSON만 참조한다.
+
+경로 수정은 실행파일과 인자를 문자열 배열로 받으며 shell을 사용하지 않는다. 회귀 테스트에서 빈 PATH와 공백 포함 경로로 RED(ENOENT) → GREEN을 확인했다. 존재하지 않는 명시 경로는 다른 CLI로 대체하지 않는다.
+`pro-live-spike.mjs`는 승인된 수동 시험 전용이며 `--run`이 필요하다. 로그인 상태가 ChatGPT가 아니면 요청 0회, API 키 환경변수는 자식 프로세스에서 제거한다. 실패 시 남은 시험을 NOT_RUN으로 멈추고 자동 재시도·유료 대체를 하지 않는다. `--ephemeral`, read-only와 도구 사용 금지 프롬프트를 사용한다. timeout은 처리 여부 불명확으로 보고 재요청하지 않는다. CLI 내부 동작 전체나 청구 내역을 감시하는 보안 경계는 아니다.
+
 재현:
 
 ```sh
 npm ci
 npm run check
-node scripts/pro-spike.mjs
+node scripts/pro-spike.mjs node /opt/codex/bin/codex.js
+# 기존 개발 세션 요청에 대한 승인 범위 안에서만 별도 실행
+node scripts/pro-live-spike.mjs --run node /opt/codex/bin/codex.js
 npm run scan:secrets
 ```
 
-관측 결과: 최초 모듈 부재로 수집 실패 후 인터페이스 stub에서 25/25 assertion 실패를 확인했다. 구현 후 `npm run check` exit 0: 새 통제 시험 25개와 기존 4개, 총 29개 통과. web은 테스트 파일 없음(exit 0)이며 UI 시험 통과로 세지 않는다. lint·typecheck·server/web build 통과. DB/Redis 변경 없음, 실서버·브라우저·실기기 시험 없음.
+이전 실행 관측 결과: 최초 모듈 부재로 수집 실패 후 인터페이스 stub에서 25/25 assertion 실패를 확인했다. 구현 후 `npm run check` exit 0: 새 통제 시험 25개와 기존 4개, 총 29개 통과. web은 테스트 파일 없음(exit 0)이며 UI 시험 통과로 세지 않는다. lint·typecheck·server/web build 통과. DB/Redis 변경 없음, 실서버·브라우저·실기기 시험 없음.
+
+재시험 `npm run check` exit 0: lint·typecheck·server/web build 및 서버 29개 통제/기존 시험, CLI 경계 회귀 5개 통과. web은 테스트 파일 없음. `npm run scan:secrets`는 42 files OK, `git diff --check` exit 0. CLI 경계 시험은 합성 자식 프로세스로 정상 완료 3회, API 인증 시 0회, 한도 오류 시 1회 뒤 중단을 검증한다. 실제 구독 한도·만료 관측이나 제품 재연결 시험으로 세지 않는다.
+`npm ci`는 기존 잠금파일 기준 취약점 3건(중간 1·치명 2)을 보고했다. 의존성 업그레이드는 이 수정에 포함하지 않았다.
 
 ## 호출 경계·인증 보관·재개 계약
 
@@ -78,9 +93,9 @@ TASK-9/13/19의 구독 의존 실행 부분은 **지원·계정 검증 미완료
 
 | 조건 | 판정 | 근거 |
 |---|---|---|
-| AC-1 공식 근거 + 실제 계정 시험 | PARTIAL | 공식 문서 확인, 실제 계정 NOT_RUN |
-| AC-2 요청 결과 또는 미지원 사유 구분 | PARTIAL | 시험표·문서상 제한 구분, 실제 3종 요청 NOT_RUN |
-| AC-3 한도/만료 유료 대체 없음 | PARTIAL | 오프라인 25개 통제 시험 PASS; 실제 어댑터/계정 시험 없음 |
+| AC-1 공식 근거 + 실제 계정 시험 | PARTIAL | 공식 문서·개발 계정 CLI 시험 확인; 제품 SIWC 권한/호스팅 미검증 |
+| AC-2 요청 결과 또는 미지원 사유 구분 | PASS | 개발 세션 실제 3종 PASS와 제품 경로 NOT_RUN/공식 입력 제한을 시험표에서 구분 |
+| AC-3 한도/만료 유료 대체 없음 | PARTIAL | 오프라인 경계 및 CLI 중단 통제 시험; 제품 어댑터 통합/재연결 NOT_RUN |
 | AC-4 의존 착수 차단 조건 | PASS | TASK-9/13/19 차단·해제 조건 명시 |
 
-공용 계획 D03-01/02/03은 미실행 근거와 함께 BLOCKED로 남긴다. D03-04만 문서 증거로 완료한다. 전체 완료·review-request를 보내지 않고 PARTIAL report와 block을 제출한다. 배포·유료 호출·인증 변경 없음. 원격 PR/아티팩트 발행은 수행하지 않았다.
+공용 계획 D03-01/03은 제품 경로 미검증 근거와 함께 BLOCKED로 남긴다. D03-02는 개발 세션 3종 최소 시험 증거로, D03-04는 경계·결정 문서 증거로 완료한다. 전체 완료·review-request를 보내지 않고 PARTIAL report와 block을 제출한다. 배포·유료 호출·인증 변경 없음. 원격 PR/아티팩트 발행은 수행하지 않았다.

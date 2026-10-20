@@ -1,0 +1,47 @@
+{
+  "observedAt": "2026-10-20T11:43:28.142Z",
+  "provenance": "LIVE_DEVELOPMENT_SESSION",
+  "chatgptLoginObserved": true,
+  "productAuthVerified": false,
+  "modelOverride": false,
+  "paidFallbackImplemented": false,
+  "rawOutputRetained": false,
+  "cases": [
+    {
+      "name": "text-question",
+      "result": "PASS",
+      "invocations": 1,
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "completed": true,
+      "matched": true,
+      "toolItems": 0,
+      "rawOutputRetained": false
+    },
+    {
+      "name": "record-summary",
+      "result": "PASS",
+      "invocations": 1,
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "completed": true,
+      "matched": true,
+      "toolItems": 0,
+      "rawOutputRetained": false
+    },
+    {
+      "name": "allowed-attachment",
+      "result": "PASS",
+      "invocations": 1,
+      "exitCode": 0,
+      "signal": null,
+      "errorCode": null,
+      "completed": true,
+      "matched": true,
+      "toolItems": 0,
+      "rawOutputRetained": false
+    }
+  ]
+}

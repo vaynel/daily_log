@@ -15,7 +15,8 @@
     "typecheck": "npm run typecheck -ws",
     "test": "npm run test -ws --if-present",
     "build": "npm run build -ws",
-    "check": "npm run lint && npm run typecheck && npm test && npm run build",
+    "check": "npm run lint && npm run typecheck && npm test && npm run build && npm run test:spike",
+    "test:spike": "node --test scripts/pro-spike.test.mjs",
     "scan:secrets": "node scripts/scan-secrets.mjs"
   },
   "devDependencies": {
