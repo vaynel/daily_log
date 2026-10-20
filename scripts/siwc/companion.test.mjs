@@ -33,3 +33,19 @@ test('explicit enabled button starts OAuth only after click, matching state deni
   assert.equal(calls,0);assert.equal(await new Store(dir).read(),null);
  } finally {await app.close();await rm(dir,{recursive:true,force:true});}
 });
+test('permission-enable button is explicit, click required, and cancellation preserves waiting credentials',async()=>{
+ const dir=await mkdtemp(resolve('data/siwc-consent-'));const store=new Store(dir);await store.init();
+ const saved={version:1,client_id:'oaiapp_test',subject:'synthetic-user',scopes:['openid'],state:'WAIT_PERMISSION'};
+ await store.save(saved);let calls=0;
+ const app=await api.startCompanion(store,{allowLogin:true,transport:async()=>{calls++;throw Error('forbidden');}});
+ try {
+  const page=await(await fetch(app.url)).text();assert.match(page,/ChatGPT 사용 권한 활성화/);assert.match(page,/제품 연결은 미검증/);assert.equal(calls,0);
+  const csrf=page.match(/name="csrf" value="([^"]+)"/)[1],base=new URL(app.url).origin;
+  const r=await fetch(`${base}/start`,{method:'POST',headers:{Origin:base},body:new URLSearchParams({csrf}),redirect:'manual'});
+  assert.equal(r.status,303);const u=new URL(r.headers.get('location'));assert.equal(u.searchParams.get('prompt'),'consent');
+  assert.equal((await fetch(`${base}/auth/callback?error=access_denied&state=${u.searchParams.get('state')}`)).status,400);
+  assert.deepEqual(await store.read(),saved);assert.equal(calls,0);
+  await store.save({...saved,state:'READY'});
+  const normal=await(await fetch(app.url)).text();assert.match(normal,/Continue with ChatGPT/);assert.doesNotMatch(normal,/ChatGPT 사용 권한 활성화/);
+ }finally{await app.close();await rm(dir,{recursive:true,force:true});}
+});

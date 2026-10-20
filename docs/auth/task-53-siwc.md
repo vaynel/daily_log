@@ -59,6 +59,7 @@ Import는 서명·issuer·audience·subject·만료를 다시 검증한다. 원�
 
 ## 상태·복구
 
+- `WAIT_PERMISSION` 복구: 같은 앱 전용 디렉터리에서 `login --personal-oss`를 다시 실행하고 **ChatGPT 사용 권한 활성화** 버튼을 누른다. 저장된 client/subject/host와 전체 요청 scope를 유지하고 새 state/nonce/PKCE로 `prompt=consent`를 요청한다. 일반 로그인에는 강제하지 않는다. `force_reconsent`는 제공자 배포 확인이 없어 사용하지 않는다. 반환 grant를 재검증하여 계속 누락되면 대기하고 부여되면 자격증명만 READY로 회복한다. 실제 제품 연결 검증은 TASK4에 남는다.
 - `READY`는 검증된 자격증명 상태일 뿐 제품 연결 완료가 아니다. 권한 누락은 `WAIT_PERMISSION`.
 - 401/만료의 terminal refresh 실패는 `WAIT_AUTH`; 권한/정책 403은 `WAIT_SUPPORT`; 429는 `WAIT_LIMIT`. 유료 API fallback이나 자동 retry는 없다.
 - 5xx는 `WAIT_RETRY`. 자동 복구·재시도는 구현하지 않았다. 정책/한도 해소를 확인하고 명시적 새 로그인·import로 회복한다. reset 시간을 추측하지 않는다.

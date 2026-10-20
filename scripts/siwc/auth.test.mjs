@@ -90,3 +90,26 @@ test('import rejects forged signature and mismatched account before overwriting 
   await assert.rejects(remote.importFile(`${base}/local/session.json`,jwks));
  }finally{await rm(base,{recursive:true,force:true});}
 });
+test('permission recovery requests consent only for WAIT_PERMISSION and rechecks the returned grant',async()=>{
+ const selected={client_id:'oaiapp_test',subject:'synthetic-user',state:'WAIT_PERMISSION'};
+ const a=auth.createAttempt('host','http://127.0.0.1:1455/auth/callback',selected);
+ const b=auth.createAttempt('host','http://127.0.0.1:1455/auth/callback',selected);
+ const u=new URL(a.url);
+ assert.equal(u.searchParams.get('prompt'),'consent');
+ assert.equal(u.searchParams.has('force_reconsent'),false);
+ assert.equal(u.searchParams.get('client_id'),selected.client_id);
+ assert.equal(u.searchParams.get('ext_agent_host_id'),'host');
+ assert.equal(u.searchParams.get('scope'),auth.SCOPES);
+ assert.notEqual(a.state,b.state);assert.notEqual(a.nonce,b.nonce);assert.notEqual(a.verifier,b.verifier);
+ for(const state of ['READY','WAIT_AUTH','WAIT_SUPPORT']) assert.equal(new URL(auth.createAttempt('host','http://127.0.0.1:1455/auth/callback',{...selected,state}).url).searchParams.has('prompt'),false);
+ for(const granted of [false,true]) {
+  const attempt=auth.createAttempt('host','http://127.0.0.1:1455/auth/callback',selected);
+  const transport=async(url)=>{
+   if(url===auth.TOKEN_URL)return Response.json({...tokens({nonce:attempt.nonce}),scope:granted?auth.SCOPES:'openid'});
+   if(url.endsWith('openid-configuration'))return Response.json({issuer:auth.ISSUER,jwks_uri:auth.ISSUER+'/jwks',revocation_endpoint:auth.ISSUER+'/revoke'});
+   return Response.json(jwks);
+  };
+  const r=await auth.exchange(attempt,new URLSearchParams({state:attempt.state,code:'synthetic'}),transport);
+  assert.equal(r.state,granted?'READY':'WAIT_PERMISSION');assert.equal(r.subject,selected.subject);
+ }
+});

@@ -15,6 +15,9 @@ export function createAttempt(hostId, redirectUri, selected = null) {
  const a = { state:random(), nonce:random(), verifier:random(), redirectUri, expiresAt:Date.now()+600000, clientId:selected?.client_id ?? null, subject:selected?.subject };
  const params = { client_id:a.clientId ?? 'dynamic_agent_client', ext_agent_host_id:hostId, response_type:'code', redirect_uri:redirectUri, scope:SCOPES, resource:RESOURCE, state:a.state, nonce:a.nonce, code_challenge_method:'S256', code_challenge:createHash('sha256').update(a.verifier).digest('base64url') };
  if (!a.clientId) params.agent_name_hint = 'daily_log';
+ // The companion's explicit permission-enable button initiates this recovery.
+ // Ordinary sign-in must not force consent; force_reconsent needs rollout approval.
+ if (selected?.state === 'WAIT_PERMISSION') params.prompt = 'consent';
  // Task policy deliberately omits all account/token hints from URLs.
  a.url = `${ISSUER}/api/accounts/authorize?${new URLSearchParams(params)}`;
  return a;
