@@ -6,3 +6,6 @@ dist/
 data/*
 !data/.gitkeep
 *.log
+scripts/video-spike/out/assets/
+scripts/video-spike/out/.tmp-render/
+scripts/video-spike/out/frame_*.png

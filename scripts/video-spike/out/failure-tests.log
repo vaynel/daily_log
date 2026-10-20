@@ -1,0 +1,21 @@
+== T1 abort (SIGKILL after 8s)
+ "exit": null,
+ "signal": "SIGKILL",
+ "published": false,
+ "previousResultSha256Before": "ebecf326b8d53aa69ebfdae3b7bf3f0c3f5d9d6f5164272d812a2058a4857e9d",
+ "previousResultSha256After": "ebecf326b8d53aa69ebfdae3b7bf3f0c3f5d9d6f5164272d812a2058a4857e9d"
+--- abort: state hash before=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6 after=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6
+RESULT abort: PRESERVED (inputs+previous sample unchanged)
+tmp dir cleaned
+== T2 missing font
+{"exit":3,"published":false,"error":"FONT_MISSING_OR_NO_HANGUL","fontfile":"/nonexistent/font.ttc"}
+--- missing-font: state hash before=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6 after=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6
+RESULT missing-font: PRESERVED (inputs+previous sample unchanged)
+tmp dir cleaned
+== T3 disk-full simulation (RLIMIT_FSIZE 512KB => EFBIG on write, not real ENOSPC)
+ "exit": 1,
+ "ffmpegStderrTail": "eaved_write_frame(): File too large\n    Last message repeated 3 times\nError writing trailer of /workspace/scripts/video-spike/out/.tmp-render/sample.mp4: File too large\nError closing file /workspace/scripts/video-spike/out/.tmp-render/sample.mp4: File too large\nCommand exited with non-zero status 1\n",
+ "published": false,
+--- fsize-limit: state hash before=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6 after=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6
+RESULT fsize-limit: PRESERVED (inputs+previous sample unchanged)
+tmp dir cleaned
