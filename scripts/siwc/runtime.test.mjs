@@ -5,9 +5,9 @@ import { resolve } from 'node:path';
 import { Store } from './auth.mjs';
 const runtime=await import('./runtime.mjs').catch(()=>({}));
 async function fixture(fn, overrides={}) {
- const dir=await mkdtemp(resolve('data/siwc-runtime-'));const store=new Store(dir);await store.init();
+ const base=await mkdtemp(resolve('data/siwc-runtime-'));const dir=resolve(base,'store');const store=new Store(dir);await store.init();
  await store.save({version:1,issuer:'https://auth.openai.com',subject:'synthetic-user',client_id:'oaiapp_test',access_token:'synthetic-access',refresh_token:'synthetic-refresh',scopes:['chatgpt.tokens.use.direct','resource.invoke'],expires_at:Date.now()+3600000,state:'READY',...overrides});
- try {await fn(store);} finally {await rm(dir,{recursive:true,force:true});}
+ try {await fn(store);} finally {await rm(base,{recursive:true,force:true});}
 }
 const stream=(events)=>new Response(events.map(x=>`data: ${JSON.stringify(x)}\n\n`).join(''),{headers:{'Content-Type':'text/event-stream'}});
 const input={model:'synthetic-model',text:'합성 테스트'};

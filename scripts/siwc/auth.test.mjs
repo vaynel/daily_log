@@ -46,7 +46,7 @@ test('signed identity rejects tampering, issuer, audience, nonce, expiry and acc
  assert.throws(() => auth.validateTokens(tokens(),{...verifyOptions,subject:'other'}));
  assert.equal(auth.validateTokens({...tokens(),scope:'openid'},verifyOptions).state,'WAIT_PERMISSION');
 });
-test('protected atomic storage preserves host across import, excludes mismatched registrations, rejects insecure modes and serializes writers', async () => {
+test('protected atomic storage preserves host across import, excludes mismatched registrations, rejects insecure modes and serializes writers', {skip:process.platform==='win32'}, async () => {
  assert.equal(typeof auth.Store, 'function');
  const base=await mkdtemp(resolve('data/siwc-store-'));
  try {
@@ -79,7 +79,7 @@ test('exchange binds actual nonce, issued client and exact redirect; failed veri
  const p=new URLSearchParams({state:b.state,code:'synthetic-code'});
  await assert.rejects(auth.exchange(b,p,async(url,opts)=>url===auth.TOKEN_URL?Response.json(tokens({nonce:b.nonce})):transport(url,opts)),/TOKEN_INVALID/);
 });
-test('import rejects forged signature and mismatched account before overwriting saved registration',async()=>{
+test('import rejects forged signature and mismatched account before overwriting saved registration',{skip:process.platform==='win32'},async()=>{
  const base=await mkdtemp(resolve('data/siwc-import-'));
  try {
   const local=new auth.Store(`${base}/local`),remote=new auth.Store(`${base}/remote`);await local.init();await remote.init();

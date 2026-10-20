@@ -45,3 +45,5 @@ CI(`.github/workflows/ci.yml`)는 같은 검사와 빈 PostgreSQL에 대한 마�
 [SIWC 도우미 실행·보호 저장·서버 전달 안내](docs/auth/task-53-siwc.md).
 `npm run siwc -- help`, `npm run test:siwc`. 기본 데모는 외부 요청 없음.
 실제 제품 계정 동의·요청 검증은 TASK4 후속이며 개발 Codex 인증과 분리한다.
+
+Windows용 준비판: [시작 도우미·보호 저장·ZIP 안내](docs/auth/task-56-windows.md). Windows 실제 검증과 독립 QA 전에는 사용자 로그인 준비 완료가 아니다.

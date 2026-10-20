@@ -18,7 +18,7 @@
 
 ## 설치·컴퓨터에서 확인
 
-Node.js 22+, Linux 또는 macOS(Unix 권한)에서 저장소의 `npm ci` 실행. Windows 직접 실행은 권한 보호 구현이 없어 차단한다. Windows/WSL 브라우저의 loopback 연결은 별도 검증 전이다. 저장소·종속성은 작업 공간 안에 둔다.
+Node.js 22+, Linux 또는 macOS(Unix 권한)에서 저장소의 `npm ci` 실행. Windows는 [TASK-56 준비판 안내](task-56-windows.md)를 따른다. Windows 실제 OS 검수 전에는 사용자 실행 준비 완료가 아니며, 아래 Unix 저장·SSH 복사 절차는 Windows에 적용하지 않는다. 저장소·종속성은 작업 공간 안에 둔다.
 
 아래 예시는 이 작업 공간의 보호된 앱 전용 디렉터리이다. 계정 등록마다 별도 하위 디렉터리를 사용한다. 경로에는 `daily-log-siwc` 구성요소가 있어야 한다. 일반 auth.json, Codex 파일, API 키를 지정하거나 복사하지 않는다.
 

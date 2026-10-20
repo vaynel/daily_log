@@ -1,0 +1,41 @@
+name: SIWC Windows native verification
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ['scripts/siwc/**', 'scripts/siwc-*.mjs', 'scripts/package-siwc-windows.mjs', 'start-windows.cmd', 'docs/auth/task-56-windows.md', '.github/workflows/siwc-windows.yml']
+  push:
+    branches: ['task-56-windows-siwc']
+permissions:
+  contents: read
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Mock OAuth and native storage regressions (no external account)
+        run: node --test --test-reporter=tap scripts/siwc/*.test.mjs
+      - name: Package committed allowlist
+        run: node scripts/package-siwc-windows.mjs
+      - name: Verify deterministic archive
+        shell: bash
+        run: |
+          cp dist/siwc-windows/*.zip data/first.zip
+          node scripts/package-siwc-windows.mjs
+          cmp data/first.zip dist/siwc-windows/*.zip
+      - name: Extract and check Windows launcher from path with spaces and Korean
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $destination = Join-Path $env:RUNNER_TEMP '한글 패키지'
+          Expand-Archive -LiteralPath (Get-ChildItem dist/siwc-windows/*.zip).FullName -DestinationPath $destination
+          node (Join-Path $destination 'daily-log-siwc/scripts/siwc-windows.mjs') --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      # Evidence stays in Actions logs; no release, deployment, or worker artifact publication.

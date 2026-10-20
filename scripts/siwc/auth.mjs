@@ -1,6 +1,8 @@
 import { randomBytes, randomUUID, createHash, createPublicKey, verify } from 'node:crypto';
 import { mkdir, lstat, open, rename, unlink, rmdir, realpath } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
+import {AsyncLocalStorage} from 'node:async_hooks';
+import {openWindowsStore} from './windows-store.mjs';
 export const ISSUER = 'https://auth.openai.com';
 export const RESOURCE = 'https://api.openai.com/v1';
 export const TOKEN_URL = `${ISSUER}/api/accounts/oauth/token`;
@@ -85,29 +87,39 @@ async function protectedRead(path) {
  } finally {await f.close();}
 }
 export class Store {
- constructor(dir) {this.dir=resolve(dir);}
+ constructor(dir) {this.dir=resolve(dir);this.transaction=new AsyncLocalStorage();}
  async secureDir() {
-  if(process.platform==='win32') fail('STORAGE_UNSUPPORTED_USE_LINUX');
+  if(process.platform==='win32') return this.lock(async()=>{});
   await mkdir(this.dir,{recursive:true,mode:0o700});
   const s=await lstat(this.dir);
   if(!s.isDirectory() || s.isSymbolicLink() || (s.mode & 0o077) || s.uid!==process.getuid() || await realpath(this.dir)!==this.dir) fail('STORAGE_UNSAFE');
  }
  async lock(fn) {
+  if(process.platform==='win32') {
+   if(this.transaction.getStore()) fail('STORE_BUSY');
+   const backend=await openWindowsStore(this.dir);
+   try {return await this.transaction.run(backend,fn);} finally {await backend.close();}
+  }
   await this.secureDir(); const path=join(this.dir,'.lock');
   try {await mkdir(path,{mode:0o700});} catch {fail('STORE_BUSY');}
   try {return await fn();} finally {await rmdir(path);}
  }
  async atomic(name,value) {
+  if(process.platform==='win32') {
+   const backend=this.transaction.getStore();if(!backend) fail('STORE_LOCK_REQUIRED');
+   return backend.write(name,value);
+  }
   const path=join(this.dir,`${name}.${randomUUID()}.tmp`); const f=await open(path,'wx',0o600);
   try {await f.writeFile(JSON.stringify(value));await f.sync();} finally {await f.close();}
   try {await rename(path,join(this.dir,name));} finally {await unlink(path).catch(()=>{});}
  }
  async hostUnlocked() {
-  try {const h=await protectedRead(join(this.dir,'host.json')); if(!/^urn:uuid:[0-9a-f-]{36}$/.test(h.id)) fail('HOST_INVALID');return h.id;}
+  try {const h=process.platform==='win32'?await this.transaction.getStore().read('host.json'):await protectedRead(join(this.dir,'host.json')); if(!h){const missing=Error('missing');missing.code='ENOENT';throw missing;} if(!/^urn:uuid:[0-9a-f-]{36}$/.test(h.id)) fail('HOST_INVALID');return h.id;}
   catch(e) {if(e.code!=='ENOENT') throw e; const id=`urn:uuid:${randomUUID()}`;await this.atomic('host.json',{id});return id;}
  }
  async init() {return this.lock(()=>this.hostUnlocked());}
  async read() {
+  if(process.platform==='win32') {const backend=this.transaction.getStore();return backend?backend.read('session.json'):this.lock(()=>this.read());}
   await this.secureDir();
   try {return await protectedRead(join(this.dir,'session.json'));} catch(e) {if(e.code==='ENOENT') return null;throw e;}
  }
@@ -117,7 +129,14 @@ export class Store {
   await this.atomic('session.json',record);
  }
  async save(record) {return this.lock(()=>this.saveUnlocked(record));}
+ async forget() {
+  return this.lock(async()=>{
+   if(process.platform==='win32') return this.transaction.getStore().forget();
+   await unlink(join(this.dir,'session.json')).catch(e=>{if(e.code!=='ENOENT')throw e;});
+  });
+ }
  async importFile(file,jwks) {
+  if(process.platform==='win32') fail('WINDOWS_IMPORT_UNSUPPORTED');
   return this.lock(async()=>{
    await this.hostUnlocked(); const r=await protectedRead(resolve(file));
    validateIdentity(r.id_token,{clientId:r.client_id,subject:r.subject,jwks});
