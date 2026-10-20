@@ -40,3 +40,8 @@ CI(`.github/workflows/ci.yml`)는 같은 검사와 빈 PostgreSQL에 대한 마�
 
 ## 알려진 한계 (이 Task 범위 밖)
 인증·기록 스키마·작업 큐·렌더러·Redis 사용은 후속 Task. 운영 배포 구성 없음.
+
+## 앱 전용 ChatGPT 로그인 준비 (TASK-53)
+[SIWC 도우미 실행·보호 저장·서버 전달 안내](docs/auth/task-53-siwc.md).
+`npm run siwc -- help`, `npm run test:siwc`. 기본 데모는 외부 요청 없음.
+실제 제품 계정 동의·요청 검증은 TASK4 후속이며 개발 Codex 인증과 분리한다.
