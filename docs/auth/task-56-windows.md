@@ -1,6 +1,6 @@
 # TASK-56 · Windows 로그인 도우미 준비판
 
-**아직 사용자 실행 준비 완료가 아니다.** Windows 실제 OS 시험과 독립 QA 전에는 로그인하지 않는다. 이 작업 환경은 Linux이며 Windows 저장소/PowerShell/시작 배치의 실제 실행은 NOT_RUN이다. PM이 제출 커밋을 push하여 `SIWC Windows native verification`의 Windows 결과를 확인해야 한다. 실제 사용자 동의·계정 지원·추론 성공은 TASK-4에서 별도 확인한다. 개발 Codex 인증을 읽거나 복사하지 않는다. 배포 없음.
+**아직 사용자 실행 준비 완료가 아니다.** 기준 커밋 `a36ae5cb7b5315ddcfbcddbee1fe9a84e9be8e70`의 실제 Windows CI는 21 PASS / 0 FAIL / 2 SKIP이며 [검증 기록](task-56-verification.md)에 근거와 한계가 있다. TASK-57 독립 QA 전에는 로그인하지 않는다. `.cmd` 더블클릭·대화형 메뉴 전체는 미검증이다. 실제 사용자 동의·계정 지원·추론 성공은 TASK-4에서 별도 확인한다. 개발 Codex 인증을 읽거나 복사하지 않는다. 배포 없음.
 
 ## Windows에서 사용할 때 (검수 후 사용자용)
 
@@ -38,7 +38,7 @@ node scripts/package-siwc-windows.mjs
 
 `.github/workflows/siwc-windows.yml`은 Windows와 Ubuntu에서 Node 22 모의 OAuth·저장소 회귀를 실행한다. Windows 전용 시험은 실제 win32에서만 수행하며 Linux에서는 SKIP이다. POSIX 파일 mode/import 시험 두 건은 Windows에서 SKIP하고 Windows 전용 DPAPI/ACL 시험으로 따로 검사한다. 압축 해제한 한글·공백 경로에서 시작 도우미 preflight도 검사한다. 기존 Linux 전체 `npm run check` CI는 유지한다. OAuth transport는 합성이며 실계정이나 유료 API를 호출하지 않는다.
 
-PM 후속: 제출 branch/commit push → Windows 작업 결과/실패 로그 확인 → 필요 수정 → 독립 QA → 그 뒤 TASK-4 실제 사용자 로그인 검증. 이 worker에는 Windows OS/PowerShell/gh가 없고 새 workflow를 dispatch하는 연결 도구도 없다. 원격 CI 결과 URL은 아직 없다. 작업 지시에 따라 push/CI 실행은 PM에게 인계한다.
+PM 후속: 최종 문서 커밋·ZIP/체크섬 확인 → TASK-57 독립 QA → 그 뒤 TASK-4 실제 사용자 로그인 검증. [Windows/Ubuntu CI](https://github.com/vaynel/daily_log/actions/runs/39450866093)는 기준 구현 커밋에서 성공했으며 현재 문서 커밋의 실행 소스·테스트·워크플로는 동일하다. Windows 로그에는 Node 부재 `.cmd` 검사와 한글·공백 경로의 Node launcher preflight가 포함되지만 더블클릭·대화형 메뉴 전체 실행은 포함되지 않는다. 필요 시 독립 QA에서 실제 Windows로 추가 확인한다. 최종 ZIP의 문서 갱신에 따른 해시는 기준 구현 ZIP과 다르므로 제출 report와 manifest의 정확한 커밋·해시를 사용한다.
 
 ## 확인한 공식 근거
 
