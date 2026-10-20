@@ -1,0 +1,40 @@
+baseline state hash=5bb0416fe80e1420c8d07472b64b63d13d01b67b5c3ca54e6545528acdfef649
+== T1 abort (SIGKILL after 8s)
+{
+ "exit": null,
+ "signal": "SIGKILL",
+ "wallSeconds": 8.067,
+ "maxRssKB": null,
+ "userSec": null,
+ "sysSec": null,
+ "tmpDirBytesAtEnd": 270446,
+ "ffmpegStderrTail": "",
+ "published": false,
+ "previousResultSha256Before": "ebecf326b8d53aa69ebfdae3b7bf3f0c3f5d9d6f5164272d812a2058a4857e9d",
+ "previousResultSha256After": "ebecf326b8d53aa69ebfdae3b7bf3f0c3f5d9d6f5164272d812a2058a4857e9d"
+}
+exit=1 (non-zero, expected)
+cause matched: "signal": *"SIGKILL"
+controlled hash failure
+FAIL T1 abort (SIGKILL after 8s): cannot verify inputs/previous result
+== T2 missing font
+{"exit":3,"published":false,"error":"FONT_MISSING_OR_NO_HANGUL","fontfile":"/nonexistent/font.ttc"}
+exit=3 (non-zero, expected)
+cause matched: FONT_MISSING_OR_NO_HANGUL
+controlled hash failure
+FAIL T2 missing font: cannot verify inputs/previous result
+== T3 disk-full simulation (RLIMIT_FSIZE 512KB => EFBIG, not real ENOSPC)
+KB": 477048,
+ "userSec": 11.83,
+ "sysSec": 0.33,
+ "tmpDirBytesAtEnd": 270398,
+ "ffmpegStderrTail": "av_interleaved_write_frame(): File too large\n    Last message repeated 3 times\nError writing trailer of /tmp/video-audit/.tmp-render/sample.mp4: File too large\nError closing file /tmp/video-audit/.tmp-render/sample.mp4: File too large\nCommand exited with non-zero status 1\n",
+ "published": false,
+ "previousResultSha256Before": "ebecf326b8d53aa69ebfdae3b7bf3f0c3f5d9d6f5164272d812a2058a4857e9d",
+ "previousResultSha256After": "ebecf326b8d53aa69ebfdae3b7bf3f0c3f5d9d6f5164272d812a2058a4857e9d"
+}
+exit=1 (non-zero, expected)
+cause matched: File too large
+controlled hash failure
+FAIL T3 disk-full simulation (RLIMIT_FSIZE 512KB => EFBIG, not real ENOSPC): cannot verify inputs/previous result
+OVERALL: FAIL (3 problem(s))

@@ -1,0 +1,47 @@
+sha256sum: assets/unreadable.txt: Permission denied
+baseline state hash=a645828b7d6eb456ae162cc4f7db848ebb738c5b23d19aef2daa6ca4ad33d4c1
+== T1 abort (SIGKILL after 8s)
+{
+ "exit": null,
+ "signal": "SIGKILL",
+ "wallSeconds": 8.062,
+ "maxRssKB": null,
+ "userSec": null,
+ "sysSec": null,
+ "tmpDirBytesAtEnd": 270422,
+ "ffmpegStderrTail": "",
+ "published": false,
+ "previousResultSha256Before": "ebecf326b8d53aa69ebfdae3b7bf3f0c3f5d9d6f5164272d812a2058a4857e9d",
+ "previousResultSha256After": "ebecf326b8d53aa69ebfdae3b7bf3f0c3f5d9d6f5164272d812a2058a4857e9d"
+}
+exit=1 (non-zero, expected)
+cause matched: "signal": *"SIGKILL"
+sha256sum: assets/unreadable.txt: Permission denied
+state hash before=a645828b7d6eb456ae162cc4f7db848ebb738c5b23d19aef2daa6ca4ad33d4c1 after=a645828b7d6eb456ae162cc4f7db848ebb738c5b23d19aef2daa6ca4ad33d4c1
+RESULT T1 abort (SIGKILL after 8s): PRESERVED
+tmp dir cleaned
+== T2 missing font
+{"exit":3,"published":false,"error":"FONT_MISSING_OR_NO_HANGUL","fontfile":"/nonexistent/font.ttc"}
+exit=3 (non-zero, expected)
+cause matched: FONT_MISSING_OR_NO_HANGUL
+sha256sum: assets/unreadable.txt: Permission denied
+state hash before=a645828b7d6eb456ae162cc4f7db848ebb738c5b23d19aef2daa6ca4ad33d4c1 after=a645828b7d6eb456ae162cc4f7db848ebb738c5b23d19aef2daa6ca4ad33d4c1
+RESULT T2 missing font: PRESERVED
+tmp dir cleaned
+== T3 disk-full simulation (RLIMIT_FSIZE 512KB => EFBIG, not real ENOSPC)
+ssKB": 475608,
+ "userSec": 10.69,
+ "sysSec": 0.47,
+ "tmpDirBytesAtEnd": 270374,
+ "ffmpegStderrTail": "av_interleaved_write_frame(): File too large\n    Last message repeated 3 times\nError writing trailer of /tmp/regression/.tmp-render/sample.mp4: File too large\nError closing file /tmp/regression/.tmp-render/sample.mp4: File too large\nCommand exited with non-zero status 1\n",
+ "published": false,
+ "previousResultSha256Before": "ebecf326b8d53aa69ebfdae3b7bf3f0c3f5d9d6f5164272d812a2058a4857e9d",
+ "previousResultSha256After": "ebecf326b8d53aa69ebfdae3b7bf3f0c3f5d9d6f5164272d812a2058a4857e9d"
+}
+exit=1 (non-zero, expected)
+cause matched: File too large
+sha256sum: assets/unreadable.txt: Permission denied
+state hash before=a645828b7d6eb456ae162cc4f7db848ebb738c5b23d19aef2daa6ca4ad33d4c1 after=a645828b7d6eb456ae162cc4f7db848ebb738c5b23d19aef2daa6ca4ad33d4c1
+RESULT T3 disk-full simulation (RLIMIT_FSIZE 512KB => EFBIG, not real ENOSPC): PRESERVED
+tmp dir cleaned
+OVERALL: PASS (3/3 cases failed for the injected cause and preserved state)

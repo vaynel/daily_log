@@ -7,14 +7,15 @@ OUT=${1:-scripts/video-spike/out}
 R="node scripts/video-spike/render.mjs"
 FAILS=0
 fail() { echo "FAIL $1"; FAILS=$((FAILS+1)); }
-h() { (cd "$OUT" && find assets -type f | sort | xargs sha256sum && sha256sum sample.mp4) | sha256sum | cut -d' ' -f1; }
+h() { node scripts/video-spike/hash-state.mjs "$OUT"; }
 
 # Preconditions: without inputs and a previous result, "preserved" would be meaningless.
 [ -f "$OUT/sample.mp4" ] || { echo "PRECONDITION FAILED: $OUT/sample.mp4 missing (run render first)"; exit 2; }
 [ -f "$OUT/assets/narration.wav" ] || { echo "PRECONDITION FAILED: $OUT/assets missing (run prepare first)"; exit 2; }
 [ -n "$(find "$OUT/assets" -type f)" ] || { echo "PRECONDITION FAILED: assets empty"; exit 2; }
 [ -f "${FONT:-/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc}" ] || { echo "PRECONDITION FAILED: default font missing, cannot isolate font case"; exit 2; }
-B=$(h)
+B=$(h) || { echo "PRECONDITION FAILED: cannot hash all inputs and previous result"; exit 2; }
+[ -n "$B" ] || { echo "PRECONDITION FAILED: empty baseline hash"; exit 2; }
 echo "baseline state hash=$B"
 
 # run_case NAME EXPECT_REGEX EXPECT_EXIT_DESC render-args...
@@ -28,7 +29,9 @@ run_case() {
   grep -Eq "$expect" "$outf" && echo "cause matched: $expect" || fail "$name: expected cause /$expect/ not found in output"
   grep -q '"published": *true' "$outf" && fail "$name: result was published"
   rm -f "$outf"
-  A=$(h); echo "state hash before=$B after=$A"
+  A=$(h) || { fail "$name: cannot verify inputs/previous result"; return 1; }
+  [ -n "$A" ] || { fail "$name: empty verification hash"; return 1; }
+  echo "state hash before=$B after=$A"
   [ "$A" = "$B" ] && echo "RESULT $name: PRESERVED" || fail "$name: inputs/previous result CHANGED"
   [ -d "$OUT/.tmp-render" ] && fail "$name: tmp dir left behind" || echo "tmp dir cleaned"
 }
