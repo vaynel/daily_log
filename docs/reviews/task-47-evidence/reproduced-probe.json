@@ -1,0 +1,15 @@
+{
+ "width": 720,
+ "height": 1280,
+ "ratio": 0.5625,
+ "nineSixteen": true,
+ "fps": "24/1",
+ "vcodec": "h264",
+ "acodec": "aac",
+ "durationSec": 180,
+ "le180": true,
+ "bytes": 2138651,
+ "meanVolume": "-22.6",
+ "maxVolume": "-0.4",
+ "sha256": "ebecf326b8d53aa69ebfdae3b7bf3f0c3f5d9d6f5164272d812a2058a4857e9d"
+}

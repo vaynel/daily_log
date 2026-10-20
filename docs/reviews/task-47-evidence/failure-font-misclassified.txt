@@ -1,0 +1,15 @@
+== T1 abort (SIGKILL after 8s)
+{"exit":3,"published":false,"error":"FONT_MISSING_OR_NO_HANGUL","fontfile":"/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc"}
+--- abort: state hash before=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6 after=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6
+RESULT abort: PRESERVED (inputs+previous sample unchanged)
+tmp dir cleaned
+== T2 missing font
+{"exit":3,"published":false,"error":"FONT_MISSING_OR_NO_HANGUL","fontfile":"/nonexistent/font.ttc"}
+--- missing-font: state hash before=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6 after=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6
+RESULT missing-font: PRESERVED (inputs+previous sample unchanged)
+tmp dir cleaned
+== T3 disk-full simulation (RLIMIT_FSIZE 512KB => EFBIG on write, not real ENOSPC)
+{"exit":3,"published":false,"error":"FONT_MISSING_OR_NO_HANGUL","fontfile":"/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc"}
+--- fsize-limit: state hash before=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6 after=f077c49f23ad6f12af6533e0318b48c1a728cbd521cde65d37519e08a19652a6
+RESULT fsize-limit: PRESERVED (inputs+previous sample unchanged)
+tmp dir cleaned
