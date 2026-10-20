@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>알림 시험 · Daily Log</title>
+    <style>
+      body { font: 16px/1.5 system-ui, sans-serif; margin: 0; padding: 16px; max-width: 520px; color: #1d2433; }
+      h1 { font-size: 20px; margin: 0 0 12px; }
+      .card { border: 1px solid #c9d0dc; border-radius: 12px; padding: 12px 14px; margin: 12px 0; }
+      .ok { border-color: #1b7f4b; background: #eef8f2; }
+      .ask { border-color: #2457c5; background: #eef3fd; }
+      .blocked { border-color: #b3261e; background: #fdf0ef; }
+      .unsupported { border-color: #8a6100; background: #fff7e0; }
+      button { min-height: 48px; padding: 0 16px; font-size: 16px; border-radius: 10px; border: 1px solid #2457c5; background: #fff; margin: 4px 4px 4px 0; }
+      button:focus-visible { outline: 3px solid #2457c5; outline-offset: 2px; }
+      table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      td, th { text-align: left; padding: 4px; border-bottom: 1px solid #e1e5ec; word-break: break-all; }
+      .note { font-size: 14px; color: #4a5568; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>밤 10시 알림 시험</h1>
+      <p class="note">시험용 화면입니다. 모의(mock) 전송은 실제 푸시 성공이 아니며 "전달 확인"으로 기록되지 않습니다.</p>
+      <section id="perm" class="card" role="status" aria-live="polite"></section>
+      <div>
+        <button id="ask">알림 허용 요청</button>
+        <button id="recheck">다시 확인</button>
+        <button id="sub">푸시 구독 시도</button>
+      </div>
+      <div>
+        <button id="send-ok">모의 전송 (201)</button>
+        <button id="send-dup">같은 날 다시 전송</button>
+        <button id="send-410">만료 구독 (410)</button>
+        <button id="send-done">완료 알림 (별도 키)</button>
+      </div>
+      <section class="card" aria-label="전달 기록">
+        <strong>전달 기록</strong>
+        <table><thead><tr><th>키</th><th>상태</th><th>전달 확인</th></tr></thead><tbody id="log"></tbody></table>
+      </section>
+      <p id="env" class="note"></p>
+    </main>
+    <script type="module" src="/src/notify/spike.ts"></script>
+  </body>
+</html>
