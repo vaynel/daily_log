@@ -47,3 +47,12 @@ CI(`.github/workflows/ci.yml`)는 같은 검사와 빈 PostgreSQL에 대한 마�
 실제 제품 계정 동의·요청 검증은 TASK4 후속이며 개발 Codex 인증과 분리한다.
 
 Windows용 준비판: [시작 도우미·보호 저장·ZIP 안내](docs/auth/task-56-windows.md). Windows 실제 검증과 독립 QA 전에는 사용자 로그인 준비 완료가 아니다.
+
+## Google 로그인과 비공개 파일 접근 (TASK-10)
+
+- 설정(선택, 하나라도 없으면 `/api/**` 는 전부 503 으로 차단): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ALLOWED_EMAILS`(쉼표 구분), `PUBLIC_BASE_URL`, `APP_URL`, `SESSION_TTL_SECONDS`(기본 43200). 실제 값은 커밋 금지.
+- 로그인은 `/auth/login`(scope `openid email profile`만), Drive 동의는 로그인 후 `/auth/drive/connect`(scope `drive.file`)로 분리. Drive 토큰 보관은 후속 Task.
+- `/api/**`(기록·`/api/attachments/:name`·`/api/videos/:name`)는 전역 훅에서 같은 검사를 거치며, 허용 목록은 요청마다 재확인한다.
+- 시험: `npm test -w apps/server` — 시험 코드가 띄우는 모의 OIDC 발급자(authorization code + PKCE, nonce, RS256 id_token)로 AC 를 검증한다.
+- 화면 확인: `npm run dev:auth-demo -w apps/server` 와 `npm run dev:web` (모의 발급자, 실제 Google 미사용).
+- 범위 밖(관리자 후속): 실제 Google Cloud OAuth 클라이언트 등록, 실계정 로그인, Drive 실동의.
