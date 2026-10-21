@@ -116,14 +116,66 @@ describe.skipIf(!url)('RecordStore (실제 PostgreSQL 임시 스키마)', () => 
       expect(snap!.versions.filter((v) => v.kind === 'PRODUCTION_PLAN').map((v) => v.version)).toEqual([1, 2]);
     });
 
-    it('예시7: 10/23에 기록 없는 10/21 신규 선택은 거부(행 생성 없음), 전날 10/22는 허용', async () => {
+    it('예시7: 10/23 10:00에 기록 없는 10/21·10/22 신규 선택은 거부(행 생성 없음), 당일 10/23만 허용', async () => {
       const o = newOwner();
       const now = kst('2026-10-23T10:00:00');
       await rejects(store.startInterview(o, now, '2026-10-21'), 'EMPTY_PAST_DATE');
       await rejects(store.startInterview(o, now, '2026-10-24'), 'INVALID_LIFE_DATE');
       await rejects(store.startInterview(o, now, '2026-02-30'), 'INVALID_LIFE_DATE');
+      await rejects(store.startInterview(o, now, '2026-10-22'), 'EMPTY_PAST_DATE');
       expect(await count('interviews', o)).toBe(0);
-      expect((await store.startInterview(o, now, '2026-10-22')).interview.lifeDate).toBe('2026-10-22');
+      expect((await store.startInterview(o, now, '2026-10-23')).interview.lifeDate).toBe('2026-10-23');
+    });
+
+    it('F11-03 경계: 00:40 전전날 거부, 04:59 전날 허용, 05:00 전날 거부', async () => {
+      const o = newOwner();
+      await rejects(store.startInterview(o, kst('2026-10-21T00:40:00'), '2026-10-19'), 'EMPTY_PAST_DATE');
+      expect((await store.startInterview(o, kst('2026-10-21T04:59:00'), '2026-10-20')).interview.lifeDate).toBe('2026-10-20');
+      expect((await store.startInterview(newOwner(), kst('2026-10-21T04:59:00'), '2026-10-21')).interview.lifeDate).toBe('2026-10-21');
+      const o2 = newOwner();
+      await rejects(store.startInterview(o2, kst('2026-10-21T05:00:00'), '2026-10-20'), 'EMPTY_PAST_DATE');
+      expect(await count('interviews', o2)).toBe(0);
+    });
+
+    it('F11-03 기존 작성 중 기록은 허용 창을 지나도 원래 생활일로 재개되고 재개 시각이 별도 기록된다', async () => {
+      const o = newOwner();
+      const { interview } = await store.startInterview(o, kst('2026-10-20T22:30:00'));
+      const later = kst('2026-10-23T09:00:00');
+      const again = await store.startInterview(o, later, '2026-10-20');
+      expect(again).toMatchObject({ resumed: true });
+      expect(again.interview.id).toBe(interview.id);
+      expect(again.interview.startedAt.toISOString()).toBe(kst('2026-10-20T22:30:00').toISOString());
+      const snap = await store.load(o, '2026-10-20', later);
+      expect(snap!.resumes.map((d) => d.toISOString())).toEqual([later.toISOString()]);
+    });
+  });
+
+  describe('F11-01 동시 시작', () => {
+    it('같은 소유자·신규 생활일 동시 8회 시작 → 모두 성공, 같은 id, 행 1개', async () => {
+      const o = newOwner();
+      const now = kst('2026-10-21T10:00:00');
+      const rs = await Promise.all(Array.from({ length: 8 }, () => store.startInterview(o, now)));
+      expect(new Set(rs.map((r) => r.interview.id)).size).toBe(1);
+      expect(rs.filter((r) => !r.resumed)).toHaveLength(1);
+      expect(await count('interviews', o)).toBe(1);
+      expect(await count('pipeline_states')).toBe(Number((await pool.query('SELECT count(*) FROM interviews')).rows[0].count));
+    });
+  });
+
+  describe('F11-02 확정 후 저장', () => {
+    it('확정된 기록에는 새 항목·첨부 저장이 거부되고 내용은 그대로, 같은 요청 재전송은 중복으로 응답', async () => {
+      const o = newOwner();
+      const now = kst('2026-10-21T10:00:00');
+      const { interview } = await store.startInterview(o, now);
+      const item = await store.saveItem(o, interview.id, 'a', 'ANSWER', '확정 전', now);
+      await store.confirm(o, interview.id, now);
+      const before = await store.load(o, '2026-10-21', now);
+      await rejects(store.saveItem(o, interview.id, 'b', 'ANSWER', '확정 후', now), 'CONFIRMED_LOCKED');
+      await rejects(store.saveItem(o, interview.id, 'a', 'ANSWER', '덮어쓰기', now), 'IDEMPOTENCY_CONFLICT');
+      await rejects(store.saveItemWithAttachment(o, interview.id, 'c', 'ANSWER', 'x', { storageKey: 's', checksum: 'c' }, now), 'CONFIRMED_LOCKED');
+      await rejects(store.saveAttachment(o, interview.id, 'att', { itemId: item.id, storageKey: 's', checksum: 'c' }, now), 'CONFIRMED_LOCKED');
+      expect((await store.saveItem(o, interview.id, 'a', 'ANSWER', '확정 전', now)).duplicate).toBe(true);
+      expect(await store.load(o, '2026-10-21', now)).toEqual(before);
     });
   });
 

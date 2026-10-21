@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type pg from 'pg';
-import { addCalendarMonthSeoul, addDays, isValidDate, seoulDate, suggestLifeDate } from './time.js';
+import { addCalendarMonthSeoul, isValidDate, seoulDate, suggestLifeDate } from './time.js';
 
 export type RecordErrorCode =
   | 'INVALID_LIFE_DATE'
@@ -8,6 +8,7 @@ export type RecordErrorCode =
   | 'NOT_FOUND'
   | 'IDEMPOTENCY_CONFLICT'
   | 'INVALID_STATE'
+  | 'CONFIRMED_LOCKED'
   | 'AUDIO_EXPIRED';
 
 export class RecordError extends Error {
@@ -104,37 +105,50 @@ export class RecordStore {
     return toInterview(r.rows[0]);
   }
 
-  /** 새 인터뷰에서 선택할 수 있는 생활일: 제안일, 그 전날, 오늘(서울) 달력일. */
+  /**
+   * 새 인터뷰에서 선택할 수 있는 생활일: 제안일과 서울 오늘 달력일.
+   * 05:00 KST 전에는 전날·당일, 05:00 이후에는 당일만 허용한다(Wiki05 v9).
+   */
   allowedNewLifeDates(now: Date): string[] {
-    const s = suggestLifeDate(now);
-    return [...new Set([s, addDays(s, -1), seoulDate(now)])].sort();
+    return [...new Set([suggestLifeDate(now), seoulDate(now)])].sort();
   }
 
   /**
    * 인터뷰 시작. lifeDate 생략 시 05:00 KST 규칙의 제안일.
-   * 같은 생활일의 기록이 이미 있으면 이어보기(재개 시각만 별도 기록, 생활일 불변).
+   * 같은 생활일의 기록이 이미 있으면 이어보기(재개 시각만 별도 기록, 생활일 불변). 기존 작성 중 기록은
+   * 날짜 규칙과 무관하게 원래 생활일로 재개된다. 동시 요청은 INSERT ... ON CONFLICT로 한 행만 만들고 나머지는 재개한다.
    * 기록이 없는 과거·미래 날짜의 신규 생성은 거부한다.
    */
   async startInterview(ownerId: string, now: Date, lifeDate?: string): Promise<{ interview: Interview; resumed: boolean }> {
     const date = lifeDate ?? suggestLifeDate(now);
     if (!isValidDate(date)) throw new RecordError('INVALID_LIFE_DATE', '생활일 형식 오류');
     return this.tx(async (c) => {
-      const existing = await c.query(`SELECT ${INTERVIEW_COLS} FROM interviews WHERE owner_id = $1 AND life_date = $2 FOR UPDATE`, [ownerId, date]);
-      if (existing.rows[0]) {
-        const iv = toInterview(existing.rows[0]);
+      const resume = async (): Promise<Interview | null> => {
+        const r = await c.query(`SELECT ${INTERVIEW_COLS} FROM interviews WHERE owner_id = $1 AND life_date = $2 FOR UPDATE`, [ownerId, date]);
+        if (!r.rows[0]) return null;
+        const iv = toInterview(r.rows[0]);
         await c.query('INSERT INTO interview_resumes (interview_id, resumed_at) VALUES ($1, $2)', [iv.id, now]);
-        return { interview: iv, resumed: true };
-      }
+        return iv;
+      };
+      const existing = await resume();
+      if (existing) return { interview: existing, resumed: true };
       if (date > seoulDate(now)) throw new RecordError('INVALID_LIFE_DATE', '미래 생활일은 선택할 수 없음');
       if (!this.allowedNewLifeDates(now).includes(date)) throw new RecordError('EMPTY_PAST_DATE', '기록이 없는 과거 날짜는 새로 만들 수 없음');
-      const id = randomUUID();
       const ins = await c.query(
         `INSERT INTO interviews (id, owner_id, life_date, started_at, created_at, updated_at) VALUES ($1, $2, $3, $4, $4, $4)
+         ON CONFLICT (owner_id, life_date) DO NOTHING
          RETURNING ${INTERVIEW_COLS}`,
-        [id, ownerId, date, now],
+        [randomUUID(), ownerId, date, now],
       );
-      await c.query('INSERT INTO pipeline_states (interview_id, updated_at) VALUES ($1, $2)', [id, now]);
-      return { interview: toInterview(ins.rows[0]), resumed: false };
+      if (!ins.rows[0]) {
+        // 동시 요청이 먼저 만들었다: 그 기록을 이어본다.
+        const raced = await resume();
+        if (!raced) throw new RecordError('INVALID_STATE', '기록을 시작하지 못했습니다. 다시 시도하세요');
+        return { interview: raced, resumed: true };
+      }
+      const iv = toInterview(ins.rows[0]);
+      await c.query('INSERT INTO pipeline_states (interview_id, updated_at) VALUES ($1, $2)', [iv.id, now]);
+      return { interview: iv, resumed: false };
     });
   }
 
@@ -181,12 +195,13 @@ export class RecordStore {
   }
 
   private async insertItem(c: Q, ownerId: string, interviewId: string, key: string, kind: ItemKind, body: string, now: Date) {
-    await this.lock(c, ownerId, interviewId);
+    const iv = await this.lock(c, ownerId, interviewId);
     const ex = await c.query('SELECT id, seq, kind, body FROM conversation_items WHERE interview_id = $1 AND idempotency_key = $2', [interviewId, key]);
     if (ex.rows[0]) {
       if (ex.rows[0].kind !== kind || ex.rows[0].body !== body) throw new RecordError('IDEMPOTENCY_CONFLICT', '같은 요청 키에 다른 내용');
       return { id: ex.rows[0].id as string, seq: ex.rows[0].seq as number, duplicate: true };
     }
+    assertEditable(iv);
     const id = randomUUID();
     const r = await c.query(
       `INSERT INTO conversation_items (id, interview_id, seq, idempotency_key, kind, body, saved_at)
@@ -203,7 +218,7 @@ export class RecordStore {
   }
 
   private async insertAttachment(c: Q, ownerId: string, interviewId: string, key: string, ref: { itemId?: string; storageKey: string; checksum: string }, now: Date) {
-    await this.lock(c, ownerId, interviewId);
+    const iv = await this.lock(c, ownerId, interviewId);
     const ex = await c.query('SELECT id, item_id, storage_key, checksum FROM attachment_refs WHERE interview_id = $1 AND idempotency_key = $2', [interviewId, key]);
     if (ex.rows[0]) {
       const x = ex.rows[0];
@@ -212,6 +227,7 @@ export class RecordStore {
       }
       return { id: x.id as string, duplicate: true };
     }
+    assertEditable(iv);
     if (ref.itemId) {
       const it = await c.query('SELECT 1 FROM conversation_items WHERE id = $1 AND interview_id = $2', [ref.itemId, interviewId]);
       if (!it.rows[0]) throw new RecordError('NOT_FOUND', '연결할 대화 항목이 없음');
@@ -330,6 +346,11 @@ export class RecordStore {
     const r = await this.pool.query("UPDATE audio_segments SET status = 'EXPIRED', status_changed_at = $1 WHERE expires_at <= $1 AND status <> 'EXPIRED'", [now]);
     return r.rowCount ?? 0;
   }
+}
+
+/** 확정된 기록은 저장 요청으로 바뀌지 않는다. 수정은 startProduction의 새 revision으로만 남긴다. */
+function assertEditable(iv: Interview) {
+  if (iv.status === 'CONFIRMED') throw new RecordError('CONFIRMED_LOCKED', '확정된 기록은 저장으로 수정할 수 없음');
 }
 
 function viewAudio(r: Record<string, unknown>, now: Date): AudioView {
