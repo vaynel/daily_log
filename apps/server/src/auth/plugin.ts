@@ -35,7 +35,7 @@ export interface AuthPluginOptions {
 export type AuthFailure = { status: 401 | 403 | 503; code: 'unauthenticated' | 'session_expired' | 'account_not_allowed' | 'auth_not_configured' };
 
 /**
- * 인증 + 보호 자원. /api/** 는 전역 onRequest 훅에서 동일한 검사를 거친다(새 라우트도 기본 차단).
+ * 인증 + 보호 자원. /healthz·/auth/** 외 모든 경로는 전역 onRequest 훅에서 동일한 검사를 거친다(새 라우트도 기본 차단).
  * 세션은 서명 쿠키이며, 허용 계정 여부는 요청마다 다시 확인한다(허용 목록에서 빠지면 즉시 차단).
  */
 export function registerAuth(app: FastifyInstance, opts: AuthPluginOptions) {
@@ -67,9 +67,23 @@ export function registerAuth(app: FastifyInstance, opts: AuthPluginOptions) {
 
   const clearCookie = (name: string, p: string) => serializeCookie(name, '', { maxAge: 0, path: p, secure });
 
-  // ---- /api/** 전역 보호 ----
+  // ---- 전역 보호: 기본 차단 + 공개 경로 허용목록 ----
+  // 라우터는 퍼센트 인코딩(/%61pi/...)을 디코딩해 매칭하므로 raw URL 접두사 검사는 우회된다.
+  // 따라서 디코딩한 경로가 공개 허용목록(/healthz, /auth/**)에 속할 때만 통과시키고 나머지는 모두 인증한다.
+  const isPublicPath = (rawUrl: string) => {
+    const raw = rawUrl.split(/[?#]/, 1)[0] ?? '';
+    let decoded: string;
+    try {
+      decoded = decodeURIComponent(raw);
+    } catch {
+      return false;
+    }
+    // 원문과 디코딩 결과 모두 공개 경로여야 한다(둘이 다르면 어느 쪽으로 라우팅되든 안전하도록).
+    const pub = (p: string) => p === '/healthz' || p === '/auth' || p.startsWith('/auth/');
+    return pub(raw) && pub(decoded);
+  };
   app.addHook('onRequest', async (req, reply) => {
-    if (!req.url.startsWith('/api/') && req.url !== '/api') return;
+    if (isPublicPath(req.url)) return;
     const r = authenticate(req);
     if ('status' in r) return fail(reply, r);
     (req as FastifyRequest & { user?: SessionClaims }).user = r.user;

@@ -121,7 +121,7 @@ describe('AC-1 허용 계정 로그인 후 개인 기록 접근 (인증 E2E, 모
 });
 
 describe('AC-2 비로그인 요청 차단 (API 접근 시험)', () => {
-  it.each(['/api/entries', '/api/attachments/photo.png', '/api/videos/day1.mp4', '/api/unknown-future-route', '/api/attachments/..%2Fsecret.txt'])('쿠키 없음: %s → 401', async (url) => {
+  it.each(['/api/entries', '/api/attachments/photo.png', '/api/videos/day1.mp4', '/api/unknown-future-route', '/api/attachments/..%2Fsecret.txt', '/%61pi/entries', '/%61pi/attachments/photo.png', '/%61pi/videos/day1.mp4', '/%2561pi/entries', '/api%2Fentries', '/%41pi/entries', '//api/entries', '/api/entries;x', '/%2e/api/entries', '/nope', '/healthz/../api/entries', '/auth%2Fsession/../../api/entries'])('쿠키 없음: %s → 401', async (url) => {
     const r = await app.inject(url);
     expect(r.statusCode).toBe(401);
     expect(r.json()).toEqual({ error: 'unauthenticated' });
