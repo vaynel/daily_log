@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type pg from 'pg';
+import { LIMITS } from '../attachments/policy.js';
 import { addCalendarMonthSeoul, isValidDate, seoulDate, suggestLifeDate } from './time.js';
 
 export type RecordErrorCode =
@@ -9,7 +10,8 @@ export type RecordErrorCode =
   | 'IDEMPOTENCY_CONFLICT'
   | 'INVALID_STATE'
   | 'CONFIRMED_LOCKED'
-  | 'AUDIO_EXPIRED';
+  | 'AUDIO_EXPIRED'
+  | 'TOO_MANY_ATTACHMENTS';
 
 export class RecordError extends Error {
   constructor(public readonly code: RecordErrorCode, message: string) {
@@ -61,6 +63,8 @@ export interface StoreOptions {
 }
 
 type Q = pg.PoolClient;
+
+const MAX_ATTACHMENTS_PER_RECORD = LIMITS.perRecord;
 
 function toInterview(r: Record<string, unknown>): Interview {
   return {
@@ -239,6 +243,61 @@ export class RecordStore {
     );
     await c.query('UPDATE interviews SET updated_at = $2 WHERE id = $1', [interviewId, now]);
     return { id, duplicate: false };
+  }
+
+  /**
+   * 업로드된 파일 참조 저장. 같은 기록에 같은 내용(checksum)이 이미 있으면 새 참조를 만들지 않고 기존 것을 돌려준다.
+   * 멱등 키가 같으면 재전송으로 본다. 촬영 시각은 호출자가 EXIF 에서 얻은 값만 받는다(업로드 시각으로 채우지 않음).
+   */
+  async saveFileAttachment(
+    ownerId: string, interviewId: string, key: string,
+    f: { itemId?: string; storageKey: string; checksum: string; kind: string; name: string; mime: string; size: number; capturedAt: Date | null; capturedSource: string | null },
+    now: Date,
+  ) {
+    return this.tx(async (c) => {
+      const iv = await this.lock(c, ownerId, interviewId);
+      const ex = await c.query('SELECT id, checksum FROM attachment_refs WHERE interview_id = $1 AND idempotency_key = $2', [interviewId, key]);
+      if (ex.rows[0]) {
+        if (ex.rows[0].checksum !== f.checksum) throw new RecordError('IDEMPOTENCY_CONFLICT', '같은 요청 키에 다른 첨부');
+        return { id: ex.rows[0].id as string, duplicate: true };
+      }
+      assertEditable(iv);
+      const same = await c.query('SELECT id FROM attachment_refs WHERE interview_id = $1 AND checksum = $2 ORDER BY saved_at LIMIT 1', [interviewId, f.checksum]);
+      if (same.rows[0]) return { id: same.rows[0].id as string, duplicate: true };
+      const n = await c.query('SELECT count(*)::int AS n FROM attachment_refs WHERE interview_id = $1', [interviewId]);
+      if ((n.rows[0].n as number) >= MAX_ATTACHMENTS_PER_RECORD) throw new RecordError('TOO_MANY_ATTACHMENTS', '기록당 첨부 개수 제한');
+      if (f.itemId) {
+        const it = await c.query('SELECT 1 FROM conversation_items WHERE id = $1 AND interview_id = $2', [f.itemId, interviewId]);
+        if (!it.rows[0]) throw new RecordError('NOT_FOUND', '연결할 대화 항목이 없음');
+      }
+      const id = randomUUID();
+      await c.query(
+        `INSERT INTO attachment_refs (id, interview_id, item_id, idempotency_key, storage_key, checksum, saved_at, kind, original_name, mime_type, size_bytes, captured_at, captured_source)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+        [id, interviewId, f.itemId ?? null, key, f.storageKey, f.checksum, now, f.kind, f.name, f.mime, f.size, f.capturedAt, f.capturedSource],
+      );
+      await c.query('UPDATE interviews SET updated_at = $2 WHERE id = $1', [interviewId, now]);
+      return { id, duplicate: false };
+    });
+  }
+
+  async isStorageKeyReferenced(storageKey: string): Promise<boolean> {
+    return (await this.pool.query('SELECT 1 FROM attachment_refs WHERE storage_key = $1 LIMIT 1', [storageKey])).rows.length > 0;
+  }
+
+  /** 기록의 첨부 목록. 촬영 시각이 없으면 capturedAt 은 null(업로드 시각 uploadedAt 과 별개). */
+  async listAttachments(ownerId: string, interviewId: string) {
+    await this.tx((c) => this.lock(c, ownerId, interviewId));
+    const r = await this.pool.query(
+      `SELECT id, item_id, storage_key, kind, original_name, mime_type, size_bytes, saved_at, captured_at, captured_source
+         FROM attachment_refs WHERE interview_id = $1 ORDER BY saved_at, id`,
+      [interviewId],
+    );
+    return r.rows.map((x) => ({
+      id: x.id as string, itemId: (x.item_id as string | null) ?? null, storageKey: x.storage_key as string, kind: x.kind as string,
+      name: (x.original_name as string | null) ?? null, mime: (x.mime_type as string | null) ?? null, size: x.size_bytes === null ? null : Number(x.size_bytes),
+      uploadedAt: x.saved_at as Date, capturedAt: (x.captured_at as Date | null) ?? null, capturedSource: (x.captured_source as string | null) ?? null,
+    }));
   }
 
   /** 항목과 첨부를 한 트랜잭션으로 저장. 중간에 프로세스가 죽으면 둘 다 남지 않는다. */

@@ -1,5 +1,6 @@
 import { StrictMode, useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { AttachPanel } from './AttachPanel';
 
 type Session = { email: string; name: string | null; driveConnected: boolean };
 type View =
@@ -54,6 +55,7 @@ function Home({ session, onLogout }: { session: Session; onLogout: () => void })
       {!session.driveConnected && <a className="button secondary" href="/auth/drive/connect">Google Drive 연결</a>}
       <ul>{(entries ?? []).map((e) => <li key={e.id}>{e.body}</li>)}</ul>
       {entries?.length === 0 && <p>아직 기록이 없습니다.</p>}
+      <AttachPanel />
       <button onClick={onLogout}>로그아웃</button>
     </section>
   );
