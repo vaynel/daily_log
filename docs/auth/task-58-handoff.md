@@ -14,7 +14,9 @@
 - 사용자가 `SEND`를 입력한 경우에만 진행한다. 세션은 DPAPI 저장소에서 읽어 **ssh stdin**으로만 전달한다(인수·환경변수·로그·파일 없음). 서버는 `import --stdin`으로 서명·issuer·audience·subject·만료를 재검증하고 서버 자체 host ID를 유지한다.
 - 서버가 `CREDENTIALS_IMPORTED_PRODUCT_NOT_VERIFIED` 또는 `CREDENTIALS_ALREADY_CURRENT`를 확인한 뒤에만 Windows 로컬 세션을 삭제한다(host ID 보존). 이중 갱신 방지.
 - 실패·무응답·확인 불가: 로컬 세션 유지. 응답 유실 후 재시도는 서버가 이미 있는 같은 계정 세션을 덮어쓰지 않고 `ALREADY_CURRENT`로 응답하므로 중복 갱신이 없다.
-- 만료(access 60초 미만)·권한 부족(`WAIT_PERMISSION`)·미로그인 상태는 전달하지 않고 재로그인/권한 활성화를 안내한다. 다른 계정이 이미 있는 서버는 거부한다.
+- 만료되었거나 60초 안에 만료되는 access_token은 `SEND` 이후 전송 전에 저장된 refresh_token으로 자동 갱신한 뒤 전달한다(TASK-64). 같은 저장소 잠금 안에서 1회만 회전하며, 동시에 실행된 다른 전달/갱신은 `STORE_BUSY`로 거부되어 재시도하면 된다. 재로그인은 갱신이 영구 실패(`invalid_grant` 등 → `WAIT_AUTH`)할 때만 필요하다. 이때도 로컬 세션 레코드는 삭제하지 않는다(토큰만 제거, 상태 `WAIT_AUTH`).
+- 일시 실패(HTTP 5xx 등 → `WAIT_RETRY`)는 토큰을 보존하고 다시 `5번`을 실행하면 갱신을 재시도한다. 응답 유실 등 결과 불명(`WAIT_RECONCILIATION`)은 회전 중복을 막기 위해 자동 재전송하지 않는다.
+- 권한 부족(`WAIT_PERMISSION`)·미로그인 상태는 전달하지 않고 재로그인/권한 활성화를 안내한다. 다른 계정이 이미 있는 서버는 거부한다.
 - 완료 화면 안내는 상태·플랫폼별이다(`nextStep`). 추가 공개 포트·유료 fallback 없음.
 
 ## 사용자 절차 (검수 후, 이미 로그인한 Windows 사용자)

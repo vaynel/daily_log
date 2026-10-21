@@ -2,6 +2,8 @@ import {spawn} from 'node:child_process';
 import {mkdtemp,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
+import {renewUnlocked} from './runtime.mjs';
+import {request} from './auth.mjs';
 const fail=code=>{throw new Error(code);};
 export const IMPORT_OK='CREDENTIALS_IMPORTED_PRODUCT_NOT_VERIFIED', IMPORT_CURRENT='CREDENTIALS_ALREADY_CURRENT';
 const TARGET=/^[A-Za-z_][A-Za-z0-9_.-]{0,31}@(?:[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?|\[[0-9A-Fa-f:]+\])$/;
@@ -31,16 +33,24 @@ function runSsh(args,payload,{spawnFn=spawn,exe='ssh'}={}) {
 // Sends the single local session over an SSH stdin pipe to the verified server and retires the
 // local copy only after the server confirmed. Failure keeps the local session; a retry after an
 // unknown outcome is idempotent because the server answers ALREADY_CURRENT.
-export async function sendHandoff(store,opts,{confirm,run=runSsh,spawnFn,now=Date.now}={}) {
+export async function sendHandoff(store,opts,{confirm,run=runSsh,spawnFn,now=Date.now,transport=request}={}) {
  validateHandoff(opts);
  if(typeof confirm!=='function' || await confirm({target:opts.target,port:opts.port??22})!==true) return {state:'CANCELLED'};
  const dir=await mkdtemp(join(tmpdir(),'daily-log-hostkey-'));
  try {
   return await store.lock(async()=>{
-   const r=await store.read();
+   let r=await store.read();
    if(!r) return {state:'WAIT_AUTH'};
-   if(r.state!=='READY') return {state:r.state};
-   if(!r.refresh_token || !r.access_token || r.expires_at<=now()+60000) return {state:'WAIT_AUTH'};
+   if(r.state!=='READY' && !(r.state==='WAIT_RETRY' && r.refresh_token)) return {state:r.state};
+   if(!r.refresh_token) return {state:'WAIT_AUTH'};
+   // After SEND and before sending: renew an expired/expiring access token under the same store lock,
+   // so a concurrent refresh cannot rotate twice. Only a permanent refresh failure asks for re-login.
+   if(r.state!=='READY' || !r.access_token || r.expires_at<=now()+60000) {
+    const renewed=await renewUnlocked(store,transport,{retryTransient:true});
+    if(renewed.state!=='READY') return {state:renewed.state,localKept:true};
+    r=await store.read();
+    if(!r?.refresh_token || !r.access_token || r.expires_at<=now()+60000) return {state:'WAIT_AUTH',localKept:true};
+   }
    const hostName=opts.target.slice(opts.target.indexOf('@')+1).replace(/^\[|\]$/g,'');
    const known=join(dir,'known_hosts');
    await writeFile(known,`${(opts.port??22)===22?hostName:`[${hostName}]:${opts.port}`} ${opts.hostKey}\n`,{mode:0o600});

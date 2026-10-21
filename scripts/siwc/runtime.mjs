@@ -13,9 +13,10 @@ async function wait(store,record,state,clear=false) {
  if(clear) {delete next.access_token;delete next.refresh_token;delete next.id_token;}
  await store.saveUnlocked(next);return {state};
 }
-async function renewUnlocked(store,transport) {
+// retryTransient lets the hand-off retry after WAIT_RETRY (tokens kept, request definitely not applied); WAIT_RECONCILIATION is never replayed.
+export async function renewUnlocked(store,transport,{retryTransient=false}={}) {
  const r=await store.read(); if(!r) return {state:'WAIT_AUTH'};
- if(r.state!=='READY') return {state:r.state};
+ if(r.state!=='READY' && !(retryTransient && r.state==='WAIT_RETRY' && r.refresh_token)) return {state:r.state};
  if(r.expires_at>Date.now()+60000) return {state:'READY'};
  if(!r.refresh_token) return wait(store,r,'WAIT_AUTH',true);
  // Persist uncertainty before a possibly rotating request. A crash must never replay it.
