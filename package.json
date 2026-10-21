@@ -17,8 +17,9 @@
     "test:siwc": "node --test scripts/siwc/*.test.mjs",
     "siwc": "node scripts/siwc-cli.mjs",
     "build": "npm run build -ws",
-    "check": "npm run lint && npm run typecheck && npm test && npm run build && npm run test:spike",
+    "check": "npm run lint && npm run typecheck && npm test && npm run build && npm run test:spike && npm run test:records-crash",
     "test:spike": "node --test scripts/pro-spike.test.mjs",
+    "test:records-crash": "node scripts/records-crash-e2e.mjs",
     "scan:secrets": "node scripts/scan-secrets.mjs"
   },
   "devDependencies": {
