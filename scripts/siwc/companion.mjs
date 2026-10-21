@@ -1,7 +1,15 @@
 import { createServer } from 'node:http';
 import {randomBytes} from 'node:crypto';
 import {createAttempt,exchange,request} from './auth.mjs';
-export async function startCompanion(store,{allowLogin=false,transport=request,port=0}={}) {
+// Completion guidance depends on platform and readiness; never an unconditional server step.
+export function nextStep(state,platform=process.platform) {
+ if(state==='READY') return platform==='win32'
+  ?'다음: 이 창을 닫고 Windows 시작 메뉴 5번(서버로 안전 전달)을 실행하세요. 서버 SSH 정보와 서버 호스트 공개키가 필요합니다. 파일을 직접 복사하지 마세요.'
+  :'다음: 이 컴퓨터가 서버이면 추가 전달이 필요 없습니다. 다른 서버로 옮기려면 docs/auth/task-53-siwc.md의 서버 전달 절차를 따르세요.';
+ if(state==='WAIT_PERMISSION') return '서버 전달 불가: ChatGPT 사용 권한을 먼저 활성화하세요.';
+ return '서버 전달 불가: 먼저 로그인을 완료하세요.';
+}
+export async function startCompanion(store,{allowLogin=false,transport=request,port=0,platform=process.platform}={}) {
  const host=await store.init(), csrf=randomBytes(32).toString('hex');
  let attempt=null, status='미연결 — 실제 계정 동의와 제품 요청 검증 전입니다.', base, busy=false;
  const entry=`/session/${randomBytes(24).toString('hex')}`;
@@ -30,7 +38,7 @@ export async function startCompanion(store,{allowLogin=false,transport=request,p
     try {
      const record=await exchange(current,u.searchParams,transport);await store.save(record);
      status=record.state==='READY'?'앱 전용 동의 검증·저장됨 — 제품 연결 검증은 아직 미완료입니다.':'계정 확인됨 — ChatGPT 사용 권한이 없어 대기합니다.';
-     return send(200,status+' 이 창을 닫고 서버 전달 안내를 따르세요.');
+     return send(200,`${status} ${nextStep(record.state,platform)}`);
     } catch {status='로그인 실패 또는 취소 — 기존 계정은 유지됩니다. 다시 시작하세요.';return send(400,status);}
     finally {busy=false;}
    }

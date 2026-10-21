@@ -3,11 +3,13 @@ import {appDirectory} from './siwc/paths.mjs';
 import { Store,getJwks } from './siwc/auth.mjs';
 import {startCompanion} from './siwc/companion.mjs';
 import {refresh,signOut} from './siwc/runtime.mjs';
+import {sendHandoff,IMPORT_OK,IMPORT_CURRENT} from './siwc/handoff.mjs';
+import {createInterface} from 'node:readline/promises';
 const [command='help',...args]=process.argv.slice(2);
 const value=flag=>{const i=args.indexOf(flag);return i<0?undefined:args[i+1];};
 const dir=value('--dir');
 async function main() {
- if(command==='help') {console.log('daily_log SIWC: init | demo | login --personal-oss | status | forget | import --file PATH | refresh | signout; 모든 명령에 --dir APP_DIRECTORY 필요. docs/auth/task-53-siwc.md 참고.');return;}
+ if(command==='help') {console.log('daily_log SIWC: init | demo | login --personal-oss | status | forget | import --file PATH 또는 --stdin | handoff --target USER@HOST --host-key "ssh-ed25519 …" --remote-repo PATH --remote-dir PATH [--port N] | refresh | signout; 모든 명령에 --dir APP_DIRECTORY 필요. docs/auth/task-53-siwc.md 참고.');return;}
  const store=new Store(appDirectory(dir));
  if(command==='init') {await store.init();console.log('HOST_READY');}
  else if(command==='status') {const r=await store.read();console.log(JSON.stringify({credentials:r?.state??'WAIT_AUTH',productConnection:'NOT_VERIFIED',paidFallback:false}));}
@@ -19,8 +21,24 @@ async function main() {
   for(const signal of ['SIGINT','SIGTERM']) process.once(signal,async()=>{clearTimeout(timer);await app.close();});
  } else if(command==='import') {
   if(process.platform==='win32') throw Error('WINDOWS_IMPORT_UNSUPPORTED');
-  if(!value('--file')) throw Error('FILE_REQUIRED');
-  await store.importFile(value('--file'),await getJwks());console.log('CREDENTIALS_IMPORTED_PRODUCT_NOT_VERIFIED');
+  if(args.includes('--stdin')) {
+   let text='';for await(const chunk of process.stdin) {text+=chunk;if(text.length>65536) throw Error('IMPORT_INVALID');}
+   const {result}=await store.importText(text,await getJwks());
+   console.log(result==='ALREADY_CURRENT'?IMPORT_CURRENT:IMPORT_OK);
+  } else {
+   if(!value('--file')) throw Error('FILE_REQUIRED');
+   await store.importFile(value('--file'),await getJwks());console.log(IMPORT_OK);
+  }
+ } else if(command==='handoff') {
+  const port=value('--port')===undefined?22:Number(value('--port'));
+  const opts={target:value('--target'),hostKey:value('--host-key'),remoteRepo:value('--remote-repo'),remoteDir:value('--remote-dir'),port};
+  const confirm=async({target})=>{
+   const rl=createInterface({input:process.stdin,output:process.stdout});
+   try {return (await rl.question(`${target} 서버로 로그인 자격증명을 SSH로 전달하고 이 PC의 로컬 세션을 삭제합니다. 진행하려면 SEND 입력: `)).trim()==='SEND';} finally {rl.close();}
+  };
+  const result=await sendHandoff(store,opts,{confirm});
+  console.log(JSON.stringify({...result,paidFallback:false}));
+  if(result.state!=='TRANSFERRED') process.exitCode=1;
  } else if(command==='forget') {await store.forget();console.log('LOCAL_SESSION_REMOVED_REMOTE_REVOCATION_NOT_CONFIRMED');}
  else if(command==='refresh') console.log(JSON.stringify(await refresh(store)));
  else if(command==='signout') {const result=await signOut(store);console.log(JSON.stringify(result));if(!result.revoked) console.log('원격 해지 미확인: ChatGPT 설정에서 daily_log 연결을 해제하세요.');}

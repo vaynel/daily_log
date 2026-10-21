@@ -129,20 +129,32 @@ export class Store {
   await this.atomic('session.json',record);
  }
  async save(record) {return this.lock(()=>this.saveUnlocked(record));}
- async forget() {
-  return this.lock(async()=>{
-   if(process.platform==='win32') return this.transaction.getStore().forget();
-   await unlink(join(this.dir,'session.json')).catch(e=>{if(e.code!=='ENOENT')throw e;});
-  });
+ async retireUnlocked() {
+  if(process.platform==='win32') return this.transaction.getStore().forget();
+  await unlink(join(this.dir,'session.json')).catch(e=>{if(e.code!=='ENOENT')throw e;});
  }
+ async forget() {return this.lock(()=>this.retireUnlocked());}
  async importFile(file,jwks) {
   if(process.platform==='win32') fail('WINDOWS_IMPORT_UNSUPPORTED');
-  return this.lock(async()=>{
-   await this.hostUnlocked(); const r=await protectedRead(resolve(file));
-   validateIdentity(r.id_token,{clientId:r.client_id,subject:r.subject,jwks});
-   if(r.version!==1 || r.issuer!==ISSUER || !Array.isArray(r.scopes) || !r.access_token || !r.refresh_token || !Number.isFinite(r.expires_at) || r.expires_at<=Date.now()) fail('IMPORT_INVALID');
-   // Imported local status is not proof of a successful product inference.
-   await this.saveUnlocked({...r,state:r.scopes.includes('chatgpt.tokens.use.direct') && r.scopes.includes('resource.invoke')?'READY':'WAIT_PERMISSION'});
-  });
+  return this.lock(async()=>this.importRecord(await protectedRead(resolve(file)),jwks));
+ }
+ // Server side of a Windows->Linux hand-off: JSON arrives on stdin, never argv.
+ async importText(text,jwks) {
+  if(process.platform==='win32') fail('WINDOWS_IMPORT_UNSUPPORTED');
+  if(typeof text!=='string' || text.length>65536) fail('IMPORT_INVALID');
+  let r;try {r=JSON.parse(text);} catch {fail('IMPORT_INVALID');}
+  return this.lock(()=>this.importRecord(r,jwks));
+ }
+ async importRecord(r,jwks) {
+  await this.hostUnlocked();
+  if(!r || typeof r!=='object' || !r.id_token) fail('IMPORT_INVALID');
+  validateIdentity(r.id_token,{clientId:r.client_id,subject:r.subject,jwks});
+  if(r.version!==1 || r.issuer!==ISSUER || !Array.isArray(r.scopes) || !r.access_token || !r.refresh_token || !Number.isFinite(r.expires_at) || r.expires_at<=Date.now()) fail('IMPORT_INVALID');
+  const old=await this.read();
+  // The server owns refresh after hand-off: a retry or stale copy never replaces its session.
+  if(old?.refresh_token && old.client_id===r.client_id && old.subject===r.subject) return {result:'ALREADY_CURRENT'};
+  // Imported local status is not proof of a successful product inference.
+  await this.saveUnlocked({...r,state:r.scopes.includes('chatgpt.tokens.use.direct') && r.scopes.includes('resource.invoke')?'READY':'WAIT_PERMISSION'});
+  return {result:'IMPORTED'};
  }
 }

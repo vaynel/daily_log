@@ -22,7 +22,7 @@ PowerShell helper는 `-NoProfile -NonInteractive -ExecutionPolicy RemoteSigned`�
 - `.lock`은 삭제하지 않는 파일이다. 전체 갱신 트랜잭션 동안 독점 Windows 핸들을 유지한다. 다른 프로세스는 BUSY로 실패하며, 프로세스 종료 시 OS가 잠금을 해제한다. 파일 존재만으로 잠겼다고 판단하거나 오래됐다고 잠금을 삭제하지 않는다.
 - 새 암호문을 같은 폴더의 고유 임시 파일에 쓰고 `Flush(true)` 후 `MoveFileEx(REPLACE_EXISTING | WRITE_THROUGH)`로 교체한다. 이전 세션을 먼저 truncate하지 않는다. 장애로 남은 `.tmp`도 암호문이다. 로컬 디스크 자체의 손상·백업·완전 삭제까지 보장하지 않는다.
 - 메뉴 4번과 `DELETE`는 로컬 세션 파일만 삭제하고 안정적인 host ID를 보존한다. 원격 연결 해지가 아니다. 원격 해지는 사용자가 ChatGPT 설정에서 확인한다. CLI `signout`은 원격 해지를 시도하고 토큰을 제거하며 실패/미확인을 표시한다. 진행 중인 도우미를 종료한 다음 삭제한다.
-- **Windows의 암호화 파일은 Linux에 복사/import할 수 없다.** Windows 평문 export/import는 제공하지 않는다. 기존 TASK-53의 Linux SSH 전달 예제를 Windows 파일에 적용하지 않는다. Windows→서버 보안 인계는 후속 설계·검증 대상이며 이번 준비판은 서버 연결을 완료하지 않는다.
+- **Windows의 암호화 파일은 Linux에 복사/import할 수 없다.** 평문 export/import도 없다. Windows→headless Linux 서버 연결은 메뉴 5번의 SSH 보호 전달로 한다: [TASK-58 절차](task-58-handoff.md). 이 기능은 독립 검수 전이며 실제 계정·제품 요청은 TASK-4 검증 대상이다.
 - DPAPI와 ACL은 다른 일반 사용자/파일 노출에 대한 보호다. 같은 사용자로 실행되는 악성 코드, 관리자/SYSTEM, OS 계정 탈취까지 방어한다고 주장하지 않는다. DPAPI 사용자 프로필을 잃었을 때 평문 복구·자동 fallback은 없다. 저장 오류는 비밀값 없는 일반 오류로 표시하며 기존 파일을 자동 삭제/덮어써서 복구하지 않는다.
 
 ## PM: 재현 가능한 ZIP·검증·인계

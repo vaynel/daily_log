@@ -6,8 +6,8 @@ const output=resolve('dist/siwc-windows');
 // Exact committed-source allowlist: no data, credentials, .env, dependencies or local build outputs.
 const files=['start-windows.cmd','scripts/siwc-windows.mjs','scripts/siwc-cli.mjs',
  'scripts/siwc/auth.mjs','scripts/siwc/paths.mjs','scripts/siwc/runtime.mjs','scripts/siwc/companion.mjs',
- 'scripts/siwc/windows-store.mjs','scripts/siwc/windows/Store.cs','scripts/siwc/windows/store.ps1',
- 'docs/auth/task-56-windows.md','docs/auth/task-56-verification.md'];
+ 'scripts/siwc/windows-store.mjs','scripts/siwc/handoff.mjs','scripts/siwc/windows/Store.cs','scripts/siwc/windows/store.ps1',
+ 'docs/auth/task-56-windows.md','docs/auth/task-56-verification.md','docs/auth/task-58-handoff.md'];
 const commit=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
 if(!/^[0-9a-f]{40}$/.test(commit))throw Error('COMMIT_REQUIRED');
 for(const file of files)execFileSync('git',['cat-file','-e',`${commit}:${file}`],{stdio:'ignore'});
