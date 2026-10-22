@@ -65,16 +65,15 @@ function checkPng(b: Buffer): boolean {
 /** JPEG: SOI, 세그먼트 구조 순회로 SOF(해상도) 존재, 끝 EOI. 잘린 파일은 거부한다. */
 function checkJpeg(b: Buffer): boolean {
   if (b.length < 4 || b[0] !== 0xff || b[1] !== 0xd8) return false;
-  let end = b.length;
-  while (end > 2 && b[end - 1] === 0) end--;
-  if (b[end - 2] !== 0xff || b[end - 1] !== 0xd9) return false;
   let o = 2;
   let sof = false;
   while (o + 4 <= b.length) {
     if (b[o] !== 0xff) return false;
     const m = b[o + 1]!;
     if (m === 0xff) { o++; continue; }
-    if (m === 0xda) return sof; // 이후는 압축 데이터
+    // 이후는 압축 데이터. 스캔 데이터의 0xFF 는 0x00 으로 이스케이프되므로 FFD9 는 EOI 뿐이다.
+    // 잘린 파일은 EOI 가 없어 거부하고, EOI 뒤 추가 데이터(Motion Photo·MPF)는 허용한다.
+    if (m === 0xda) return sof && b.indexOf(Buffer.from([0xff, 0xd9]), o + 2) !== -1;
     if (m === 0xd9) return false;
     const len = b.readUInt16BE(o + 2);
     if (len < 2 || o + 2 + len > b.length) return false;

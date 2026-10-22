@@ -24,6 +24,16 @@ describe('사진 검사 (D12-02, AC-2)', () => {
     expect(code(() => validateUpload('PHOTO', 'a.png', bad, now))).toBe('UNREADABLE_FILE');
     expect(code(() => validateUpload('PHOTO', 'a.webp', Buffer.from('RIFF\x10\0\0\0WEBPVP8 junkjunkjunk', 'latin1'), now))).toBe('UNREADABLE_FILE');
   });
+  it('EOI 뒤에 데이터가 붙은 JPEG(Motion Photo·MPF)는 허용하되 잘린 파일은 거부', () => {
+    const j = makeJpeg();
+    const trailer = Buffer.concat([Buffer.from('MotionPhoto-video-bytes'), Buffer.alloc(64, 0x5a)]);
+    const v = validateUpload('PHOTO', 'a.jpg', Buffer.concat([j, trailer]), now);
+    expect(v.mime).toBe('image/jpeg');
+    const embedded = Buffer.concat([j, makeJpeg({ exif: null })]);
+    expect(validateUpload('PHOTO', 'a.jpg', embedded, now).mime).toBe('image/jpeg');
+    expect(code(() => validateUpload('PHOTO', 'a.jpg', Buffer.concat([j.subarray(0, j.length - 6), trailer]), now))).toBe('UNREADABLE_FILE');
+    expect(code(() => validateUpload('PHOTO', 'a.jpg', Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xd9]), trailer]), now))).toBe('UNREADABLE_FILE');
+  });
   it('형식·크기·빈 파일 제한', () => {
     expect(code(() => validateUpload('PHOTO', 'a.jpg', Buffer.from('not an image at all'), now))).toBe('UNSUPPORTED_TYPE');
     expect(code(() => validateUpload('PHOTO', 'a.jpg', Buffer.alloc(0), now))).toBe('EMPTY_FILE');
