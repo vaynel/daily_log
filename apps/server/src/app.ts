@@ -3,6 +3,7 @@ import { registerAuth, type EntryStore } from './auth/plugin.js';
 import type { AuthConfig } from './auth/config.js';
 import { AttachmentService } from './attachments/service.js';
 import { registerRecordRoutes } from './attachments/routes.js';
+import { registerRecordViewRoutes } from './records/routes.js';
 import type { RecordStore } from './records/store.js';
 
 export interface AppOptions {
@@ -27,6 +28,7 @@ export function buildApp(opts: AppOptions = {}) {
   });
   if (opts.records) {
     registerRecordRoutes(app, { store: opts.records, attachments: new AttachmentService(opts.records, opts.fileStorageDir ?? ''), now: opts.now });
+    registerRecordViewRoutes(app, { store: opts.records, fileStorageDir: opts.fileStorageDir ?? '', now: opts.now });
   }
   return app;
 }

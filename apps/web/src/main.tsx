@@ -1,6 +1,7 @@
 import { StrictMode, useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AttachPanel } from './AttachPanel';
+import { RecordDetailView, RecordsList } from './RecordsView';
 
 type Session = { email: string; name: string | null; driveConnected: boolean };
 type View =
@@ -43,18 +44,14 @@ function Notice({ title, children, action }: { title: string; children: string; 
 }
 
 function Home({ session, onLogout }: { session: Session; onLogout: () => void }) {
-  const [entries, setEntries] = useState<{ id: string; body: string }[] | null>(null);
-  useEffect(() => {
-    fetch('/api/entries').then((r) => (r.ok ? r.json() : Promise.reject(r.status))).then((j: { entries: { id: string; body: string }[] }) => setEntries(j.entries)).catch(() => setEntries([]));
-  }, []);
+  const [openId, setOpenId] = useState<string | null>(null);
   return (
     <section data-testid="screen-home" className="card">
       <h2>내 기록</h2>
       <p data-testid="account">{session.email} 로 로그인됨</p>
       <p data-testid="drive-status">Google Drive: {session.driveConnected ? '연결됨' : '연결 안 됨 (선택 사항)'}</p>
       {!session.driveConnected && <a className="button secondary" href="/auth/drive/connect">Google Drive 연결</a>}
-      <ul>{(entries ?? []).map((e) => <li key={e.id}>{e.body}</li>)}</ul>
-      {entries?.length === 0 && <p>아직 기록이 없습니다.</p>}
+      {openId ? <RecordDetailView id={openId} onBack={() => setOpenId(null)} /> : <RecordsList onOpen={setOpenId} />}
       <AttachPanel />
       <button onClick={onLogout}>로그아웃</button>
     </section>

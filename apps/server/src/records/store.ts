@@ -24,7 +24,7 @@ export type ItemKind = 'QUESTION' | 'ANSWER';
 export type VersionKind = 'SUMMARY' | 'PRODUCTION_PLAN' | 'RESULT';
 export type AudioStatus = 'UNPROCESSED' | 'INTERRUPTED' | 'PROCESSED' | 'EXPIRED';
 export interface PipelineState {
-  production: 'NONE' | 'QUEUED' | 'RUNNING' | 'DONE' | 'FAILED';
+  production: 'NONE' | 'QUEUED' | 'RUNNING' | 'DONE' | 'FAILED' | 'WAITING_BUDGET';
   review: 'NONE' | 'PENDING' | 'PASSED' | 'REJECTED';
   backup: 'NONE' | 'PENDING' | 'VERIFIED' | 'FAILED';
 }
@@ -166,6 +166,29 @@ export class RecordStore {
     const snap = await this.load(ownerId, lifeDate, now);
     if (!snap) throw new RecordError('NOT_FOUND', '해당 생활일의 기록이 없음');
     return snap;
+  }
+
+  /** 소유자의 기록 목록: 생활일 최신순(제작·완료 시각과 무관). 읽기 전용. */
+  async listRecords(ownerId: string): Promise<{ id: string; lifeDate: string; status: Interview['status']; pipeline: PipelineState; hasResult: boolean; attachmentCount: number }[]> {
+    const r = await this.pool.query(
+      `SELECT i.id, to_char(i.life_date, 'YYYY-MM-DD') AS life_date, i.status, p.production, p.review, p.backup,
+              EXISTS (SELECT 1 FROM record_versions v WHERE v.interview_id = i.id AND v.kind = 'RESULT') AS has_result,
+              (SELECT count(*) FROM attachment_refs a WHERE a.interview_id = i.id)::int AS att
+         FROM interviews i LEFT JOIN pipeline_states p ON p.interview_id = i.id
+        WHERE i.owner_id = $1 ORDER BY i.life_date DESC`,
+      [ownerId],
+    );
+    return r.rows.map((x) => ({
+      id: x.id, lifeDate: x.life_date, status: x.status,
+      pipeline: { production: x.production ?? 'NONE', review: x.review ?? 'NONE', backup: x.backup ?? 'NONE' },
+      hasResult: x.has_result, attachmentCount: x.att,
+    }));
+  }
+
+  /** id 로 읽기 전용 조회(소유자 확인). 없거나 타 소유자면 null. */
+  async loadById(ownerId: string, id: string, now: Date): Promise<Snapshot | null> {
+    const r = await this.pool.query('SELECT to_char(life_date, \'YYYY-MM-DD\') AS d FROM interviews WHERE id = $1 AND owner_id = $2', [id, ownerId]);
+    return r.rows[0] ? this.load(ownerId, r.rows[0].d as string, now) : null;
   }
 
   /** 읽기 전용 조회. 어떤 경우에도 행을 만들지 않는다. */
