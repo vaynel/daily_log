@@ -21,6 +21,7 @@
     "test:spike": "node --test scripts/pro-spike.test.mjs",
     "test:records-crash": "node scripts/records-crash-e2e.mjs",
     "test:calendar-e2e": "node scripts/calendar-e2e.mjs",
+    "test:paging-e2e": "node scripts/paging-e2e.mjs",
     "scan:secrets": "node scripts/scan-secrets.mjs"
   },
   "devDependencies": {

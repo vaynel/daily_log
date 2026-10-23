@@ -1,6 +1,8 @@
-export type DisplayStatus = 'WRITING' | 'AWAITING_PRODUCTION' | 'PRODUCING' | 'BUDGET_WAIT' | 'FAILED' | 'REVIEW_REJECTED' | 'REVIEW_PENDING' | 'COMPLETED';
+export type DisplayStatus = 'WRITING' | 'AWAITING_PRODUCTION' | 'PRODUCING' | 'BUDGET_WAIT' | 'FAILED' | 'REVIEW_REJECTED' | 'REVIEW_PENDING' | 'COMPLETED' | 'RESULT_FILE_MISSING';
 export type NextAction = 'CONTINUE_RECORDING' | 'REQUEST_PRODUCTION' | 'WAIT' | 'RETRY' | 'EDIT_AND_REMAKE' | 'DOWNLOAD' | 'RETRY_BACKUP';
 export interface Pipeline { production: string; review: string; backup: string }
+export const PAGE_SIZE = 50;
+export interface RecordsPage { records: RecordRow[]; nextCursor: string | null }
 export interface RecordRow { id: string; lifeDate: string; status: DisplayStatus; pipeline: Pipeline; hasResult: boolean; attachmentCount: number }
 export interface RecordDetail {
   id: string; lifeDate: string; status: DisplayStatus; pipeline: Pipeline; nextActions: NextAction[];
@@ -11,7 +13,7 @@ export interface RecordDetail {
 }
 
 /** tone 은 색에만 의존하지 않도록 항상 문구와 함께 쓴다. ok 는 정상 완료만. */
-export const STATUS_INFO: Record<DisplayStatus, { label: string; tone: 'ok' | 'info' | 'wait' | 'bad'; hint: string }> = {
+export const STATUS_INFO: Record<DisplayStatus, { label: string; tone: 'ok' | 'info' | 'wait' | 'warn' | 'bad'; hint: string }> = {
   WRITING: { label: '작성 중', tone: 'info', hint: '아직 확정하지 않은 기록입니다. 이어서 기록할 수 있습니다.' },
   AWAITING_PRODUCTION: { label: '확정됨 · 제작 전', tone: 'info', hint: '확정한 기록입니다. 영상 제작을 요청할 수 있습니다.' },
   PRODUCING: { label: '제작 중', tone: 'info', hint: '영상을 만들고 있습니다. 끝나면 이 화면에 표시됩니다.' },
@@ -20,6 +22,7 @@ export const STATUS_INFO: Record<DisplayStatus, { label: string; tone: 'ok' | 'i
   REVIEW_REJECTED: { label: '검수 미통과', tone: 'bad', hint: '영상이 검수를 통과하지 못했습니다. 내용을 수정해 다시 만들 수 있습니다.' },
   REVIEW_PENDING: { label: '검수 중', tone: 'wait', hint: '영상이 만들어졌고 검수를 기다립니다. 통과 전에는 완료가 아닙니다.' },
   COMPLETED: { label: '완료', tone: 'ok', hint: '제작과 검수가 끝났습니다.' },
+  RESULT_FILE_MISSING: { label: '결과 파일 없음', tone: 'warn', hint: '검수는 끝났지만 결과 파일을 찾을 수 없어 내려받을 수 없습니다. 완료로 볼 수 없습니다.' },
 };
 
 export const PIPELINE_LABEL: Record<'production' | 'review' | 'backup', Record<string, string>> = {
@@ -46,6 +49,16 @@ export async function fetchJson<T>(url: string, f: typeof fetch = fetch): Promis
   } catch {
     return { state: 'error' };
   }
+}
+
+/** 목록 요청 주소. cursor 는 직전 페이지의 nextCursor(생활일)다. */
+export const recordsUrl = (cursor: string | null) => `/api/records?limit=${PAGE_SIZE}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`;
+
+/** 달력이 보여줄 달(ym)의 첫날까지 불러왔는지: 다음 페이지가 없거나 가장 오래된 행이 그 달 첫날 이전이면 충분하다. */
+export function coversMonth(rows: RecordRow[], nextCursor: string | null, ym: string): boolean {
+  if (!nextCursor) return true;
+  const oldest = rows.at(-1)?.lifeDate;
+  return !!oldest && oldest <= `${ym}-01`;
 }
 
 /** 달력의 한 칸. date 가 null 이면 해당 월이 아닌 빈 칸이다. */

@@ -144,19 +144,19 @@ try {
     await page.getByRole('button', { name: '← 목록' }).click();
 
     // 빈 목록·접근 만료·불러오기 오류 (응답 가로채기 — 서버 응답 모의)
-    await page.route('**/api/records', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"records":[]}' }));
+    await page.route(/\/api\/records(\?|$)/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"records":[]}' }));
     await page.reload();
     await page.getByTestId('records-empty').waitFor();
     await shot(page, `${name}-empty`);
-    await page.unroute('**/api/records');
-    await page.route('**/api/records', (r) => r.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"session_expired"}' }));
+    await page.unroute(/\/api\/records(\?|$)/);
+    await page.route(/\/api\/records(\?|$)/, (r) => r.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"session_expired"}' }));
     await page.reload();
     await page.getByTestId('screen-access-expired').waitFor();
-    await page.unroute('**/api/records');
-    await page.route('**/api/records', (r) => r.abort('connectionfailed'));
+    await page.unroute(/\/api\/records(\?|$)/);
+    await page.route(/\/api\/records(\?|$)/, (r) => r.abort('connectionfailed'));
     await page.reload();
     await page.getByTestId('screen-load-error').waitFor();
-    await page.unroute('**/api/records');
+    await page.unroute(/\/api\/records(\?|$)/);
     await page.getByRole('button', { name: '다시 불러오기' }).click();
     await page.getByTestId('records-list').waitFor();
     out.push({ profile: name, result: 'PASS' });

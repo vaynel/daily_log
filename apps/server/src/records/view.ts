@@ -9,11 +9,16 @@ export type DisplayStatus =
   | 'FAILED'
   | 'REVIEW_REJECTED'
   | 'REVIEW_PENDING'
-  | 'COMPLETED';
+  | 'COMPLETED'
+  | 'RESULT_FILE_MISSING';
 
 export type NextAction = 'CONTINUE_RECORDING' | 'REQUEST_PRODUCTION' | 'WAIT' | 'RETRY' | 'EDIT_AND_REMAKE' | 'DOWNLOAD' | 'RETRY_BACKUP';
 
-export function displayStatus(status: 'IN_PROGRESS' | 'CONFIRMED', p: PipelineState): DisplayStatus {
+/**
+ * fileAvailable 이 false 로 확인된 완료 기록은 정상 완료가 아니라 RESULT_FILE_MISSING 이다.
+ * undefined(확인하지 않음)는 기존 동작을 유지한다.
+ */
+export function displayStatus(status: 'IN_PROGRESS' | 'CONFIRMED', p: PipelineState, fileAvailable?: boolean): DisplayStatus {
   if (status === 'IN_PROGRESS') return 'WRITING';
   switch (p.production) {
     case 'NONE': return 'AWAITING_PRODUCTION';
@@ -23,13 +28,14 @@ export function displayStatus(status: 'IN_PROGRESS' | 'CONFIRMED', p: PipelineSt
     case 'FAILED': return 'FAILED';
     case 'DONE':
       if (p.review === 'REJECTED') return 'REVIEW_REJECTED';
-      return p.review === 'PASSED' ? 'COMPLETED' : 'REVIEW_PENDING';
+      if (p.review !== 'PASSED') return 'REVIEW_PENDING';
+      return fileAvailable === false ? 'RESULT_FILE_MISSING' : 'COMPLETED';
   }
 }
 
 /** 제작·검수·백업은 서로 독립이므로 다음 행동도 각각의 상태에서만 정한다. */
 export function nextActions(status: 'IN_PROGRESS' | 'CONFIRMED', p: PipelineState, fileAvailable: boolean): NextAction[] {
-  const d = displayStatus(status, p);
+  const d = displayStatus(status, p, fileAvailable);
   const out: NextAction[] = [];
   if (d === 'WRITING') out.push('CONTINUE_RECORDING');
   else if (d === 'AWAITING_PRODUCTION') out.push('REQUEST_PRODUCTION');

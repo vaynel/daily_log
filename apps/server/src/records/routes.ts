@@ -8,6 +8,11 @@ import { displayStatus, nextActions, resultFileName, summaryText } from './view.
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+export const DEFAULT_PAGE = 50;
+export const MAX_PAGE = 100;
+/** 커서는 마지막으로 받은 생활일(YYYY-MM-DD). 실제 달력 날짜만 허용한다. */
+const isLifeDate = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v) && new Date(`${v}T00:00:00Z`).toISOString().slice(0, 10) === v;
+
 const latest = (snap: Snapshot, kind: 'SUMMARY' | 'RESULT') => snap.versions.filter((v) => v.kind === kind).sort((a, b) => b.version - a.version)[0];
 
 /**
@@ -21,10 +26,21 @@ export function registerRecordViewRoutes(app: FastifyInstance, opts: { store: Re
   const exists = (full: string) => stat(full).then((s) => s.isFile() && s.size > 0, () => false);
 
   app.get('/api/records', async (req, reply) => {
-    const rows = await opts.store.listRecords(owner(req));
-    return reply.header('cache-control', 'private, no-store').send({
-      records: rows.map((r) => ({ id: r.id, lifeDate: r.lifeDate, status: displayStatus(r.status, r.pipeline), pipeline: r.pipeline, hasResult: r.hasResult, attachmentCount: r.attachmentCount })),
-    });
+    const q = req.query as { limit?: string; cursor?: string };
+    const limit = q.limit === undefined ? DEFAULT_PAGE : Number(q.limit);
+    if (!Number.isInteger(limit) || limit < 1 || limit > MAX_PAGE) return reply.code(400).send({ error: 'INVALID_LIMIT', message: `limit 은 1~${MAX_PAGE} 사이 정수입니다` });
+    if (q.cursor !== undefined && !isLifeDate(q.cursor)) return reply.code(400).send({ error: 'INVALID_CURSOR', message: '잘못된 cursor 입니다' });
+    const { rows, nextCursor } = await opts.store.listRecords(owner(req), { limit, before: q.cursor ?? null });
+    const records = await Promise.all(rows.map(async (r) => {
+      // 정상 완료로 보이는 기록만 결과 파일이 실제로 있는지 확인한다(이 페이지 분량만 stat).
+      let status = displayStatus(r.status, r.pipeline);
+      if (status === 'COMPLETED') {
+        const name = r.hasResult ? resultFileName(r.resultContent) : null;
+        if (!name || !(await exists(videoPath(name)))) status = displayStatus(r.status, r.pipeline, false);
+      }
+      return { id: r.id, lifeDate: r.lifeDate, status, pipeline: r.pipeline, hasResult: r.hasResult, attachmentCount: r.attachmentCount };
+    }));
+    return reply.header('cache-control', 'private, no-store').send({ records, nextCursor });
   });
 
   app.get('/api/records/:id', async (req, reply) => {
@@ -40,7 +56,7 @@ export function registerRecordViewRoutes(app: FastifyInstance, opts: { store: Re
     const { interview, pipeline } = snap;
     return reply.header('cache-control', 'private, no-store').send({
       id, lifeDate: interview.lifeDate, startedAt: interview.startedAt, writingStatus: interview.status, revision: interview.revision,
-      status: displayStatus(interview.status, pipeline),
+      status: displayStatus(interview.status, pipeline, fileAvailable),
       pipeline,
       nextActions: nextActions(interview.status, pipeline, fileAvailable),
       conversation: snap.items.map((i) => ({ id: i.id, seq: i.seq, kind: i.kind, body: i.body, attachmentIds: attachments.filter((a) => a.itemId === i.id).map((a) => a.id) })),

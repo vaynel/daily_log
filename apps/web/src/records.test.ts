@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { byLifeDate, fetchJson, initialMonth, monthGrid, shiftMonth, STATUS_INFO, type RecordRow } from './records.js';
+import { byLifeDate, coversMonth, fetchJson, initialMonth, monthGrid, PAGE_SIZE, recordsUrl, shiftMonth, STATUS_INFO, type RecordRow } from './records.js';
 
 const res = (status: number, body: unknown = {}) => (async () => new Response(JSON.stringify(body), { status })) as unknown as typeof fetch;
 
@@ -47,5 +47,25 @@ describe('달력 계산', () => {
   it('처음 달은 가장 최근 생활일의 달, 기록이 없으면 오늘의 달', () => {
     expect(initialMonth([row('a', '2026-08-31'), row('b', '2026-09-01')])).toBe('2026-09');
     expect(initialMonth([], new Date(2026, 0, 5))).toBe('2026-01');
+  });
+});
+
+describe('목록 페이지 나누기 보조', () => {
+  it('recordsUrl: 첫 페이지는 cursor 없이, 이후는 인코딩된 cursor', () => {
+    expect(recordsUrl(null)).toBe(`/api/records?limit=${PAGE_SIZE}`);
+    expect(recordsUrl('2026-10-01')).toBe(`/api/records?limit=${PAGE_SIZE}&cursor=2026-10-01`);
+  });
+  it('coversMonth: 다음 페이지가 없거나 가장 오래된 행이 달 첫날 이전이면 충분', () => {
+    const rows = [row('a', '2026-10-20'), row('b', '2026-09-15')];
+    expect(coversMonth(rows, null, '2026-01')).toBe(true);
+    expect(coversMonth(rows, 'c', '2026-10')).toBe(true);
+    expect(coversMonth(rows, 'c', '2026-09')).toBe(false); // 9/15 까지만 불러와 9/1~9/14 가 아직 없다
+    expect(coversMonth([...rows, row('z', '2026-08-31')], 'c', '2026-09')).toBe(true);
+    expect(coversMonth(rows, 'c', '2026-08')).toBe(false);
+    expect(coversMonth([], 'c', '2026-08')).toBe(false);
+  });
+  it('결과 파일 없음은 ok 가 아닌 경고 톤', () => {
+    expect(STATUS_INFO.RESULT_FILE_MISSING).toMatchObject({ label: '결과 파일 없음', tone: 'warn' });
+    expect(STATUS_INFO.RESULT_FILE_MISSING.hint).not.toContain('제작과 검수가 끝났습니다');
   });
 });

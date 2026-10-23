@@ -9,6 +9,7 @@ import { loadAuthConfig } from '../auth/config.js';
 import { sign } from '../auth/session.js';
 import { createTempSchema } from './db.testutil.js';
 import { RecordStore, type PipelineState } from './store.js';
+import { DEFAULT_PAGE, MAX_PAGE } from './routes.js';
 import { displayStatus, nextActions } from './view.js';
 
 const url = process.env.DATABASE_URL;
@@ -30,6 +31,8 @@ describe('displayStatus / nextActions', () => {
     ];
     expect(new Set(all).size).toBe(all.length);
     expect(all[7]).toBe('COMPLETED');
+    expect(displayStatus('CONFIRMED', p('DONE', 'PASSED'), false)).toBe('RESULT_FILE_MISSING');
+    expect(displayStatus('CONFIRMED', p('DONE', 'PASSED'), true)).toBe('COMPLETED');
   });
   it('다운로드는 검수 통과 + 파일 있음일 때만, 백업 실패는 별도 행동', () => {
     expect(nextActions('CONFIRMED', p('DONE', 'PASSED'), true)).toEqual(['DOWNLOAD']);
@@ -74,6 +77,8 @@ describe.skipIf(!url)('기록 목록·상세 API (실제 PostgreSQL)', () => {
     await store.confirm('owner-a', d19, new Date('2026-10-19T22:00:00+09:00'));
     await store.setPipeline('owner-a', d19, { production: 'DONE', review: 'PASSED' }, new Date('2026-10-24T09:00:00+09:00'));
     await store.appendVersion('owner-a', d19, 'RESULT', { file: 'late.mp4' }, new Date('2026-10-24T09:00:00+09:00'));
+    await mkdir(path.join(dir, 'videos'), { recursive: true });
+    await writeFile(path.join(dir, 'videos', 'late.mp4'), 'video-bytes');
     const list = ((await get('/api/records')).json() as { records: { id: string; lifeDate: string; status: string }[] }).records;
     expect(list.map((x) => x.lifeDate)).toEqual(['2026-10-21', '2026-10-20', '2026-10-19']);
     expect(list.map((x) => x.id)).toEqual([d21, d20, d19]);
@@ -83,7 +88,7 @@ describe.skipIf(!url)('기록 목록·상세 API (실제 PostgreSQL)', () => {
 
   it('다른 소유자의 기록은 목록·상세에 나오지 않고 비로그인은 401', async () => {
     const id = await mk('owner-a', '2026-10-22');
-    expect((await get('/api/records', B)).json()).toEqual({ records: [] });
+    expect((await get('/api/records', B)).json()).toEqual({ records: [], nextCursor: null });
     expect((await get(`/api/records/${id}`, B)).statusCode).toBe(404);
     expect((await app.inject({ method: 'GET', url: '/api/records' })).statusCode).toBe(401);
   });
@@ -119,6 +124,11 @@ describe.skipIf(!url)('기록 목록·상세 API (실제 PostgreSQL)', () => {
       const id = await mk('owner-a', date);
       await store.confirm('owner-a', id, new Date());
       await store.setPipeline('owner-a', id, patch, new Date());
+      if (patch.review === 'PASSED') {
+        await store.appendVersion('owner-a', id, 'RESULT', { file: 'ok13.mp4' }, new Date());
+        await mkdir(path.join(dir, 'videos'), { recursive: true });
+        await writeFile(path.join(dir, 'videos', 'ok13.mp4'), 'video-bytes');
+      }
       const d = (await get(`/api/records/${id}`)).json() as { status: string; nextActions: string[]; pipeline: { backup: string } };
       out[date] = `${d.status}|${d.nextActions.join(',')}|${d.pipeline.backup}`;
     }
@@ -126,7 +136,7 @@ describe.skipIf(!url)('기록 목록·상세 API (실제 PostgreSQL)', () => {
       '2026-10-10': 'FAILED|RETRY|NONE',
       '2026-10-11': 'BUDGET_WAIT|WAIT|NONE',
       '2026-10-12': 'REVIEW_REJECTED|EDIT_AND_REMAKE|NONE',
-      '2026-10-13': 'COMPLETED|RETRY_BACKUP|FAILED',
+      '2026-10-13': 'COMPLETED|DOWNLOAD,RETRY_BACKUP|FAILED',
     });
   });
 
@@ -157,5 +167,66 @@ describe.skipIf(!url)('기록 목록·상세 API (실제 PostgreSQL)', () => {
     const id = await mk('owner-a', '2026-10-15');
     await store.appendVersion('owner-a', id, 'RESULT', { file: '../attachments/x' }, new Date());
     expect((await get(`/api/records/${id}/result/file`)).statusCode).toBe(404);
+  });
+
+  it('TASK-69 AC-3 결과 파일이 없는 완료 기록은 목록·상세 모두 RESULT_FILE_MISSING, 파일이 생기면 COMPLETED', async () => {
+    const noResult = await mk('owner-a', '2026-09-01');
+    const noFile = await mk('owner-a', '2026-09-02');
+    for (const id of [noResult, noFile]) {
+      await store.confirm('owner-a', id, new Date());
+      await store.setPipeline('owner-a', id, { production: 'DONE', review: 'PASSED' }, new Date());
+    }
+    await store.appendVersion('owner-a', noFile, 'RESULT', { file: 'gone69.mp4' }, new Date());
+    const statusOf = async (id: string) => ({
+      list: ((await get('/api/records?limit=100')).json() as { records: { id: string; status: string }[] }).records.find((r) => r.id === id)?.status,
+      detail: ((await get(`/api/records/${id}`)).json() as { status: string; nextActions: string[] }),
+    });
+    for (const id of [noResult, noFile]) {
+      const s = await statusOf(id);
+      expect(s.list).toBe('RESULT_FILE_MISSING');
+      expect(s.detail.status).toBe('RESULT_FILE_MISSING');
+      expect(s.detail.nextActions).not.toContain('DOWNLOAD');
+    }
+    await mkdir(path.join(dir, 'videos'), { recursive: true });
+    await writeFile(path.join(dir, 'videos', 'gone69.mp4'), 'video-bytes');
+    const s = await statusOf(noFile);
+    expect(s.list).toBe('COMPLETED');
+    expect(s.detail.status).toBe('COMPLETED');
+  });
+
+  it('TASK-69 AC-1 1500건을 기본·최대 개수 단위로 순회해도 중복·누락 없이 생활일 내림차순', async () => {
+    const owner = 'owner-bulk';
+    await pool.query(
+      `INSERT INTO interviews (id, owner_id, life_date, started_at, created_at, updated_at)
+       SELECT gen_random_uuid(), $1, DATE '2020-01-01' + g, now(), now(), now() FROM generate_series(0, 1499) g`,
+      [owner],
+    );
+    const C = cookie(owner, 'a@example.test');
+    type Page = { records: { id: string; lifeDate: string }[]; nextCursor: string | null };
+    const walk = async (limitQ: string) => {
+      const ids: string[] = []; const dates: string[] = []; let cursor: string | null = null; let pages = 0; let max = 0;
+      do {
+        const res = await get(`/api/records${limitQ}${cursor ? `${limitQ ? '&' : '?'}cursor=${cursor}` : ''}`, C);
+        expect(res.statusCode).toBe(200);
+        const body = res.json() as Page;
+        max = Math.max(max, body.records.length);
+        for (const r of body.records) { ids.push(r.id); dates.push(r.lifeDate); }
+        cursor = body.nextCursor; pages++;
+      } while (cursor);
+      return { ids, dates, pages, max };
+    };
+    const def = await walk('');
+    expect(def.ids).toHaveLength(1500);
+    expect(new Set(def.ids).size).toBe(1500);
+    expect(def.max).toBe(DEFAULT_PAGE);
+    expect(def.pages).toBe(1500 / DEFAULT_PAGE);
+    expect(def.dates).toEqual([...def.dates].sort().reverse());
+    const big = await walk(`?limit=${MAX_PAGE}`);
+    expect(big.ids).toEqual(def.ids);
+    expect(big.max).toBe(MAX_PAGE);
+    // 최대 개수 초과·잘못된 값/커서는 400, 다른 소유자 커서 사용으로 남의 기록이 보이지 않는다.
+    for (const bad of [`?limit=${MAX_PAGE + 1}`, '?limit=0', '?limit=abc', '?cursor=2026-02-30', '?cursor=x']) expect((await get(`/api/records${bad}`, C)).statusCode).toBe(400);
+    expect((await get('/api/records?cursor=2030-01-01', B)).json()).toEqual({ records: [], nextCursor: null });
+    await pool.query('DELETE FROM interviews WHERE owner_id = $1', [owner]);
   });
 });

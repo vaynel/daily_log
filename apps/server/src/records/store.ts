@@ -84,6 +84,8 @@ const INTERVIEW_COLS = `id, owner_id, ${LIFE_DATE_SQL} AS life_date, started_at,
  * 생활일별 기록 저장소. 모든 시각은 호출자가 주입한 now를 사용한다(시계 제어 가능).
  * 인터뷰가 없는 날짜에는 어떤 행도 만들지 않는다.
  */
+export interface RecordListRow { id: string; lifeDate: string; status: Interview['status']; pipeline: PipelineState; hasResult: boolean; resultContent: unknown; attachmentCount: number }
+
 export class RecordStore {
   constructor(private readonly pool: pg.Pool, private readonly opts: StoreOptions = {}) {}
 
@@ -168,21 +170,29 @@ export class RecordStore {
     return snap;
   }
 
-  /** 소유자의 기록 목록: 생활일 최신순(제작·완료 시각과 무관). 읽기 전용. */
-  async listRecords(ownerId: string): Promise<{ id: string; lifeDate: string; status: Interview['status']; pipeline: PipelineState; hasResult: boolean; attachmentCount: number }[]> {
+  /**
+   * 소유자의 기록 목록: 생활일 최신순(제작·완료 시각과 무관). 읽기 전용.
+   * (owner_id, life_date) 는 유일하므로 생활일이 곧 커서다: `before` 보다 이전 생활일만 limit 건 돌려준다.
+   * 한 건 더 읽어 다음 페이지 유무를 알린다(nextCursor 가 null 이면 마지막).
+   */
+  async listRecords(ownerId: string, page: { limit: number; before?: string | null }): Promise<{ rows: RecordListRow[]; nextCursor: string | null }> {
     const r = await this.pool.query(
       `SELECT i.id, to_char(i.life_date, 'YYYY-MM-DD') AS life_date, i.status, p.production, p.review, p.backup,
+              (SELECT v.content FROM record_versions v WHERE v.interview_id = i.id AND v.kind = 'RESULT' ORDER BY v.version DESC LIMIT 1) AS result_content,
               EXISTS (SELECT 1 FROM record_versions v WHERE v.interview_id = i.id AND v.kind = 'RESULT') AS has_result,
               (SELECT count(*) FROM attachment_refs a WHERE a.interview_id = i.id)::int AS att
          FROM interviews i LEFT JOIN pipeline_states p ON p.interview_id = i.id
-        WHERE i.owner_id = $1 ORDER BY i.life_date DESC`,
-      [ownerId],
+        WHERE i.owner_id = $1 AND ($2::date IS NULL OR i.life_date < $2::date)
+        ORDER BY i.life_date DESC LIMIT $3`,
+      [ownerId, page.before ?? null, page.limit + 1],
     );
-    return r.rows.map((x) => ({
+    const more = r.rows.length > page.limit;
+    const rows = r.rows.slice(0, page.limit).map((x): RecordListRow => ({
       id: x.id, lifeDate: x.life_date, status: x.status,
       pipeline: { production: x.production ?? 'NONE', review: x.review ?? 'NONE', backup: x.backup ?? 'NONE' },
-      hasResult: x.has_result, attachmentCount: x.att,
+      hasResult: x.has_result, resultContent: x.result_content ?? null, attachmentCount: x.att,
     }));
+    return { rows, nextCursor: more ? rows[rows.length - 1]!.lifeDate : null };
   }
 
   /** id 로 읽기 전용 조회(소유자 확인). 없거나 타 소유자면 null. */

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ACTION_LABEL, byLifeDate, fetchJson, initialMonth, monthGrid, shiftMonth, PIPELINE_LABEL, STATUS_INFO, type DisplayStatus, type Loaded, type RecordDetail, type RecordRow } from './records';
+import { ACTION_LABEL, byLifeDate, coversMonth, fetchJson, initialMonth, recordsUrl, monthGrid, shiftMonth, PIPELINE_LABEL, STATUS_INFO, type DisplayStatus, type Loaded, type RecordDetail, type RecordRow, type RecordsPage } from './records';
 
 function Badge({ status }: { status: DisplayStatus }) {
   const s = STATUS_INFO[status];
@@ -18,9 +18,29 @@ export type RecordsMode = 'list' | 'calendar';
 
 /** 기록 목록을 한 번 불러와 최신순 목록과 달력이 같은 데이터를 쓴다. 보기 방식은 상위가 유지한다. */
 export function RecordsBrowser({ mode, onMode, month, onMonth, onOpen }: { mode: RecordsMode; onMode: (m: RecordsMode) => void; month: string | null; onMonth: (ym: string) => void; onOpen: (id: string) => void }) {
-  const [r, setR] = useState<Loaded<{ records: RecordRow[] }> | null>(null);
-  const load = useCallback(() => { setR(null); void fetchJson<{ records: RecordRow[] }>('/api/records').then(setR); }, []);
+  const [r, setR] = useState<Loaded<RecordsPage> | null>(null);
+  const [more, setMore] = useState<'idle' | 'loading' | 'error'>('idle');
+  const load = useCallback(() => { setR(null); setMore('idle'); void fetchJson<RecordsPage>(recordsUrl(null)).then(setR); }, []);
   useEffect(load, [load]);
+  const data = r?.state === 'ok' ? r.data : null;
+  const cursor = data?.nextCursor ?? null;
+  // 다음 페이지를 이어 붙인다. 목록 순서(생활일 내림차순)는 서버가 정하고 id 로 중복을 거른다.
+  const loadMore = useCallback(async () => {
+    if (!cursor) return;
+    setMore('loading');
+    const next = await fetchJson<RecordsPage>(recordsUrl(cursor));
+    if (next.state !== 'ok') { setMore('error'); return; }
+    setR((prev) => {
+      if (prev?.state !== 'ok') return prev;
+      const seen = new Set(prev.data.records.map((x) => x.id));
+      return { state: 'ok', data: { records: [...prev.data.records, ...next.data.records.filter((x) => !seen.has(x.id))], nextCursor: next.data.nextCursor } };
+    });
+    setMore('idle');
+  }, [cursor]);
+  // 달력은 보고 있는 달의 첫날까지 자동으로 이어 불러와, 아직 못 불러온 날짜를 "기록 없음"으로 잘못 보이지 않게 한다.
+  const calYm = data ? (month ?? initialMonth(data.records)) : null;
+  const needMore = mode === 'calendar' && !!data && !!calYm && !coversMonth(data.records, data.nextCursor, calYm);
+  useEffect(() => { if (needMore && more === 'idle') void loadMore(); }, [needMore, more, loadMore]);
   if (!r) return <p>기록을 불러오는 중</p>;
   if (r.state !== 'ok') return <Problem r={r} onRetry={load} />;
   return (
@@ -30,6 +50,12 @@ export function RecordsBrowser({ mode, onMode, month, onMonth, onOpen }: { mode:
         <button aria-pressed={mode === 'calendar'} data-testid="mode-calendar" onClick={() => onMode('calendar')}>달력</button>
       </div>
       {mode === 'list' ? <RecordRows rows={r.data.records} onOpen={onOpen} /> : <RecordsCalendar rows={r.data.records} month={month} onMonth={onMonth} onOpen={onOpen} />}
+      {more === 'error' && <p role="alert" data-testid="more-error">이전 기록을 불러오지 못했습니다. 연결을 확인하고 다시 시도해 주세요.</p>}
+      {r.data.nextCursor && (
+        <button data-testid="load-more" disabled={more === 'loading'} onClick={() => void loadMore()}>
+          {more === 'loading' ? '불러오는 중' : more === 'error' ? '다시 시도' : '이전 기록 더 보기'}
+        </button>
+      )}
     </>
   );
 }
