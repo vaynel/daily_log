@@ -47,3 +47,44 @@ export async function fetchJson<T>(url: string, f: typeof fetch = fetch): Promis
     return { state: 'error' };
   }
 }
+
+/** 달력의 한 칸. date 가 null 이면 해당 월이 아닌 빈 칸이다. */
+export interface CalendarCell { date: string | null; day: number | null }
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/** 'YYYY-MM' 형식인지 확인한다. */
+export const isYearMonth = (v: string) => /^\d{4}-(0[1-9]|1[0-2])$/.test(v);
+
+/** 'YYYY-MM' 에 달 수를 더한다. 연도 경계(12→1월)도 처리한다. 시간대와 무관한 순수 계산이다. */
+export function shiftMonth(ym: string, delta: number): string {
+  const [y, m] = ym.split('-').map(Number) as [number, number];
+  const idx = y * 12 + (m - 1) + delta;
+  return `${String(Math.floor(idx / 12)).padStart(4, '0')}-${pad((idx % 12) + 1)}`;
+}
+
+/** 한 달의 주 단위 칸(일요일 시작). 시간대 영향을 받지 않도록 UTC 로만 계산한다. */
+export function monthGrid(ym: string): CalendarCell[][] {
+  const [y, m] = ym.split('-').map(Number) as [number, number];
+  const lead = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
+  const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const cells: CalendarCell[] = [
+    ...Array.from({ length: lead }, () => ({ date: null, day: null })),
+    ...Array.from({ length: days }, (_, i) => ({ date: `${ym}-${pad(i + 1)}`, day: i + 1 })),
+  ];
+  while (cells.length % 7) cells.push({ date: null, day: null });
+  return Array.from({ length: cells.length / 7 }, (_, w) => cells.slice(w * 7, w * 7 + 7));
+}
+
+/** 생활일(YYYY-MM-DD) → 기록. 영상 제작·완성 시각은 쓰지 않고 서버가 준 생활일 그대로 놓는다. */
+export function byLifeDate(rows: RecordRow[]): Map<string, RecordRow> {
+  const m = new Map<string, RecordRow>();
+  for (const r of rows) if (!m.has(r.lifeDate)) m.set(r.lifeDate, r);
+  return m;
+}
+
+/** 처음 보여줄 달: 가장 최근 생활일의 달. 기록이 없으면 지금 달(로컬 날짜). */
+export function initialMonth(rows: RecordRow[], today: Date = new Date()): string {
+  const latest = rows.map((r) => r.lifeDate).sort().at(-1);
+  return latest ? latest.slice(0, 7) : `${today.getFullYear()}-${pad(today.getMonth() + 1)}`;
+}

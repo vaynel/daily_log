@@ -1,7 +1,7 @@
 import { StrictMode, useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AttachPanel } from './AttachPanel';
-import { RecordDetailView, RecordsList } from './RecordsView';
+import { RecordDetailView, RecordsBrowser, type RecordsMode } from './RecordsView';
 
 type Session = { email: string; name: string | null; driveConnected: boolean };
 type View =
@@ -45,13 +45,15 @@ function Notice({ title, children, action }: { title: string; children: string; 
 
 function Home({ session, onLogout }: { session: Session; onLogout: () => void }) {
   const [openId, setOpenId] = useState<string | null>(null);
+  const [mode, setMode] = useState<RecordsMode>('list');
+  const [month, setMonth] = useState<string | null>(null); // 상세에서 돌아와도 보던 달을 유지
   return (
     <section data-testid="screen-home" className="card">
       <h2>내 기록</h2>
       <p data-testid="account">{session.email} 로 로그인됨</p>
       <p data-testid="drive-status">Google Drive: {session.driveConnected ? '연결됨' : '연결 안 됨 (선택 사항)'}</p>
       {!session.driveConnected && <a className="button secondary" href="/auth/drive/connect">Google Drive 연결</a>}
-      {openId ? <RecordDetailView id={openId} onBack={() => setOpenId(null)} /> : <RecordsList onOpen={setOpenId} />}
+      {openId ? <RecordDetailView id={openId} onBack={() => setOpenId(null)} /> : <RecordsBrowser mode={mode} onMode={setMode} month={month} onMonth={setMonth} onOpen={setOpenId} />}
       <AttachPanel />
       <button onClick={onLogout}>로그아웃</button>
     </section>

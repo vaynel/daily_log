@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { ACTION_LABEL, fetchJson, PIPELINE_LABEL, STATUS_INFO, type DisplayStatus, type Loaded, type RecordDetail, type RecordRow } from './records';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ACTION_LABEL, byLifeDate, fetchJson, initialMonth, monthGrid, shiftMonth, PIPELINE_LABEL, STATUS_INFO, type DisplayStatus, type Loaded, type RecordDetail, type RecordRow } from './records';
 
 function Badge({ status }: { status: DisplayStatus }) {
   const s = STATUS_INFO[status];
@@ -14,17 +14,32 @@ function Problem({ r, onRetry }: { r: Exclude<Loaded<unknown>, { state: 'ok' }>;
 
 const size = (n: number | null) => (n === null ? '' : n >= 1048576 ? `${(n / 1048576).toFixed(1)}MB` : `${Math.max(1, Math.round(n / 1024))}KB`);
 
-/** 생활일 최신순 목록. 정렬은 서버가 생활일 기준으로 한다. */
-export function RecordsList({ onOpen }: { onOpen: (id: string) => void }) {
+export type RecordsMode = 'list' | 'calendar';
+
+/** 기록 목록을 한 번 불러와 최신순 목록과 달력이 같은 데이터를 쓴다. 보기 방식은 상위가 유지한다. */
+export function RecordsBrowser({ mode, onMode, month, onMonth, onOpen }: { mode: RecordsMode; onMode: (m: RecordsMode) => void; month: string | null; onMonth: (ym: string) => void; onOpen: (id: string) => void }) {
   const [r, setR] = useState<Loaded<{ records: RecordRow[] }> | null>(null);
   const load = useCallback(() => { setR(null); void fetchJson<{ records: RecordRow[] }>('/api/records').then(setR); }, []);
   useEffect(load, [load]);
   if (!r) return <p>기록을 불러오는 중</p>;
   if (r.state !== 'ok') return <Problem r={r} onRetry={load} />;
-  if (r.data.records.length === 0) return <p data-testid="records-empty">아직 기록이 없습니다.</p>;
+  return (
+    <>
+      <div role="group" aria-label="보기 방식" className="modes">
+        <button aria-pressed={mode === 'list'} data-testid="mode-list" onClick={() => onMode('list')}>목록</button>
+        <button aria-pressed={mode === 'calendar'} data-testid="mode-calendar" onClick={() => onMode('calendar')}>달력</button>
+      </div>
+      {mode === 'list' ? <RecordRows rows={r.data.records} onOpen={onOpen} /> : <RecordsCalendar rows={r.data.records} month={month} onMonth={onMonth} onOpen={onOpen} />}
+    </>
+  );
+}
+
+/** 생활일 최신순 목록. 정렬은 서버가 생활일 기준으로 한다. */
+function RecordRows({ rows, onOpen }: { rows: RecordRow[]; onOpen: (id: string) => void }) {
+  if (rows.length === 0) return <p data-testid="records-empty">아직 기록이 없습니다.</p>;
   return (
     <ul className="records" data-testid="records-list" aria-label="생활일별 기록">
-      {r.data.records.map((x) => (
+      {rows.map((x) => (
         <li key={x.id} data-life-date={x.lifeDate}>
           <button className="row" onClick={() => onOpen(x.id)}>
             <strong>{x.lifeDate}</strong> <Badge status={x.status} />
@@ -33,6 +48,52 @@ export function RecordsList({ onOpen }: { onOpen: (id: string) => void }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+
+/**
+ * 생활일 달력. 서버가 준 목록에 있는 날짜만 기록으로 연결한다.
+ * 기록 없는 날짜는 안내만 보이고 어떤 요청도 보내지 않는다(과거 기록 자동 생성 금지).
+ */
+function RecordsCalendar({ rows, month, onMonth, onOpen }: { rows: RecordRow[]; month: string | null; onMonth: (ym: string) => void; onOpen: (id: string) => void }) {
+  const byDate = useMemo(() => byLifeDate(rows), [rows]);
+  const ym = month ?? initialMonth(rows);
+  const [emptyDate, setEmptyDate] = useState<string | null>(null);
+  const move = (d: number) => { onMonth(shiftMonth(ym, d)); setEmptyDate(null); };
+  return (
+    <div data-testid="records-calendar">
+      <div className="cal-nav">
+        <button onClick={() => move(-1)} aria-label="이전 달" data-testid="cal-prev">‹</button>
+        <strong data-testid="cal-month" aria-live="polite">{ym.slice(0, 4)}년 {Number(ym.slice(5))}월</strong>
+        <button onClick={() => move(1)} aria-label="다음 달" data-testid="cal-next">›</button>
+      </div>
+      <table className="cal">
+        <thead><tr>{WEEKDAYS.map((w) => <th key={w} scope="col">{w}</th>)}</tr></thead>
+        <tbody>
+          {monthGrid(ym).map((week, i) => (
+            <tr key={i}>
+              {week.map((c, j) => {
+                if (!c.date) return <td key={j} />;
+                const rec = byDate.get(c.date);
+                const label = rec ? `${c.date} ${STATUS_INFO[rec.status].label}` : `${c.date} 기록 없음`;
+                return (
+                  <td key={j} data-date={c.date} data-has-record={rec ? 'true' : 'false'}>
+                    <button className={`day${rec ? ` has ${STATUS_INFO[rec.status].tone}` : ''}`} aria-label={label}
+                      onClick={() => (rec ? onOpen(rec.id) : setEmptyDate(c.date))}>
+                      <span>{c.day}</span>
+                      {rec && <small data-testid="status-badge" data-status={rec.status}>{STATUS_INFO[rec.status].label}</small>}
+                    </button>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {emptyDate && <p role="status" data-testid="cal-empty-day">{emptyDate}에는 기록이 없습니다.</p>}
+    </div>
   );
 }
 
