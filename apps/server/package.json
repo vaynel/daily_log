@@ -8,6 +8,8 @@
     "dev:worker": "tsx watch src/worker.ts",
     "start": "node dist/main.js",
     "start:worker": "node dist/worker.js",
+    "start:voice": "node dist/voice/main.js",
+    "dev:voice": "tsx src/voice/main.ts",
     "dev:auth-demo": "tsx src/auth/demo.ts",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:seed": "tsx src/db/seed.ts",
