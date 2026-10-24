@@ -90,3 +90,55 @@ test('SSE frame delimiters split across network chunks still reach completed eve
   assert.equal((await runtime.infer(s,input,{supportVerified:true,transport:async()=>new Response(body,{headers:{'Content-Type':'text/event-stream'}})})).state,'SUCCEEDED');
  });
 });
+test('missing Content-Type is accepted as SSE only with response.completed; explicit other types never succeed',async()=>{
+ const sse=(events,headers)=>{const bytes=new TextEncoder().encode(events.map(x=>`data: ${JSON.stringify(x)}\n\n`).join(''));return new Response(new ReadableStream({start(c){c.enqueue(bytes);c.close();}}),{headers});};
+ const run=(res)=>fixture(async s=>{const out=await runtime.infer(s,input,{supportVerified:true,transport:async()=>res()});assert.equal((await s.read()).state,out.state==='SUCCEEDED'?'READY':out.state);results.push(out);});
+ const results=[];
+ await run(()=>{const r=sse([{type:'response.output_text.delta',delta:'가'},{type:'response.output_text.delta',delta:'나'},{type:'response.completed'}]);assert.equal(r.headers.get('content-type'),null);return r;});
+ assert.deepEqual(results.pop(),{state:'SUCCEEDED',text:'가나'});
+ await run(()=>sse([{type:'response.output_text.delta',delta:'partial'}]));
+ assert.equal(results.pop().state,'WAIT_RECONCILIATION');
+ for(const type of ['application/json','text/plain']) {
+  await run(()=>sse([{type:'response.output_text.delta',delta:'x'},{type:'response.completed'}],{'Content-Type':type}));
+  assert.equal(results.pop().state,'WAIT_RECONCILIATION');
+ }
+});
+test('4MB cap still applies without Content-Type',async()=>{
+ await fixture(async s=>{
+  const body=new ReadableStream({start(c){c.enqueue(new Uint8Array(4*1024*1024+1));c.close();}});
+  assert.equal((await runtime.infer(s,input,{supportVerified:true,transport:async()=>new Response(body)})).state,'WAIT_REVIEW');
+ });
+});
+test('reconcile needs explicit confirm, only leaves WAIT_RECONCILIATION, and never calls the network',async()=>{
+ await fixture(async s=>{
+  assert.deepEqual(await runtime.reconcile(s),{state:'CONFIRM_REQUIRED'});
+  assert.equal((await s.read()).state,'WAIT_RECONCILIATION');
+  let calls=0;const transport=async()=>{calls++;throw Error('no network');};
+  assert.equal((await runtime.infer(s,input,{supportVerified:true,transport})).state,'WAIT_RECONCILIATION');
+  assert.equal((await runtime.refresh(s,{transport})).state,'WAIT_RECONCILIATION');
+  assert.equal(calls,0);
+  assert.deepEqual(await runtime.reconcile(s,{confirm:true}),{state:'READY',changed:true});
+  assert.equal((await s.read()).state,'READY');
+ },{state:'WAIT_RECONCILIATION'});
+ for(const state of ['WAIT_LIMIT','WAIT_AUTH']) await fixture(async s=>{
+  assert.deepEqual(await runtime.reconcile(s,{confirm:true}),{state,changed:false});
+  assert.equal((await s.read()).state,state);
+ },{state});
+ await fixture(async s=>{
+  assert.equal((await runtime.reconcile(s,{confirm:true})).state,'WAIT_AUTH');assert.equal((await s.read()).access_token,undefined);
+ },{state:'WAIT_RECONCILIATION',refresh_token:undefined});
+});
+test('CLI reconcile changes state only with --confirm',async()=>{
+ const {spawnSync}=await import('node:child_process');
+ const base=await mkdtemp(resolve('data/siwc-cli-'));const dir=resolve(base,'daily-log-siwc');
+ try {
+  const store=new Store(dir);await store.init();
+  await store.save({version:1,issuer:'https://auth.openai.com',subject:'synthetic-user',client_id:'oaiapp_test',access_token:'synthetic-access',refresh_token:'synthetic-refresh',scopes:['chatgpt.tokens.use.direct','resource.invoke'],expires_at:Date.now()+3600000,state:'WAIT_RECONCILIATION'});
+  const cli=(...a)=>spawnSync(process.execPath,['scripts/siwc-cli.mjs','reconcile','--dir',dir,...a],{encoding:'utf8'});
+  const denied=cli();assert.equal(denied.status,1);assert.match(denied.stdout,/CONFIRM_REQUIRED/);
+  assert.equal((await new Store(dir).read()).state,'WAIT_RECONCILIATION');
+  const ok=cli('--confirm');assert.equal(ok.status,0);assert.match(ok.stdout,/"state":"READY"/);
+  assert.equal((await new Store(dir).read()).state,'READY');
+  assert.doesNotMatch(denied.stdout+denied.stderr+ok.stdout+ok.stderr,/synthetic-(access|refresh)/);
+ } finally {await rm(base,{recursive:true,force:true});}
+});
