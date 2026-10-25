@@ -4,17 +4,18 @@ import path from 'node:path';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
-import type { Snapshot } from '../records/store.js';
 import { loadLiveConfig } from '../voice/live.js';
 import { startMockLive, type MockLiveOptions } from '../voice/live-mock.testutil.js';
 import type { SessionClaims } from '../auth/session.js';
-import { registerInterview, type InterviewRecords } from './routes.js';
+import type { AuthFailure } from '../auth/plugin.js';
+import { MemRecords, TEST_INTERVIEW, TEST_OWNER } from './memory.testutil.js';
+import { registerInterview } from './routes.js';
 import type { InterviewLimits } from './limits.js';
 import { MemoryLiveUsageStore } from './usage.js';
 
 const KEY = 'interview-sentinel-key-9921';
-const ME = 'user-me';
-const ID = '11111111-1111-4111-8111-111111111111';
+const ME = TEST_OWNER;
+const ID = TEST_INTERVIEW;
 type Ev = Record<string, unknown> & { type: string };
 
 import { vi } from 'vitest';
@@ -23,35 +24,17 @@ vi.setConfig({ testTimeout: 30000 });
 const cleanups: (() => Promise<void> | void)[] = [];
 afterEach(async () => { while (cleanups.length) await cleanups.pop()!(); });
 
-class MemRecords implements InterviewRecords {
-  items: { id: string; seq: number; kind: 'QUESTION' | 'ANSWER'; body: string; key: string }[] = [];
-  audio: Snapshot['audio'] = [];
-  status: 'IN_PROGRESS' | 'CONFIRMED' = 'IN_PROGRESS';
-  async loadById(ownerId: string, id: string): Promise<Snapshot | null> {
-    if (ownerId !== ME || id !== ID) return null;
-    return {
-      interview: { id, ownerId, lifeDate: '2026-10-25', startedAt: new Date(), status: this.status, revision: 1 }, resumes: [],
-      items: this.items.map(({ key, ...i }) => { void key; return i; }), attachments: [{ id: 'a1', itemId: null, storageKey: 'k', checksum: 'c' }],
-      versions: [], pipeline: { production: 'NONE', review: 'NONE', backup: 'NONE' }, audio: this.audio,
-    };
-  }
-  async saveItem(_o: string, _i: string, key: string, kind: 'QUESTION' | 'ANSWER', body: string) {
-    if (this.items.some((x) => x.key === key)) return;
-    this.items.push({ id: `i${this.items.length + 1}`, seq: this.items.length + 1, kind, body, key });
-  }
-}
-
 async function rig(o: { mock?: Partial<MockLiveOptions>; limits?: InterviewLimits; disabled?: boolean } = {}) {
   const mock = await startMockLive({ expectedKey: KEY, vadSilenceMs: 250, firstAudioDelayMs: 40, audioChunks: 3, ...o.mock });
   cleanups.push(() => mock.close());
   const records = new MemRecords();
   const usage = new MemoryLiveUsageStore();
   const app: FastifyInstance = Fastify({ logger: false });
-  const authenticate = (req: { headers: { cookie?: string } }) => {
+  const authenticate = (req: { headers: { cookie?: string } }): { user: SessionClaims } | AuthFailure => {
     const c = req.headers.cookie ?? '';
     if (c.includes('as=other')) return { user: { sub: 'user-other', email: 'o@x', iat: 0, exp: 9e9 } satisfies SessionClaims };
     if (c.includes('as=me')) return { user: { sub: ME, email: 'm@x', iat: 0, exp: 9e9 } satisfies SessionClaims };
-    return { status: 401 as const, code: 'unauthenticated' as const };
+    return { status: 401, code: 'unauthenticated' };
   };
   app.addHook('onRequest', async (req, reply) => {
     const r = authenticate(req);

@@ -58,14 +58,16 @@ export class MemoryLiveUsageStore implements LiveUsageStore {
     const r = this.rows.get(interviewId);
     return r && r.ownerId === ownerId ? { ...r } : null;
   }
-  async open(ownerId: string, interviewId: string) {
+  async open(ownerId: string, interviewId: string, _now?: Date) {
+    void _now;
     const r = this.rows.get(interviewId) ?? { ownerId, interviewId, usedMs: 0, costKrw: 0, connections: 0, status: 'OPEN' as const, endReason: null };
     if (r.ownerId !== ownerId) throw new Error('usage owner mismatch');
     r.connections++;
     this.rows.set(interviewId, r);
     return { ...r };
   }
-  async add(ownerId: string, interviewId: string, usedMs: number, costKrw: number, endReason: string | null) {
+  async add(ownerId: string, interviewId: string, usedMs: number, costKrw: number, endReason: string | null, _now?: Date) {
+    void _now;
     const r = this.rows.get(interviewId);
     if (!r || r.ownerId !== ownerId) throw new Error('usage row missing');
     r.usedMs += Math.max(0, Math.round(usedMs)); r.costKrw += Math.max(0, costKrw);

@@ -1,6 +1,6 @@
 import { StrictMode, useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { AttachPanel } from './AttachPanel';
+import { InterviewScreen } from './InterviewScreen';
 import { RecordDetailView, RecordsBrowser, type RecordsMode } from './RecordsView';
 
 type Session = { email: string; name: string | null; driveConnected: boolean };
@@ -54,7 +54,7 @@ function Home({ session, onLogout }: { session: Session; onLogout: () => void })
       <p data-testid="drive-status">Google Drive: {session.driveConnected ? '연결됨' : '연결 안 됨 (선택 사항)'}</p>
       {!session.driveConnected && <a className="button secondary" href="/auth/drive/connect">Google Drive 연결</a>}
       {openId ? <RecordDetailView id={openId} onBack={() => setOpenId(null)} /> : <RecordsBrowser mode={mode} onMode={setMode} month={month} onMonth={setMonth} onOpen={setOpenId} />}
-      <AttachPanel />
+      <InterviewScreen />
       <button onClick={onLogout}>로그아웃</button>
     </section>
   );
