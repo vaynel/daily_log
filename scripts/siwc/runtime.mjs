@@ -13,9 +13,10 @@ async function wait(store,record,state,clear=false) {
  if(clear) {delete next.access_token;delete next.refresh_token;delete next.id_token;}
  await store.saveUnlocked(next);return {state};
 }
-async function renewUnlocked(store,transport) {
+// retryTransient lets the hand-off retry after WAIT_RETRY (tokens kept, request definitely not applied); WAIT_RECONCILIATION is never replayed.
+export async function renewUnlocked(store,transport,{retryTransient=false}={}) {
  const r=await store.read(); if(!r) return {state:'WAIT_AUTH'};
- if(r.state!=='READY') return {state:r.state};
+ if(r.state!=='READY' && !(retryTransient && r.state==='WAIT_RETRY' && r.refresh_token)) return {state:r.state};
  if(r.expires_at>Date.now()+60000) return {state:'READY'};
  if(!r.refresh_token) return wait(store,r,'WAIT_AUTH',true);
  // Persist uncertainty before a possibly rotating request. A crash must never replay it.
@@ -49,7 +50,9 @@ export async function infer(store,input,{supportVerified=false,transport=request
    if(!res.ok) {
     const body=await res.json().catch(()=>({}));return wait(store,r,errorState(res.status,body.error?.code));
    }
-   if(!res.headers.get('content-type')?.includes('text/event-stream') || !res.body) return wait(store,r,'WAIT_RECONCILIATION');
+   // The live endpoint can omit Content-Type on a valid SSE stream; only an explicit other type is rejected. Success still requires response.completed.
+   const contentType=res.headers.get('content-type');
+   if((contentType && !contentType.toLowerCase().includes('text/event-stream')) || !res.body) return wait(store,r,'WAIT_RECONCILIATION');
    let buffer='',text='',bytes=0;const decoder=new TextDecoder();
    for await(const chunk of res.body) {
     bytes+=chunk.length;if(bytes>4*1024*1024) return wait(store,r,'WAIT_REVIEW');
@@ -68,6 +71,17 @@ export async function infer(store,input,{supportVerified=false,transport=request
    }
    return wait(store,r,'WAIT_RECONCILIATION');
   } catch {return wait(store,r,'WAIT_RECONCILIATION');}
+ });
+}
+// Human-confirmed only: the caller must have verified out of band that the lost request is not pending. Never replays a request.
+export async function reconcile(store,{confirm=false}={}) {
+ if(confirm!==true) return {state:'CONFIRM_REQUIRED'};
+ return store.lock(async()=>{
+  const r=await store.read();if(!r) return {state:'WAIT_AUTH'};
+  if(r.state!=='WAIT_RECONCILIATION') return {state:r.state,changed:false};
+  const hasTokens=Boolean(r.access_token && r.refresh_token);
+  if(!hasTokens) return wait(store,r,'WAIT_AUTH',true);
+  await store.saveUnlocked({...r,state:'READY'});return {state:'READY',changed:true};
  });
 }
 export async function signOut(store,{transport=request}={}) {

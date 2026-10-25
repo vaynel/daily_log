@@ -1,6 +1,6 @@
 # TASK-56 · Windows 로그인 도우미 준비판
 
-**아직 사용자 실행 준비 완료가 아니다.** Windows 실제 OS 시험과 독립 QA 전에는 로그인하지 않는다. 이 작업 환경은 Linux이며 Windows 저장소/PowerShell/시작 배치의 실제 실행은 NOT_RUN이다. PM이 제출 커밋을 push하여 `SIWC Windows native verification`의 Windows 결과를 확인해야 한다. 실제 사용자 동의·계정 지원·추론 성공은 TASK-4에서 별도 확인한다. 개발 Codex 인증을 읽거나 복사하지 않는다. 배포 없음.
+**아직 사용자 실행 준비 완료가 아니다.** 기준 커밋 `a36ae5cb7b5315ddcfbcddbee1fe9a84e9be8e70`의 실제 Windows CI는 21 PASS / 0 FAIL / 2 SKIP이며 [검증 기록](task-56-verification.md)에 근거와 한계가 있다. TASK-57 독립 QA 전에는 로그인하지 않는다. `.cmd` 더블클릭·대화형 메뉴 전체는 미검증이다. 실제 사용자 동의·계정 지원·추론 성공은 TASK-4에서 별도 확인한다. 개발 Codex 인증을 읽거나 복사하지 않는다. 배포 없음.
 
 ## Windows에서 사용할 때 (검수 후 사용자용)
 
@@ -22,7 +22,7 @@ PowerShell helper는 `-NoProfile -NonInteractive -ExecutionPolicy RemoteSigned`�
 - `.lock`은 삭제하지 않는 파일이다. 전체 갱신 트랜잭션 동안 독점 Windows 핸들을 유지한다. 다른 프로세스는 BUSY로 실패하며, 프로세스 종료 시 OS가 잠금을 해제한다. 파일 존재만으로 잠겼다고 판단하거나 오래됐다고 잠금을 삭제하지 않는다.
 - 새 암호문을 같은 폴더의 고유 임시 파일에 쓰고 `Flush(true)` 후 `MoveFileEx(REPLACE_EXISTING | WRITE_THROUGH)`로 교체한다. 이전 세션을 먼저 truncate하지 않는다. 장애로 남은 `.tmp`도 암호문이다. 로컬 디스크 자체의 손상·백업·완전 삭제까지 보장하지 않는다.
 - 메뉴 4번과 `DELETE`는 로컬 세션 파일만 삭제하고 안정적인 host ID를 보존한다. 원격 연결 해지가 아니다. 원격 해지는 사용자가 ChatGPT 설정에서 확인한다. CLI `signout`은 원격 해지를 시도하고 토큰을 제거하며 실패/미확인을 표시한다. 진행 중인 도우미를 종료한 다음 삭제한다.
-- **Windows의 암호화 파일은 Linux에 복사/import할 수 없다.** Windows 평문 export/import는 제공하지 않는다. 기존 TASK-53의 Linux SSH 전달 예제를 Windows 파일에 적용하지 않는다. Windows→서버 보안 인계는 후속 설계·검증 대상이며 이번 준비판은 서버 연결을 완료하지 않는다.
+- **Windows의 암호화 파일은 Linux에 복사/import할 수 없다.** 평문 export/import도 없다. Windows→headless Linux 서버 연결은 메뉴 5번의 SSH 보호 전달로 한다: [TASK-58 절차](task-58-handoff.md). 이 기능은 독립 검수 전이며 실제 계정·제품 요청은 TASK-4 검증 대상이다.
 - DPAPI와 ACL은 다른 일반 사용자/파일 노출에 대한 보호다. 같은 사용자로 실행되는 악성 코드, 관리자/SYSTEM, OS 계정 탈취까지 방어한다고 주장하지 않는다. DPAPI 사용자 프로필을 잃었을 때 평문 복구·자동 fallback은 없다. 저장 오류는 비밀값 없는 일반 오류로 표시하며 기존 파일을 자동 삭제/덮어써서 복구하지 않는다.
 
 ## PM: 재현 가능한 ZIP·검증·인계
@@ -38,7 +38,7 @@ node scripts/package-siwc-windows.mjs
 
 `.github/workflows/siwc-windows.yml`은 Windows와 Ubuntu에서 Node 22 모의 OAuth·저장소 회귀를 실행한다. Windows 전용 시험은 실제 win32에서만 수행하며 Linux에서는 SKIP이다. POSIX 파일 mode/import 시험 두 건은 Windows에서 SKIP하고 Windows 전용 DPAPI/ACL 시험으로 따로 검사한다. 압축 해제한 한글·공백 경로에서 시작 도우미 preflight도 검사한다. 기존 Linux 전체 `npm run check` CI는 유지한다. OAuth transport는 합성이며 실계정이나 유료 API를 호출하지 않는다.
 
-PM 후속: 제출 branch/commit push → Windows 작업 결과/실패 로그 확인 → 필요 수정 → 독립 QA → 그 뒤 TASK-4 실제 사용자 로그인 검증. 이 worker에는 Windows OS/PowerShell/gh가 없고 새 workflow를 dispatch하는 연결 도구도 없다. 원격 CI 결과 URL은 아직 없다. 작업 지시에 따라 push/CI 실행은 PM에게 인계한다.
+PM 후속: 최종 문서 커밋·ZIP/체크섬 확인 → TASK-57 독립 QA → 그 뒤 TASK-4 실제 사용자 로그인 검증. [Windows/Ubuntu CI](https://github.com/vaynel/daily_log/actions/runs/39450866093)는 기준 구현 커밋에서 성공했으며 현재 문서 커밋의 실행 소스·테스트·워크플로는 동일하다. Windows 로그에는 Node 부재 `.cmd` 검사와 한글·공백 경로의 Node launcher preflight가 포함되지만 더블클릭·대화형 메뉴 전체 실행은 포함되지 않는다. 필요 시 독립 QA에서 실제 Windows로 추가 확인한다. 최종 ZIP의 문서 갱신에 따른 해시는 기준 구현 ZIP과 다르므로 제출 report와 manifest의 정확한 커밋·해시를 사용한다.
 
 ## 확인한 공식 근거
 
