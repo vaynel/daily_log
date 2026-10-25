@@ -1,4 +1,6 @@
 import { BudgetLedger, SessionStore, type SessionRecord, type TurnMetrics } from './meter.js';
+import { classifyFailure } from '../budget/gateway.js';
+import type { MonthlyLedger, Purpose } from '../budget/ledger.js';
 import { estimateTtsSeconds, sttCostKrw, ttsCostKrw, type Pricing } from './pricing.js';
 import type { Transports } from './transports.js';
 
@@ -29,7 +31,25 @@ export class VoiceService {
   private readonly history = new Map<string, { user: string; ai: string }[]>();
   constructor(private readonly o: {
     t: Transports; pricing: Pricing; ledger: BudgetLedger; sessions: SessionStore; now?: () => number; clock?: () => Date;
+    /** 월 원장. 있으면 모든 유료 호출을 예약→확정으로 기록하고 프로세스 단위 ledger 는 보조 장치가 된다. */
+    monthly?: MonthlyLedger; purpose?: Purpose;
   }) {}
+
+  /** 유료 호출 전 예약. 월 원장이 없으면 항상 통과(프로세스 단위 검사만). */
+  private async hold(operation: string, krw: number): Promise<{ ok: true; id?: string } | { ok: false }> {
+    const m = this.o.monthly;
+    if (!m) return { ok: true };
+    const r = await m.reserve({ provider: operation === 'stt' ? 'openai' : 'gemini', operation, purpose: this.o.purpose ?? 'TEST', estimateKrw: krw });
+    return r.ok ? { ok: true, id: r.id } : { ok: false };
+  }
+  private async settle(id: string | undefined, krw: number) { if (id) await this.o.monthly!.confirm(id, krw); }
+  /** 실패: 4xx 명시 거절이면 해제, 그 외(결과 불명)는 예약액을 유지한 채 불명 처리. @returns 요금을 센 경우 true */
+  private async failHold(id: string | undefined, e: unknown): Promise<boolean> {
+    if (!id) return true;
+    if (classifyFailure(e) === 'REJECTED') { await this.o.monthly!.releaseUnsent(id); return false; }
+    await this.o.monthly!.markUnknown(id, 'CALL_ERROR');
+    return true;
+  }
 
   private nowMs() { return (this.o.now ?? (() => performance.now()))(); }
 
@@ -67,6 +87,8 @@ export class VoiceService {
       return this.reject(s, fail(402, 'BUDGET_EXCEEDED', '예산 상한에 도달해 유료 호출 전에 중단했습니다.'));
     };
     if (!ledger.canSpend(sttEst)) return stop();
+    const sttHold = await this.hold('stt', sttEst);
+    if (!sttHold.ok) return stop();
 
     const charge = (krw: number) => { ledger.add(krw); s.estimatedCostKrw += krw; };
     const t0 = this.nowMs();
@@ -76,11 +98,12 @@ export class VoiceService {
     let userText: string;
     try {
       userText = (await t.stt(audio, mime, sec)).text.trim();
-      charge(sttEst);
-    } catch {
-      charge(sttEst);
+    } catch (e) {
+      if (await this.failHold(sttHold.id, e)) charge(sttEst);
       return this.reject(s, fail(502, 'STT_FAILED', '음성 인식에 실패했습니다. 잠시 후 다시 말씀해 주세요.'));
     }
+    charge(sttEst);
+    await this.settle(sttHold.id, sttEst);
     const t1 = this.nowMs();
     if (!userText) return this.reject(s, fail(422, 'STT_EMPTY', '말씀을 알아듣지 못했습니다. 다시 말씀해 주세요.'));
 
@@ -103,17 +126,20 @@ export class VoiceService {
 
     const ttsEst = ttsCostKrw(pricing, replyText.length, estimateTtsSeconds(replyText.length));
     if (!ledger.canSpend(ttsEst)) return stop();
+    const ttsHold = await this.hold('tts', ttsEst);
+    if (!ttsHold.ok) return stop();
     s.calls.tts++;
     let tts;
     try {
       tts = await t.tts(replyText);
-    } catch {
-      charge(ttsEst);
+    } catch (e) {
+      if (await this.failHold(ttsHold.id, e)) charge(ttsEst);
       return this.reject(s, fail(502, 'TTS_FAILED', '음성 합성에 실패했습니다.'));
     }
     const t3 = this.nowMs();
     const ttsCost = ttsCostKrw(pricing, replyText.length, tts.outputSeconds);
     charge(ttsCost);
+    await this.settle(ttsHold.id, ttsCost);
 
     hist.push({ user: userText, ai: replyText });
     this.history.set(s.id, hist);

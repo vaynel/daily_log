@@ -5,6 +5,8 @@ import path from 'node:path';
 import type { Duplex } from 'node:stream';
 import type { FastifyInstance } from 'fastify';
 import { WebSocket, WebSocketServer, type RawData } from 'ws';
+import { marginFactor } from './pricing.js';
+import type { MonthlyLedger } from '../budget/ledger.js';
 import type { BudgetLedger } from './meter.js';
 import { SESSION_ID } from './meter.js';
 import { INSTRUCTION } from './pipeline.js';
@@ -15,9 +17,9 @@ import { LIVE_PAGE } from './live-page.js';
  * 키는 서버 파일에서 읽어 업스트림 헤더로만 보낸다. 브라우저·로그·응답에는 키도 임시 토큰도 없다.
  */
 
-export interface LivePricing { usdKrw: number; inputUsdPerMTok: number; outputUsdPerMTok: number }
+export interface LivePricing { usdKrw: number; inputUsdPerMTok: number; outputUsdPerMTok: number; fxMargin: number; taxRate: number }
 /** 3.1 flash live 오디오 입력 $3/1M·출력 $12/1M. 텍스트 토큰도 같은 단가로 세는 보수 추정이다. 실제 청구액이 아니다. */
-export const DEFAULT_LIVE_PRICING: LivePricing = { usdKrw: 1500, inputUsdPerMTok: 3, outputUsdPerMTok: 12 };
+export const DEFAULT_LIVE_PRICING: LivePricing = { usdKrw: 1500, inputUsdPerMTok: 3, outputUsdPerMTok: 12, fxMargin: 0.05, taxRate: 0.1 };
 
 export interface LiveConfig {
   key: string;
@@ -167,6 +169,8 @@ const rmsOf = (buf: Buffer) => {
 export interface LiveDeps {
   config: LiveConfig;
   ledger: BudgetLedger;
+  /** 월 원장. 있으면 턴마다 예약→확정으로 기록한다. */
+  monthly?: MonthlyLedger;
   store: LiveSessionStore;
   /** 시각(ms). 시험에서 교체 가능. */
   now: () => number;
@@ -198,8 +202,12 @@ export class LiveRun {
   // 턴 계측
   private cur: {
     userText: string; replyText: string; speechEndAt: number | null; firstRecvAt: number | null; firstSentAt: number | null;
-    inboundMs: number; usage: Usage | null; costKrw: number; turn: LiveTurn | null;
+    inboundMs: number; usage: Usage | null; costKrw: number; turn: LiveTurn | null; entryId: string | null;
   } | null = null;
+  // 월 원장 항목: 말 구간마다 예약하고 usage 로 확정한다. 확정 못 한 항목은 종료 시 불명으로 보존한다.
+  private reserving = false;
+  private readonly unattached: string[] = [];
+  private readonly openEntries = new Set<string>();
   private lastFinal: NonNullable<LiveRun['cur']> | null = null;
   private lastPromptTokens = 0;
   private sessionTimer: NodeJS.Timeout | null = null;
@@ -223,10 +231,15 @@ export class LiveRun {
     this.send({ type: 'notice', code, message });
   }
 
-  start() {
-    const budgetKrw = this.d.ledger.limitKrw;
+  async start() {
     // 예산이 이미 소진됐으면 연결 자체를 만들지 않는다.
     if (!this.d.ledger.canSpend(this.estimateTurnKrw())) return this.stop('BUDGET', '예산 상한에 도달해 시작하지 않았습니다.');
+    if (this.d.monthly) {
+      let remaining = 0;
+      try { remaining = (await this.d.monthly.snapshot()).remainingKrw; } catch { return this.stop('LEDGER_UNAVAILABLE', '예산 원장을 확인하지 못해 시작하지 않았습니다.'); }
+      if (remaining < this.estimateTurnKrw()) return this.stop('BUDGET', '월 예산 상한에 도달해 시작하지 않았습니다.');
+    }
+    if (this.ended) return;
     const ws = new WebSocket(this.c.url, { headers: { 'x-goog-api-key': this.c.key }, handshakeTimeout: this.c.connectTimeoutMs });
     this.upstream = ws;
     this.connectTimer = setTimeout(() => this.stop('LIVE_CONNECT', '실시간 서버에 연결하지 못했습니다.'), this.c.connectTimeoutMs);
@@ -243,7 +256,6 @@ export class LiveRun {
     this.client.on('message', (data, isBinary) => (isBinary ? this.onMic(data) : this.onClientText(data)));
     this.client.on('close', () => this.stop('CLIENT_CLOSED', ''));
     this.client.on('error', () => this.stop('CLIENT_CLOSED', ''));
-    void budgetKrw;
   }
 
   private setupMessage() {
@@ -266,7 +278,7 @@ export class LiveRun {
     const p = this.c.pricing;
     // 지난 턴의 입력 토큰(없으면 2,000)과 출력 400토큰을 보수적으로 잡는다.
     const inTok = this.lastPromptTokens || 2000;
-    return ((inTok * p.inputUsdPerMTok + 400 * p.outputUsdPerMTok) / 1e6) * p.usdKrw;
+    return ((inTok * p.inputUsdPerMTok + 400 * p.outputUsdPerMTok) / 1e6) * p.usdKrw * marginFactor(p);
   }
 
   private onClientText(data: RawData) {
@@ -281,6 +293,8 @@ export class LiveRun {
     if (!this.ready || this.ended || this.rec.stoppedReason) return;
     const buf = Array.isArray(data) ? Buffer.concat(data) : Buffer.isBuffer(data) ? data : Buffer.from(data as ArrayBuffer);
     if (buf.length < 2 || buf.length > 32768 || buf.length % 2) return;
+    // 월 원장 예약 중에는 업스트림에 보내지 않고 모아 둔다.
+    if (this.reserving) { this.cand.push(buf); return; }
     const ms = (buf.length / 2 / this.c.inputRate) * 1000;
     const voiced = rmsOf(buf) > this.c.rmsThreshold;
     if (voiced) this.lastVoiceAt = recvAt;
@@ -320,7 +334,22 @@ export class LiveRun {
 
   private confirmSpeech(recvAt: number) {
     // 새 턴을 시작하기 전에 예산을 확인한다. 넘으면 이 소리는 업스트림에 한 바이트도 보내지 않는다.
-    if (!this.d.ledger.canSpend(this.estimateTurnKrw())) return this.stop('BUDGET', '예산 상한에 도달해 새 대화를 시작하지 않고 종료했습니다.');
+    const est = this.estimateTurnKrw();
+    if (!this.d.ledger.canSpend(est)) return this.stop('BUDGET', '예산 상한에 도달해 새 대화를 시작하지 않고 종료했습니다.');
+    if (!this.d.monthly) return this.beginActive(recvAt);
+    this.reserving = true;
+    this.d.monthly.reserve({ provider: 'gemini', operation: 'live-turn', purpose: 'TEST', estimateKrw: est })
+      .then((r) => {
+        this.reserving = false;
+        if (this.ended) { if (r.ok) void this.d.monthly!.releaseUnsent(r.id).catch(() => {}); return; }
+        if (!r.ok) return this.stop('BUDGET', '월 예산 상한에 도달해 새 대화를 시작하지 않고 종료했습니다.');
+        this.unattached.push(r.id); this.openEntries.add(r.id);
+        this.beginActive(recvAt);
+      })
+      .catch(() => { this.reserving = false; this.stop('LEDGER_UNAVAILABLE', '예산 원장을 확인하지 못해 새 대화를 시작하지 않고 종료했습니다.'); });
+  }
+
+  private beginActive(recvAt: number) {
     this.mode = 'ACTIVE'; this.tailMs = 0;
     const pending = this.cand; this.cand = []; this.candMs = 0; this.candGapMs = 0;
     pending.forEach((b, i) => this.sendAudio(b, recvAt, i === pending.length - 1));
@@ -333,7 +362,7 @@ export class LiveRun {
   }
 
   private turnObj() {
-    if (!this.cur) this.cur = { userText: '', replyText: '', speechEndAt: null, firstRecvAt: null, firstSentAt: null, inboundMs: 0, usage: null, costKrw: 0, turn: null };
+    if (!this.cur) this.cur = { userText: '', replyText: '', speechEndAt: null, firstRecvAt: null, firstSentAt: null, inboundMs: 0, usage: null, costKrw: 0, turn: null, entryId: this.unattached.shift() ?? null };
     return this.cur;
   }
 
@@ -390,9 +419,13 @@ export class LiveRun {
     if (!target) return;
     const usage = { inputTokens: Math.max(0, Number(u.promptTokenCount) || 0), outputTokens: Math.max(0, Number(u.responseTokenCount ?? u.candidatesTokenCount) || 0) };
     const p = this.c.pricing;
-    const cost = ((usage.inputTokens * p.inputUsdPerMTok + usage.outputTokens * p.outputUsdPerMTok) / 1e6) * p.usdKrw;
+    const cost = ((usage.inputTokens * p.inputUsdPerMTok + usage.outputTokens * p.outputUsdPerMTok) / 1e6) * p.usdKrw * marginFactor(p);
     const prev = target.usage;
     this.d.ledger.add(cost - target.costKrw);
+    if (target.entryId && this.d.monthly) {
+      const id = target.entryId;
+      void this.d.monthly.confirm(id, cost).then(() => this.openEntries.delete(id)).catch(() => {});
+    }
     this.rec.estimatedCostKrw += cost - target.costKrw;
     this.rec.totals.inputTokens += usage.inputTokens - (prev?.inputTokens ?? 0);
     this.rec.totals.outputTokens += usage.outputTokens - (prev?.outputTokens ?? 0);
@@ -435,6 +468,8 @@ export class LiveRun {
     if (this.ended) return;
     this.ended = true;
     if (this.cur) this.finalize(false);
+    // usage 로 확정하지 못한 예약은 호출이 과금됐을 수 있으므로 환급하지 않고 불명으로 보존한다.
+    for (const id of this.openEntries) void this.d.monthly?.markUnknown(id, 'LIVE_NO_USAGE').catch(() => {});
     for (const t of [this.sessionTimer, this.connectTimer]) if (t) clearTimeout(t);
     if (reason !== 'CLIENT_CLOSED' && reason !== 'USER_END') this.rec.stoppedReason = reason;
     this.rec.endedAt = (this.d.clock ?? (() => new Date()))().toISOString();
@@ -455,6 +490,7 @@ export interface LiveRouteOptions {
   config: LiveConfig | null;
   disabledReason?: string;
   ledger: BudgetLedger;
+  monthly?: MonthlyLedger;
   sessionDir: string;
   now?: () => number;
 }
@@ -491,9 +527,9 @@ export function registerLive(app: FastifyInstance, o: LiveRouteOptions) {
       };
       if (!o.config) return refuse('LIVE_DISABLED', '실시간 대화가 설정되지 않았습니다(키 또는 설정 확인).');
       if (active.current) return refuse('BUSY', '이미 진행 중인 실시간 세션이 있습니다.');
-      const run = new LiveRun({ config: o.config, ledger: o.ledger, store, now: o.now ?? (() => performance.now()), log, active }, ws, url.searchParams);
+      const run = new LiveRun({ config: o.config, ledger: o.ledger, monthly: o.monthly, store, now: o.now ?? (() => performance.now()), log, active }, ws, url.searchParams);
       active.current = run;
-      run.start();
+      void run.start();
     });
   });
   app.addHook('onClose', async () => { active.current?.stop('SERVER_CLOSE', ''); wss.close(); });

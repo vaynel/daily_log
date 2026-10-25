@@ -2,12 +2,15 @@ import { chmodSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileS
 import os from 'node:os';
 import path from 'node:path';
 import { Writable } from 'node:stream';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
 import { buildVoiceApp } from './app.js';
 import { INSTRUCTION } from './pipeline.js';
 import { loadLiveConfig, type LiveConfig } from './live.js';
 import { startMockLive, type MockLiveOptions } from './live-mock.testutil.js';
+import type pg from 'pg';
+import { MonthlyLedger, HARD_MONTHLY_LIMIT_KRW } from '../budget/ledger.js';
+import { createTempSchema } from '../records/db.testutil.js';
 import { mockTransports } from './mock.testutil.js';
 import { loadVoiceKeys, VoiceConfigError } from './keys.js';
 
@@ -18,14 +21,14 @@ type Ev = Record<string, unknown> & { type: string };
 const cleanups: (() => Promise<void> | void)[] = [];
 afterEach(async () => { while (cleanups.length) await cleanups.pop()!(); });
 
-async function rig(o: { mock?: Partial<MockLiveOptions>; env?: Record<string, string>; budgetKrw?: number; disabled?: boolean; key?: string } = {}) {
+async function rig(o: { mock?: Partial<MockLiveOptions>; env?: Record<string, string>; budgetKrw?: number; disabled?: boolean; key?: string; monthly?: MonthlyLedger } = {}) {
   const mock = await startMockLive({ expectedKey: KEY, vadSilenceMs: 250, firstAudioDelayMs: 40, audioChunks: 4, ...o.mock });
   cleanups.push(() => mock.close());
   const logs: string[] = [];
   const dir = mkdtempSync(path.join(os.tmpdir(), 'dl-live-'));
   const config: LiveConfig = loadLiveConfig(o.key ?? KEY, { DAILY_LOG_VOICE_LIVE_URL: mock.url, ...o.env });
   const app = buildVoiceApp({
-    transports: mockTransports().t, sessionDir: dir, budgetKrw: o.budgetKrw ?? 1000, live: o.disabled ? null : config,
+    transports: mockTransports().t, sessionDir: dir, budgetKrw: o.budgetKrw ?? 1000, monthly: o.monthly, live: o.disabled ? null : config,
     logger: { level: 'info', stream: new Writable({ write(c, _e, cb) { logs.push(String(c)); cb(); } }) },
   });
   await app.listen({ port: 0, host: '127.0.0.1' });
@@ -350,4 +353,48 @@ describe('설정 검증', () => {
     const c = loadLiveConfig('k', {});
     expect(c).toMatchObject({ model: 'gemini-3.1-flash-live-preview', inputRate: 16000, pricing: { inputUsdPerMTok: 3, outputUsdPerMTok: 12 } });
   });
+});
+
+describe.skipIf(!process.env.DATABASE_URL)('Live 호출의 월 원장 연동 (TASK-13)', () => {
+  let t: Awaited<ReturnType<typeof createTempSchema>>;
+  let pool: pg.Pool;
+  beforeAll(async () => { t = await createTempSchema(process.env.DATABASE_URL!); pool = t.pool(); });
+  afterAll(async () => { await pool.end(); await t.drop(); });
+
+  it('AC-3 한 턴이 예약→확정으로 월 원장에 기록되고 세션 추정액과 같다', async () => {
+    const monthly = new MonthlyLedger(pool, { clock: () => new Date('2031-03-10T12:00:00+09:00') });
+    const r = await rig({ monthly });
+    const b = new Browser(r.base);
+    await b.wait('ready');
+    await b.say(600, 10);
+    await b.wait('turn');
+    await new Promise((res) => setTimeout(res, 300));
+    const snap = await monthly.snapshot();
+    const rec = JSON.parse(readFileSync(path.join(r.dir, readdirSync(r.dir).find((f) => f.startsWith('live-'))!), 'utf8'));
+    expect(snap.confirmedKrw).toBeCloseTo(rec.estimatedCostKrw, 2);
+    expect(snap.reservedKrw).toBe(0);
+  }, 20000);
+
+  it('AC-1 월 잔여가 없으면 업스트림 연결 없이 시작하지 않는다', async () => {
+    const monthly = new MonthlyLedger(pool, { clock: () => new Date('2031-04-10T12:00:00+09:00') });
+    await monthly.recordCarryover('2031-04', HARD_MONTHLY_LIMIT_KRW, 'full', '소진');
+    const r = await rig({ monthly });
+    const b = new Browser(r.base);
+    expect(await b.wait('stopped')).toMatchObject({ reason: 'BUDGET' });
+    expect(r.mock.state.connections).toBe(0);
+  });
+
+  it('AC-5 usage 를 받지 못하고 끊긴 턴의 예약은 환급하지 않고 불명으로 남긴다', async () => {
+    const monthly = new MonthlyLedger(pool, { clock: () => new Date('2031-05-10T12:00:00+09:00') });
+    const r = await rig({ monthly });
+    const b = new Browser(r.base);
+    await b.wait('ready');
+    await b.tone(600, 10); // 말 구간만 보내고 곧바로 종료
+    await new Promise((res) => setTimeout(res, 100));
+    b.ws.close();
+    await new Promise((res) => setTimeout(res, 300));
+    const snap = await monthly.snapshot();
+    expect(snap.unknownKrw + snap.confirmedKrw).toBeGreaterThan(0);
+    expect(snap.reservedKrw).toBe(0);
+  }, 20000);
 });

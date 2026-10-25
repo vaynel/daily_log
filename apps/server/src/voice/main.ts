@@ -1,6 +1,8 @@
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { buildVoiceApp, DEFAULT_BUDGET_KRW } from './app.js';
+import { MonthlyLedger } from '../budget/ledger.js';
+import { createPool } from '../db/pool.js';
 import { loadVoiceKeys, VoiceConfigError } from './keys.js';
 import { loadLiveConfig } from './live.js';
 import { loadPricing } from './pricing.js';
@@ -19,7 +21,7 @@ async function main() {
     }
     throw e;
   }
-  const missing = ['DAILY_LOG_VOICE_SESSION_DIR', 'DAILY_LOG_SIWC_DIR', 'DAILY_LOG_VOICE_PRO_MODEL'].filter((k) => !env[k]?.trim());
+  const missing = ['DATABASE_URL', 'DAILY_LOG_VOICE_SESSION_DIR', 'DAILY_LOG_SIWC_DIR', 'DAILY_LOG_VOICE_PRO_MODEL'].filter((k) => !env[k]?.trim());
   if (missing.length) {
     console.error(`음성 시험 설정 누락: ${missing.join(', ')}`);
     process.exit(78);
@@ -39,7 +41,9 @@ async function main() {
     pro: siwcPro(rt.infer, store, env.DAILY_LOG_VOICE_PRO_MODEL!, env.DAILY_LOG_VOICE_PRO_SUPPORT_VERIFIED === 'true'),
     tts: geminiTts(keys.gemini),
   };
-  const app = buildVoiceApp({ transports, sessionDir: path.resolve(env.DAILY_LOG_VOICE_SESSION_DIR!), budgetKrw: budget, pricing: loadPricing(env), live: loadLiveConfig(keys.gemini, env) });
+  // 월 원장(PostgreSQL)은 필수: 재시작해도 월 합계가 유지되어야 하므로 없으면 fail closed.
+  const monthly = new MonthlyLedger(createPool(env.DATABASE_URL!.trim()));
+  const app = buildVoiceApp({ transports, monthly, sessionDir: path.resolve(env.DAILY_LOG_VOICE_SESSION_DIR!), budgetKrw: budget, pricing: loadPricing(env), live: loadLiveConfig(keys.gemini, env) });
   await app.listen({ port: Number(env.DAILY_LOG_VOICE_PORT ?? 3100), host: env.HOST?.trim() || '127.0.0.1' });
 }
 

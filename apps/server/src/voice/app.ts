@@ -1,4 +1,5 @@
 import Fastify, { type FastifyServerOptions } from 'fastify';
+import type { MonthlyLedger } from '../budget/ledger.js';
 import { BudgetLedger, SessionStore } from './meter.js';
 import { MAX_AUDIO_BYTES, VoiceService } from './pipeline.js';
 import { loadPricing, type Pricing } from './pricing.js';
@@ -10,6 +11,8 @@ export interface VoiceAppOptions {
   transports: Transports;
   sessionDir: string;
   budgetKrw?: number;
+  /** 월 원장(PostgreSQL). 있으면 /voice-test·/voice-live 호출이 같은 원장에 예약→확정으로 기록된다. */
+  monthly?: MonthlyLedger;
   pricing?: Pricing;
   logger?: FastifyServerOptions['logger'];
   now?: () => number;
@@ -28,7 +31,7 @@ export function buildVoiceApp(opts: VoiceAppOptions) {
   });
   const sessions = new SessionStore(opts.sessionDir);
   const ledger = new BudgetLedger(opts.budgetKrw ?? DEFAULT_BUDGET_KRW);
-  const service = new VoiceService({ t: opts.transports, pricing: opts.pricing ?? loadPricing(), ledger, sessions, now: opts.now });
+  const service = new VoiceService({ t: opts.transports, pricing: opts.pricing ?? loadPricing(), ledger, sessions, now: opts.now, monthly: opts.monthly });
 
   app.addContentTypeParser(/^audio\//, { parseAs: 'buffer' }, (_req, body, done) => done(null, body));
   // 오류 응답에는 내부 메시지를 담지 않는다.
@@ -42,7 +45,7 @@ export function buildVoiceApp(opts: VoiceAppOptions) {
     reply.header('Content-Type', 'text/html; charset=utf-8').header('Cache-Control', 'no-store')
       .header('Permissions-Policy', 'microphone=(self)').send(VOICE_PAGE));
 
-  registerLive(app, { config: opts.live ?? null, ledger, sessionDir: opts.sessionDir, now: opts.liveNow });
+  registerLive(app, { config: opts.live ?? null, ledger, monthly: opts.monthly, sessionDir: opts.sessionDir, now: opts.liveNow });
 
   app.post('/voice/api/sessions', async (_req, reply) => {
     const s = sessions.create(ledger.limitKrw, new Date());

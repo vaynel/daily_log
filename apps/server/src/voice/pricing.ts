@@ -7,13 +7,22 @@ export interface Pricing {
   sttUsdPerMinute: number;
   ttsInputUsdPerKChar: number;
   ttsOutputUsdPerSecond: number;
+  /** 환율 변동 여유(비율). 예: 0.05 = 5%. 원화 환산액에 곱해 과소 계상을 막는다. */
+  fxMargin: number;
+  /** 세금(부가세 등) 여유(비율). */
+  taxRate: number;
 }
+
+/** 환율·세금 여유를 반영한 원화 배율. 단가 JSON(DAILY_LOG_VOICE_PRICING_JSON)에서 갱신한다. */
+export const marginFactor = (p: { fxMargin: number; taxRate: number }) => (1 + p.fxMargin) * (1 + p.taxRate);
 
 export const DEFAULT_PRICING: Pricing = {
   usdKrw: 1500,
   sttUsdPerMinute: 0.003,
   ttsInputUsdPerKChar: 0.0003,
   ttsOutputUsdPerSecond: 0.00025,
+  fxMargin: 0.05,
+  taxRate: 0.1,
 };
 
 export function loadPricing(env: NodeJS.ProcessEnv = process.env): Pricing {
@@ -32,8 +41,8 @@ export function loadPricing(env: NodeJS.ProcessEnv = process.env): Pricing {
   return merged;
 }
 
-export const sttCostKrw = (p: Pricing, seconds: number) => (seconds / 60) * p.sttUsdPerMinute * p.usdKrw;
+export const sttCostKrw = (p: Pricing, seconds: number) => (seconds / 60) * p.sttUsdPerMinute * p.usdKrw * marginFactor(p);
 export const ttsCostKrw = (p: Pricing, chars: number, outSeconds: number) =>
-  ((chars / 1000) * p.ttsInputUsdPerKChar + outSeconds * p.ttsOutputUsdPerSecond) * p.usdKrw;
+  ((chars / 1000) * p.ttsInputUsdPerKChar + outSeconds * p.ttsOutputUsdPerSecond) * p.usdKrw * marginFactor(p);
 /** 한국어 합성 음성 길이 상한 추정(초당 약 4자). 사전 예산 확인용 보수값. */
 export const estimateTtsSeconds = (chars: number) => Math.ceil(chars / 4) + 1;

@@ -13,6 +13,8 @@
     "dev:auth-demo": "tsx src/auth/demo.ts",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:seed": "tsx src/db/seed.ts",
+    "budget:carryover": "tsx src/budget/carryover-cli.ts",
+    "budget:status": "tsx src/budget/status-cli.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json && node ../../scripts/copy-migrations.mjs"
