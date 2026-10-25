@@ -6,6 +6,7 @@ import { registerRecordRoutes } from './attachments/routes.js';
 import { registerRecordViewRoutes } from './records/routes.js';
 import type { RecordStore } from './records/store.js';
 import { registerInterview } from './interview/routes.js';
+import type { ExclusionRuleStore } from './briefing/rules.js';
 import { registerBriefing } from './briefing/routes.js';
 import type { ProInfer } from './briefing/briefing.js';
 import type { LiveUsageStore } from './interview/usage.js';
@@ -25,7 +26,7 @@ export interface AppOptions {
   /** 제품 음성 인터뷰(Gemini Live). usage 와 records 가 있으면 라우트를 등록하고, live 가 null 이면 대화 시작은 fail closed. */
   interview?: { usage: LiveUsageStore; live: LiveConfig | null; monthly?: MonthlyLedger; sessionDir: string; liveNow?: () => number };
   /** 통합 브리핑. infer 가 null 이면 생성은 fail closed(Pro 정리 미설정). 유료 모델로 자동 전환하지 않는다. */
-  briefing?: { infer: ProInfer | null };
+  briefing?: { infer: ProInfer | null; rules?: ExclusionRuleStore };
   notifications?: NotificationService;
   vapidPublicKey?: string | null;
 }
@@ -48,7 +49,7 @@ export function buildApp(opts: AppOptions = {}) {
     registerInterview(app, { records: opts.records, authenticate, now: opts.now, ...opts.interview });
   }
   if (opts.records && opts.interview && opts.briefing) {
-    registerBriefing(app, { records: opts.records, usage: opts.interview.usage, infer: opts.briefing.infer, now: opts.now });
+    registerBriefing(app, { records: opts.records, usage: opts.interview.usage, infer: opts.briefing.infer, rules: opts.briefing.rules, now: opts.now });
   }
   if (opts.notifications) registerNotifyRoutes(app, { service: opts.notifications, vapidPublicKey: opts.vapidPublicKey });
   return app;
