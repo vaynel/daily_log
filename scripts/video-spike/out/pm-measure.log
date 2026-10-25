@@ -1,0 +1,24 @@
+date_utc=2026-10-20T13:54:21Z
+cpu= Intel(R) N100
+cgroup_cpu_max=200000 100000 cgroup_memory_max=3221225472
+ffmpeg=ffmpeg version 5.1.9-0+deb12u1 Copyright (c) 2000-2026 the FFmpeg developers
+loadavg_before=7.15 3.58 2.57
+cgroup_memory_peak_before=454041600
+du_assets_bytes=20056699
+{
+ "exit": 0,
+ "signal": null,
+ "wallSeconds": 49.351,
+ "maxRssKB": 547292,
+ "userSec": 89,
+ "sysSec": 1.38,
+ "tmpDirBytesAtEnd": 2146905,
+ "ffmpegStderrTail": "",
+ "published": true,
+ "sha256": "ebecf326b8d53aa69ebfdae3b7bf3f0c3f5d9d6f5164272d812a2058a4857e9d"
+}
+render_exit=0
+cgroup_memory_peak_after=506392576
+cgroup_memory_events=low 0 high 0 max 0 oom 0 oom_kill 0 oom_group_kill 0 
+loadavg_after=6.91 4.08 2.79
+log=/tmp/video-audit/measure-135421.log measure_exit=0

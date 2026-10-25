@@ -1,0 +1,2 @@
+ebecf326b8d53aa69ebfdae3b7bf3f0c3f5d9d6f5164272d812a2058a4857e9d  /tmp/video-audit/sample.mp4
+ebecf326b8d53aa69ebfdae3b7bf3f0c3f5d9d6f5164272d812a2058a4857e9d  scripts/video-spike/out/sample.mp4

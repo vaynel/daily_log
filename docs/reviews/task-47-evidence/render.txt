@@ -1,0 +1,12 @@
+{
+ "exit": 0,
+ "signal": null,
+ "wallSeconds": 47.603,
+ "maxRssKB": 546740,
+ "userSec": 88.22,
+ "sysSec": 1.38,
+ "tmpDirBytesAtEnd": 2147697,
+ "ffmpegStderrTail": "",
+ "published": true,
+ "sha256": "ebecf326b8d53aa69ebfdae3b7bf3f0c3f5d9d6f5164272d812a2058a4857e9d"
+}
