@@ -29,6 +29,8 @@ export interface MockLiveState {
   /** 턴마다 보고한 promptTokenCount. */
   promptTokens: number[];
   connections: number;
+  /** realtimeInput.text 로 받은 진행 안내(마무리 전환 등). */
+  textInputs: string[];
 }
 
 const rms = (b: Buffer) => {
@@ -39,7 +41,7 @@ const rms = (b: Buffer) => {
 
 /** 모의 Gemini Live(BidiGenerateContent). 실제 API를 호출하지 않는다. 맥락 누적과 contextWindowCompression 을 흉내 낸다. */
 export async function startMockLive(o: MockLiveOptions) {
-  const st: MockLiveState = { setups: [], keysSeen: [], audioMsgs: 0, turnsAnswered: 0, interrupts: 0, promptTokens: [], connections: 0 };
+  const st: MockLiveState = { setups: [], keysSeen: [], audioMsgs: 0, turnsAnswered: 0, interrupts: 0, promptTokens: [], connections: 0, textInputs: [] };
   const http: Server = createServer();
   const wss = new WebSocketServer({ noServer: true });
   http.on('upgrade', (req, socket, head) => {
@@ -64,7 +66,7 @@ export async function startMockLive(o: MockLiveOptions) {
     ws.on('message', (raw) => {
       const m = JSON.parse(raw.toString()) as {
         setup?: Record<string, unknown> & { contextWindowCompression?: { triggerTokens?: number; slidingWindow?: { targetTokens?: number } } };
-        realtimeInput?: { audio?: { data: string } };
+        realtimeInput?: { audio?: { data: string }; text?: string };
       };
       if (m.setup) {
         st.setups.push(m.setup);
@@ -74,6 +76,7 @@ export async function startMockLive(o: MockLiveOptions) {
         send({ setupComplete: {} });
         return;
       }
+      if (typeof m.realtimeInput?.text === 'string') { st.textInputs.push(m.realtimeInput.text); answer(); return; }
       const data = m.realtimeInput?.audio?.data;
       if (!data) return;
       st.audioMsgs++;

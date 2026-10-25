@@ -45,7 +45,7 @@ export function registerAuth(app: FastifyInstance, opts: AuthPluginOptions) {
   const isAllowed = (email: string) => !!auth && auth.allowedEmails.includes(email.toLowerCase());
   const loginPage = (q: string) => `${(auth?.appUrl ?? '/').replace(/\/$/, '')}/login?${q}`;
 
-  function authenticate(req: FastifyRequest): { user: SessionClaims } | AuthFailure {
+  function authenticate(req: { headers: { cookie?: string } }): { user: SessionClaims } | AuthFailure {
     if (!auth) return { status: 503, code: 'auth_not_configured' };
     const token = parseCookies(req.headers.cookie)[SESSION_COOKIE];
     if (!token) return { status: 401, code: 'unauthenticated' };
@@ -181,4 +181,5 @@ export function registerAuth(app: FastifyInstance, opts: AuthPluginOptions) {
       return reply.send(createReadStream(full));
     });
   }
+  return { authenticate };
 }

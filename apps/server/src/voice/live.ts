@@ -6,9 +6,9 @@ import type { Duplex } from 'node:stream';
 import type { FastifyInstance } from 'fastify';
 import { WebSocket, WebSocketServer, type RawData } from 'ws';
 import { marginFactor } from './pricing.js';
-import type { MonthlyLedger } from '../budget/ledger.js';
-import type { BudgetLedger } from './meter.js';
-import { SESSION_ID } from './meter.js';
+import type { MonthlyLedger, Purpose } from '../budget/ledger.js';
+import { instructionWithHistory, limitPhase, WRAP_UP_TEXT, type HistoryLine, type InterviewLimits } from '../interview/limits.js';
+import { BudgetLedger, SESSION_ID } from './meter.js';
 import { INSTRUCTION } from './pipeline.js';
 import { LIVE_PAGE } from './live-page.js';
 
@@ -166,7 +166,22 @@ const rmsOf = (buf: Buffer) => {
   return Math.sqrt(sum / n);
 };
 
+/** 제품 인터뷰 모드(TASK-17): 세션 상한·마무리 전환·전사 저장·이어하기. 없으면 시험 도구 동작 그대로. */
+export interface ProductSession {
+  purpose: Purpose;
+  limits: InterviewLimits;
+  /** 같은 생활일 앞선 연결에서 이미 쓴 시간·추정 비용(이어하기에서 합산). */
+  priorUsedMs: number;
+  priorCostKrw: number;
+  history: HistoryLine[];
+  /** 완료된 턴을 저장한다(순서대로 한 번에 하나). 실패하면 사용자에게 저장 실패를 알린다. */
+  onTurn: (turn: LiveTurn) => Promise<void>;
+  /** 연결 종료 시 한 번: 이번 연결에서 쓴 시간·추정 비용. */
+  onEnd: (info: { usedMs: number; costKrw: number; reason: string }) => Promise<void>;
+}
+
 export interface LiveDeps {
+  product?: ProductSession;
   config: LiveConfig;
   ledger: BudgetLedger;
   /** 월 원장. 있으면 턴마다 예약→확정으로 기록한다. */
@@ -212,6 +227,11 @@ export class LiveRun {
   private lastPromptTokens = 0;
   private sessionTimer: NodeJS.Timeout | null = null;
   private connectTimer: NodeJS.Timeout | null = null;
+  // 제품 모드
+  private readyAt: number | null = null;
+  private wrapSent = false;
+  private endAfterTurn: string | null = null;
+  private persistChain: Promise<void> = Promise.resolve();
 
   constructor(private readonly d: LiveDeps, private readonly client: WebSocket, private readonly query: URLSearchParams) {
     this.c = { ...d.config };
@@ -219,8 +239,16 @@ export class LiveRun {
       const v = Number(query.get(name));
       return Number.isFinite(v) && v >= min && v <= max && query.get(name) ? v : def;
     };
-    this.c.noSpeechMs = clampQ('noSpeechMs', this.c.noSpeechMs, 1000, 30000);
-    this.c.minSpeechMs = clampQ('minSpeechMs', this.c.minSpeechMs, 100, 2000);
+    if (!d.product) {
+      this.c.noSpeechMs = clampQ('noSpeechMs', this.c.noSpeechMs, 1000, 30000);
+      this.c.minSpeechMs = clampQ('minSpeechMs', this.c.minSpeechMs, 100, 2000);
+    }
+    const pr = d.product;
+    if (pr) {
+      // 제품 모드의 상한은 클라이언트 값으로 바꿀 수 없다.
+      this.c.instruction = instructionWithHistory(this.c.instruction, pr.history);
+      this.c.maxSessionMs = Math.max(1000, pr.limits.maxMs - pr.priorUsedMs);
+    }
     this.rec = d.store.create(this.c.model, d.ledger.limitKrw, this.c.compression, (d.clock ?? (() => new Date()))());
   }
 
@@ -252,7 +280,7 @@ export class LiveRun {
     ws.on('close', () => this.stop(this.ready ? 'LIVE_CLOSED' : 'LIVE_CONNECT', '실시간 서버와 연결이 끊어졌습니다.'));
     ws.on('open', () => ws.send(JSON.stringify({ setup: this.setupMessage() })));
     ws.on('message', (raw) => this.onUpstream(raw));
-    this.sessionTimer = setTimeout(() => this.stop('TIME_LIMIT', '시험 세션 최대 시간에 도달해 종료했습니다.'), this.c.maxSessionMs);
+    this.sessionTimer = setTimeout(() => this.onTimeLimit(), this.c.maxSessionMs);
     this.client.on('message', (data, isBinary) => (isBinary ? this.onMic(data) : this.onClientText(data)));
     this.client.on('close', () => this.stop('CLIENT_CLOSED', ''));
     this.client.on('error', () => this.stop('CLIENT_CLOSED', ''));
@@ -274,6 +302,42 @@ export class LiveRun {
     };
   }
 
+  // ---- 제품 모드: 세션 상한(하루 1회는 호출자가 보장, 여기서는 시간·비용) ----
+  private connUsedMs() { return this.readyAt === null ? 0 : Math.max(0, this.d.now() - this.readyAt); }
+  private totalUsedMs() { return (this.d.product?.priorUsedMs ?? 0) + this.connUsedMs(); }
+  private totalCostKrw() { return (this.d.product?.priorCostKrw ?? 0) + this.rec.estimatedCostKrw; }
+  private limitStatus() {
+    const pr = this.d.product!;
+    return { limits: { maxMs: pr.limits.maxMs, wrapMs: pr.limits.wrapMs, maxCostKrw: pr.limits.maxCostKrw, wrapCostKrw: pr.limits.wrapCostKrw }, usedMs: Math.round(this.totalUsedMs()), costKrw: round2(this.totalCostKrw()) };
+  }
+
+  private onTimeLimit() {
+    if (!this.d.product) return this.stop('TIME_LIMIT', '시험 세션 최대 시간에 도달해 종료했습니다.');
+    // 말하는 도중이면 이번 턴을 마친 뒤 종료한다(새 턴은 받지 않음). 15초 안에 끝나지 않으면 즉시 종료.
+    if (this.cur) {
+      this.endAfterTurn = 'TIME_LIMIT';
+      this.notice('TIME_LIMIT_NEAR', '대화 시간이 끝나 이번 말씀까지만 듣고 마무리합니다.');
+      this.sessionTimer = setTimeout(() => this.stop('TIME_LIMIT', '대화 시간 10분에 도달해 종료했습니다.'), 15000);
+      return;
+    }
+    this.stop('TIME_LIMIT', '대화 시간 10분에 도달해 종료했습니다.');
+  }
+
+  /** 근접하면 마무리 전환 신호를 한 번 보내고, 도달하면 종료한다. true 면 종료됨. */
+  private enforceLimits(): boolean {
+    const pr = this.d.product;
+    if (!pr || this.ended) return this.ended;
+    const phase = limitPhase(pr.limits, this.totalUsedMs(), this.totalCostKrw());
+    if (phase === 'COST_LIMIT') { this.stop('COST_LIMIT', '이번 대화의 비용 한도에 도달해 마무리했습니다.'); return true; }
+    if (phase === 'TIME_LIMIT') { this.stop('TIME_LIMIT', '대화 시간 10분에 도달해 종료했습니다.'); return true; }
+    if (phase === 'WRAP_UP' && !this.wrapSent && this.upstream?.readyState === WebSocket.OPEN) {
+      this.wrapSent = true;
+      this.upstream.send(JSON.stringify({ realtimeInput: { text: WRAP_UP_TEXT } }));
+      this.send({ type: 'wrap_up', ...this.limitStatus() });
+    }
+    return false;
+  }
+
   private estimateTurnKrw() {
     const p = this.c.pricing;
     // 지난 턴의 입력 토큰(없으면 2,000)과 출력 400토큰을 보수적으로 잡는다.
@@ -285,6 +349,7 @@ export class LiveRun {
     try {
       const m = JSON.parse(data.toString()) as { type?: string };
       if (m.type === 'end') this.stop('USER_END', '');
+      else if (m.type === 'pause' && this.d.product) this.stop('USER_PAUSE', '');
     } catch { /* 무시 */ }
   }
 
@@ -335,10 +400,14 @@ export class LiveRun {
   private confirmSpeech(recvAt: number) {
     // 새 턴을 시작하기 전에 예산을 확인한다. 넘으면 이 소리는 업스트림에 한 바이트도 보내지 않는다.
     const est = this.estimateTurnKrw();
+    const pr = this.d.product;
+    if (pr && (this.totalCostKrw() + est > pr.limits.maxCostKrw || this.totalUsedMs() >= pr.limits.maxMs)) {
+      return this.stop(this.totalUsedMs() >= pr.limits.maxMs ? 'TIME_LIMIT' : 'COST_LIMIT', '대화 한도에 도달해 새 말씀은 받지 않고 마무리했습니다.');
+    }
     if (!this.d.ledger.canSpend(est)) return this.stop('BUDGET', '예산 상한에 도달해 새 대화를 시작하지 않고 종료했습니다.');
     if (!this.d.monthly) return this.beginActive(recvAt);
     this.reserving = true;
-    this.d.monthly.reserve({ provider: 'gemini', operation: 'live-turn', purpose: 'TEST', estimateKrw: est })
+    this.d.monthly.reserve({ provider: 'gemini', operation: 'live-turn', purpose: this.d.product?.purpose ?? 'TEST', estimateKrw: est })
       .then((r) => {
         this.reserving = false;
         if (this.ended) { if (r.ok) void this.d.monthly!.releaseUnsent(r.id).catch(() => {}); return; }
@@ -382,9 +451,10 @@ export class LiveRun {
 
     if (msg.setupComplete !== undefined && !this.ready) {
       this.ready = true;
+      this.readyAt = this.d.now();
       if (this.connectTimer) clearTimeout(this.connectTimer);
       this.d.log.info({ sessionId: this.rec.id, model: this.c.model }, 'live session ready');
-      this.send({ type: 'ready', sessionId: this.rec.id, inputRate: this.c.inputRate, outputRate: 24000, budgetKrw: this.rec.budgetKrw, model: this.c.model });
+      this.send({ type: 'ready', sessionId: this.rec.id, inputRate: this.c.inputRate, outputRate: 24000, budgetKrw: this.rec.budgetKrw, model: this.c.model, ...(this.d.product ? { ...this.limitStatus() } : {}) });
       return;
     }
     const sc = msg.serverContent;
@@ -438,6 +508,7 @@ export class LiveRun {
     // 다음 턴 전에 점검: 맥락이 상한을 넘었거나 예산을 다 썼으면 새 턴을 받지 않는다.
     if (usage.inputTokens > this.c.maxInputTokens) this.stop('CONTEXT', '대화 맥락이 커져 비용 보호를 위해 종료했습니다.');
     else if (this.d.ledger.spentKrw >= this.d.ledger.limitKrw) this.stop('BUDGET', '예산 상한에 도달해 종료했습니다.');
+    else this.enforceLimits();
   }
 
   private finalize(interrupted: boolean) {
@@ -462,6 +533,13 @@ export class LiveRun {
     this.d.log.info({ sessionId: this.rec.id, n: turn.n, latencyMs: lat, upstreamLatencyMs: up, serverOverheadMs: overhead, interrupted }, 'live turn');
     const { userText, replyText, ...rest } = turn;
     this.send({ type: 'turn', ...rest, userText, replyText });
+    const pr = this.d.product;
+    if (pr) {
+      // 저장은 순서대로 한 번에 하나. 실패해도 대화는 계속하되 사용자에게 알린다.
+      this.persistChain = this.persistChain.then(() => pr.onTurn(turn)).catch(() => { this.notice('SAVE_FAILED', '이번 대화 내용을 저장하지 못했습니다. 연결 상태를 확인해 주세요.'); });
+      if (this.endAfterTurn && !this.ended) this.stop(this.endAfterTurn, '대화 시간 10분에 도달해 종료했습니다.');
+      else if (!interrupted) this.enforceLimits();
+    }
   }
 
   stop(reason: string, message: string) {
@@ -471,14 +549,19 @@ export class LiveRun {
     // usage 로 확정하지 못한 예약은 호출이 과금됐을 수 있으므로 환급하지 않고 불명으로 보존한다.
     for (const id of this.openEntries) void this.d.monthly?.markUnknown(id, 'LIVE_NO_USAGE').catch(() => {});
     for (const t of [this.sessionTimer, this.connectTimer]) if (t) clearTimeout(t);
-    if (reason !== 'CLIENT_CLOSED' && reason !== 'USER_END') this.rec.stoppedReason = reason;
+    if (reason !== 'CLIENT_CLOSED' && reason !== 'USER_END' && reason !== 'USER_PAUSE') this.rec.stoppedReason = reason;
     this.rec.endedAt = (this.d.clock ?? (() => new Date()))().toISOString();
     this.d.store.save(this.rec);
-    if (reason !== 'CLIENT_CLOSED') this.send({ type: 'stopped', reason, message, sessionId: this.rec.id, summary: redactLive(this.rec) });
+    if (reason !== 'CLIENT_CLOSED') this.send({ type: 'stopped', reason, message, sessionId: this.rec.id, summary: redactLive(this.rec), ...(this.d.product ? { usedMs: Math.round(this.totalUsedMs()), costKrw: round2(this.totalCostKrw()) } : {}) });
     try { this.upstream?.close(); } catch { /* 이미 닫힘 */ }
     try { this.upstream?.terminate(); } catch { /* 이미 닫힘 */ }
     try { this.client.close(1000); } catch { /* 이미 닫힘 */ }
     if (this.d.active.current === this) this.d.active.current = null;
+    const pr = this.d.product;
+    if (pr) {
+      const info = { usedMs: Math.round(this.connUsedMs()), costKrw: this.rec.estimatedCostKrw, reason };
+      void this.persistChain.then(() => pr.onEnd(info)).catch(() => {});
+    }
     this.d.log.info({ sessionId: this.rec.id, reason, turns: this.rec.turns.length }, 'live session ended');
   }
 }
