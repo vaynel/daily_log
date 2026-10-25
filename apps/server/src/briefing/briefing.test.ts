@@ -227,6 +227,8 @@ describe('브리핑 API: 한 단계 제시·확인 전 제작 금지·정정·�
     const w = await start(waiting);
     expect(w.status).toBe(503);
     expect(w.body.error).toBe('PRO_WAITING');
+    expect(w.body.message).toContain('대기');
+    expect(w.body.message).toContain('영상은 만들어지지 않았습니다');
     const none = await rig({ infer: null });
     expect((await start(none)).body.error).toBe('PRO_UNAVAILABLE');
     expect(waiting.records.versions).toHaveLength(0);

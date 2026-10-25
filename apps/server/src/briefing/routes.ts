@@ -7,6 +7,7 @@ import {
   applyCorrection, decideEntry, generateBriefing, planOf, videoJobKey, viewOf, VIDEO_JOB_KIND, VIDEO_JOB_STAGES,
   type BriefingItem, type Correction, type ProInfer,
 } from './briefing.js';
+import { waitReason } from './pro.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -96,7 +97,7 @@ export function registerBriefing(app: FastifyInstance, o: BriefingRouteOptions) 
       const r = await work;
       if (!r.gen.ok) {
         // 대기·형식 오류: 제작 작업은 만들지 않고 저장된 대화는 그대로 둔다. 유료 모델로 자동 전환하지 않는다.
-        return reply.code(r.gen.code === 'PRO_WAITING' ? 503 : 502).send({ error: r.gen.code === 'PRO_WAITING' ? 'PRO_WAITING' : 'BAD_OUTPUT', state: r.gen.state ?? null, message: 'Pro 정리를 지금 끝내지 못했습니다. 잠시 뒤 다시 시도하세요. 대화 내용은 저장되어 있습니다.' });
+        return reply.code(r.gen.code === 'PRO_WAITING' ? 503 : 502).send({ error: r.gen.code === 'PRO_WAITING' ? 'PRO_WAITING' : 'BAD_OUTPUT', state: r.gen.state ?? null, message: r.gen.code === 'PRO_WAITING' ? `${waitReason(r.gen.state)} 대화 내용은 저장되어 있고 영상은 만들어지지 않았습니다.` : 'Pro 정리 결과를 읽지 못했습니다. 잠시 뒤 다시 시도하세요. 대화 내용은 저장되어 있습니다.' });
       }
       return { ...present(snap, { version: r.version!, items: r.gen.items }), created: true };
     } finally { inflight.delete(key); }
