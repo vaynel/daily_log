@@ -7,9 +7,10 @@ import type { FastifyInstance } from 'fastify';
 import { WebSocket, WebSocketServer, type RawData } from 'ws';
 import { marginFactor } from './pricing.js';
 import type { MonthlyLedger, Purpose } from '../budget/ledger.js';
-import { instructionWithHistory, limitPhase, WRAP_UP_TEXT, type HistoryLine, type InterviewLimits } from '../interview/limits.js';
+import { limitPhase, WRAP_UP_TEXT, type HistoryLine, type InterviewLimits } from '../interview/limits.js';
 import { BudgetLedger, SESSION_ID } from './meter.js';
 import { INSTRUCTION } from './pipeline.js';
+import { buildInterviewInstruction, type AttachmentNote } from '../interview/policy.js';
 import { LIVE_PAGE } from './live-page.js';
 
 /**
@@ -184,6 +185,8 @@ export interface ProductSession {
   priorUsedMs: number;
   priorCostKrw: number;
   history: HistoryLine[];
+  /** 그날 첨부(종류·이름만). 내용으로 사용자의 이해·수행을 단정하지 않도록 지시문에 제한과 함께 실린다. */
+  attachments?: AttachmentNote[];
   /** 완료된 턴을 저장한다(순서대로 한 번에 하나). 실패하면 사용자에게 저장 실패를 알린다. */
   onTurn: (turn: LiveTurn) => Promise<void>;
   /** 연결 종료 시 한 번: 이번 연결에서 쓴 시간·추정 비용. */
@@ -257,7 +260,7 @@ export class LiveRun {
     const pr = d.product;
     if (pr) {
       // 제품 모드의 상한은 클라이언트 값으로 바꿀 수 없다.
-      this.c.instruction = instructionWithHistory(this.c.instruction, pr.history);
+      this.c.instruction = buildInterviewInstruction({ base: this.c.instruction, history: pr.history, attachments: pr.attachments });
       this.c.maxSessionMs = Math.max(1000, pr.limits.maxMs - pr.priorUsedMs);
     }
     this.rec = d.store.create(this.c.model, d.ledger.limitKrw, this.c.compression, (d.clock ?? (() => new Date()))());

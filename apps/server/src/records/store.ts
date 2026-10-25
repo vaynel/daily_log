@@ -42,7 +42,7 @@ export interface Snapshot {
   interview: Interview;
   resumes: Date[];
   items: { id: string; seq: number; kind: ItemKind; body: string }[];
-  attachments: { id: string; itemId: string | null; storageKey: string; checksum: string }[];
+  attachments: { id: string; itemId: string | null; storageKey: string; checksum: string; kind?: string; name?: string | null }[];
   versions: { kind: VersionKind; version: number; content: unknown }[];
   pipeline: PipelineState;
   audio: AudioView[];
@@ -210,7 +210,7 @@ export class RecordStore {
     const [resumes, items, atts, vers, pipe, audio] = await Promise.all([
       this.pool.query('SELECT resumed_at FROM interview_resumes WHERE interview_id = $1 ORDER BY id', [id]),
       this.pool.query('SELECT id, seq, kind, body FROM conversation_items WHERE interview_id = $1 ORDER BY seq', [id]),
-      this.pool.query('SELECT id, item_id, storage_key, checksum FROM attachment_refs WHERE interview_id = $1 ORDER BY saved_at, id', [id]),
+      this.pool.query('SELECT id, item_id, storage_key, checksum, kind, original_name FROM attachment_refs WHERE interview_id = $1 ORDER BY saved_at, id', [id]),
       this.pool.query('SELECT kind, version, content FROM record_versions WHERE interview_id = $1 ORDER BY kind, version', [id]),
       this.pool.query('SELECT production, review, backup FROM pipeline_states WHERE interview_id = $1', [id]),
       this.pool.query('SELECT id, first_saved_at, expires_at, status FROM audio_segments WHERE interview_id = $1 ORDER BY first_saved_at, id', [id]),
@@ -219,7 +219,7 @@ export class RecordStore {
       interview,
       resumes: resumes.rows.map((x) => x.resumed_at as Date),
       items: items.rows.map((x) => ({ id: x.id, seq: x.seq, kind: x.kind, body: x.body })),
-      attachments: atts.rows.map((x) => ({ id: x.id, itemId: x.item_id, storageKey: x.storage_key, checksum: x.checksum })),
+      attachments: atts.rows.map((x) => ({ id: x.id, itemId: x.item_id, storageKey: x.storage_key, checksum: x.checksum, kind: x.kind, name: x.original_name })),
       versions: vers.rows.map((x) => ({ kind: x.kind, version: x.version, content: x.content })),
       pipeline: pipe.rows[0] as PipelineState,
       audio: audio.rows.map((x) => viewAudio(x, now)),
@@ -256,7 +256,7 @@ export class RecordStore {
 
   private async insertAttachment(c: Q, ownerId: string, interviewId: string, key: string, ref: { itemId?: string; storageKey: string; checksum: string }, now: Date) {
     const iv = await this.lock(c, ownerId, interviewId);
-    const ex = await c.query('SELECT id, item_id, storage_key, checksum FROM attachment_refs WHERE interview_id = $1 AND idempotency_key = $2', [interviewId, key]);
+    const ex = await c.query('SELECT id, item_id, storage_key, checksum, kind, original_name FROM attachment_refs WHERE interview_id = $1 AND idempotency_key = $2', [interviewId, key]);
     if (ex.rows[0]) {
       const x = ex.rows[0];
       if (x.storage_key !== ref.storageKey || x.checksum !== ref.checksum || (x.item_id ?? null) !== (ref.itemId ?? null)) {

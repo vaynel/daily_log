@@ -15,7 +15,7 @@ export class MemRecords implements InterviewRecords {
     if (ownerId !== TEST_OWNER || id !== TEST_INTERVIEW) return null;
     return {
       interview: { id, ownerId, lifeDate: '2026-10-25', startedAt: new Date(), status: this.status, revision: 1 }, resumes: [],
-      items: this.items.map(({ key, ...i }) => { void key; return i; }), attachments: this.attachments.map(({ name, ...a }) => { void name; return a; }),
+      items: this.items.map(({ key, ...i }) => { void key; return i; }), attachments: this.attachments,
       versions: [], pipeline: { production: 'NONE', review: 'NONE', backup: this.backup }, audio: this.audio,
     };
   }

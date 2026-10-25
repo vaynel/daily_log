@@ -3,6 +3,7 @@ import { classifyFailure } from '../budget/gateway.js';
 import type { MonthlyLedger, Purpose } from '../budget/ledger.js';
 import { estimateTtsSeconds, sttCostKrw, ttsCostKrw, type Pricing } from './pricing.js';
 import type { Transports } from './transports.js';
+import { INTERVIEW_INSTRUCTION } from '../interview/policy.js';
 
 export const MAX_AUDIO_BYTES = 2 * 1024 * 1024;
 export const MIN_AUDIO_BYTES = 800;
@@ -18,13 +19,8 @@ export type TurnSuccess = {
 
 const fail = (status: number, code: string, message: string): TurnFailure => ({ ok: false, status, code, message });
 
-export const INSTRUCTION = [
-  '당신은 개발자의 하루 개발·학습 기록을 함께 정리하는 인터뷰어입니다. 오늘 이야기를 쇼츠 영상과 일기로 남기는 것이 목적이므로, 대화를 이끌어 오늘 한 일·배운 것·막혔던 것과 해결·느낀 점·내일 할 일을 자연스럽게 모두 듣는 것을 목표로 하세요.',
-  '사용자 말을 그대로 되풀이하지 마세요. 대신 짧은 진짜 반응을 하세요: 들은 내용에 대한 구체적인 생각·궁금증·감탄 한마디(예: "오, 무음 감지는 기준값 잡기가 은근 까다롭죠.").',
-  '질문은 막연하게("어땠나요?", "어떤가요?") 하지 말고, 대답하기 쉽게 구체적인 갈래나 예시를 붙여 제시하세요(예: "그거 하면서 제일 오래 걸린 게 코드 쪽이었어요, 아니면 테스트 쪽이었어요?"). 한 주제를 두세 번 들었으면 다음 주제로 넘어가자고 먼저 제안하세요(예: "좋아요, 그럼 오늘 새로 배운 것도 하나 들려주세요.").',
-  '처음 시작하거나 사용자가 무엇을 말할지 망설이면, 오늘 이야기할 거리를 두세 개 먼저 제안하세요(예: "오늘 만든 기능, 새로 배운 것, 막혔던 문제 중에 뭐부터 얘기해 볼까요?").',
-  '조언·평가·설교는 하지 말고 초점은 사용자 경험에 두세요. 말로 주고받는 대화이므로 반응 한 문장과 질문 한 문장, 합쳐서 70자 안팎으로 짧게 말하세요. 사용자가 말하지 않은 사실을 만들거나 전날 일을 이어 묻지 마세요.',
-].join('\n');
+/** 인터뷰 지시문은 interview/policy.ts 가 정의한다(TASK-19). 순차 시험 경로도 같은 지시문을 쓴다. */
+export const INSTRUCTION = INTERVIEW_INSTRUCTION;
 
 export class VoiceService {
   private readonly busy = new Set<string>();

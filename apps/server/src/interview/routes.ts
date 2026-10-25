@@ -115,7 +115,7 @@ export function registerInterview(app: FastifyInstance, o: InterviewRouteOptions
           config: o.live, ledger: new BudgetLedger(limits.maxCostKrw * 2) /* 보조 안전망: 세션 상한(COST_LIMIT)이 먼저 판정한다 */, monthly: o.monthly, store,
           now: o.liveNow ?? (() => performance.now()), log, active, clock: now,
           product: {
-            purpose: 'PRODUCT', limits, priorUsedMs: usage.usedMs, priorCostKrw: usage.costKrw, history,
+            purpose: 'PRODUCT', limits, priorUsedMs: usage.usedMs, priorCostKrw: usage.costKrw, history, attachments: snap.attachments,
             onTurn: async (t) => {
               // 사용자 말(ANSWER) 다음에 AI 말(QUESTION). 같은 키 재전송은 중복 저장되지 않는다.
               if (t.userText) await o.records.saveItem(ownerId, interviewId, `live:${connId}:${t.n}:a`, 'ANSWER', t.userText, now());

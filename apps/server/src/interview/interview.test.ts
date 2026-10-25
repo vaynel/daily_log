@@ -144,6 +144,8 @@ describe('AC-1/3/5 연속 대화·저장·일시정지 후 이어하기·다른 
     const setup = r.mock.state.setups[1]!;
     const instr = (setup.systemInstruction as { parts: { text: string }[] }).parts[0]!.text;
     expect(instr).toContain('[이어하기]');
+    expect(instr).toContain('[오늘 첨부 자료]');
+    expect(instr).toContain('- 자료: seed');
     expect(instr).toContain('사용자 발화 1');
     expect(instr).toContain('인터뷰어: 네, 1번째');
     await c2.turn(1);
