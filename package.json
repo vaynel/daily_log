@@ -22,6 +22,7 @@
     "test:records-crash": "node scripts/records-crash-e2e.mjs",
     "test:calendar-e2e": "node scripts/calendar-e2e.mjs",
     "test:voice-e2e": "node scripts/voice-e2e.mjs",
+    "test:voice-live-e2e": "node scripts/voice-live-e2e.mjs",
     "test:paging-e2e": "node scripts/paging-e2e.mjs",
     "scan:secrets": "node scripts/scan-secrets.mjs"
   },
@@ -29,6 +30,7 @@
     "@eslint/js": "^9.0.0",
     "eslint": "^9.0.0",
     "globals": "^16.0.0",
+    "playwright-core": "^1.64.1",
     "typescript": "^5.9.0",
     "typescript-eslint": "^8.0.0"
   }

@@ -19,11 +19,13 @@
   },
   "dependencies": {
     "fastify": "^5.0.0",
-    "pg": "^8.0.0"
+    "pg": "^8.0.0",
+    "ws": "^8.22.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@types/pg": "^8.0.0",
+    "@types/ws": "^8.18.2",
     "tsx": "^4.0.0",
     "vitest": "4.1.11"
   }

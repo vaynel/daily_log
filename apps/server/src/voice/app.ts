@@ -4,6 +4,7 @@ import { MAX_AUDIO_BYTES, VoiceService } from './pipeline.js';
 import { loadPricing, type Pricing } from './pricing.js';
 import type { Transports } from './transports.js';
 import { VOICE_PAGE } from './page.js';
+import { registerLive, type LiveConfig } from './live.js';
 
 export interface VoiceAppOptions {
   transports: Transports;
@@ -12,6 +13,10 @@ export interface VoiceAppOptions {
   pricing?: Pricing;
   logger?: FastifyServerOptions['logger'];
   now?: () => number;
+  /** 실시간(Gemini Live) 대화. null 이면 /voice-live 는 열리되 세션 시작은 fail closed. 생략하면 같은 동작. */
+  live?: LiveConfig | null;
+  /** 실시간 지연 계측용 시각(ms). */
+  liveNow?: () => number;
 }
 
 export const DEFAULT_BUDGET_KRW = 1000;
@@ -36,6 +41,8 @@ export function buildVoiceApp(opts: VoiceAppOptions) {
   app.get('/voice-test', async (_req, reply) =>
     reply.header('Content-Type', 'text/html; charset=utf-8').header('Cache-Control', 'no-store')
       .header('Permissions-Policy', 'microphone=(self)').send(VOICE_PAGE));
+
+  registerLive(app, { config: opts.live ?? null, ledger, sessionDir: opts.sessionDir, now: opts.liveNow });
 
   app.post('/voice/api/sessions', async (_req, reply) => {
     const s = sessions.create(ledger.limitKrw, new Date());

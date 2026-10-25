@@ -2,6 +2,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { buildVoiceApp, DEFAULT_BUDGET_KRW } from './app.js';
 import { loadVoiceKeys, VoiceConfigError } from './keys.js';
+import { loadLiveConfig } from './live.js';
 import { loadPricing } from './pricing.js';
 import { geminiTts, openaiStt, siwcPro, type Transports } from './transports.js';
 
@@ -38,7 +39,7 @@ async function main() {
     pro: siwcPro(rt.infer, store, env.DAILY_LOG_VOICE_PRO_MODEL!, env.DAILY_LOG_VOICE_PRO_SUPPORT_VERIFIED === 'true'),
     tts: geminiTts(keys.gemini),
   };
-  const app = buildVoiceApp({ transports, sessionDir: path.resolve(env.DAILY_LOG_VOICE_SESSION_DIR!), budgetKrw: budget, pricing: loadPricing(env) });
+  const app = buildVoiceApp({ transports, sessionDir: path.resolve(env.DAILY_LOG_VOICE_SESSION_DIR!), budgetKrw: budget, pricing: loadPricing(env), live: loadLiveConfig(keys.gemini, env) });
   await app.listen({ port: Number(env.DAILY_LOG_VOICE_PORT ?? 3100), host: env.HOST?.trim() || '127.0.0.1' });
 }
 
