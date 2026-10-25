@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AttachPanel } from './AttachPanel';
+import { BriefingPanel } from './BriefingPanel';
 import { uploadAttachment } from './attach';
 import { openMic, Player, type MicSession } from './audio';
 import {
@@ -271,6 +272,8 @@ export function InterviewScreen() {
           {'speechSynthesis' in window && <button data-testid="btn-speak-notice" onClick={() => { const u = new SpeechSynthesisUtterance(state.audioNotice!.speech); u.lang = 'ko-KR'; window.speechSynthesis.cancel(); window.speechSynthesis.speak(u); }}>음성으로 듣기</button>}
         </div>
       )}
+
+      {recordId && state && (state.usage.status === 'ENDED' || phase === 'ended' || state.writingStatus === 'CONFIRMED') && state.conversation.some((c) => c.kind === 'ANSWER') && <BriefingPanel recordId={recordId} />}
 
       <h3>저장된 대화</h3>
       {state && state.conversation.length === 0 && <p data-testid="iv-empty" className="meta">아직 저장된 대화가 없습니다. 버튼을 누르고 말을 시작하세요.</p>}

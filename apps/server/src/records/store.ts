@@ -10,6 +10,7 @@ export type RecordErrorCode =
   | 'IDEMPOTENCY_CONFLICT'
   | 'INVALID_STATE'
   | 'CONFIRMED_LOCKED'
+  | 'STALE_BRIEFING'
   | 'AUDIO_EXPIRED'
   | 'TOO_MANY_ATTACHMENTS';
 
@@ -379,6 +380,33 @@ export class RecordStore {
       await c.query("INSERT INTO record_versions (id, interview_id, kind, version, content, created_at) VALUES ($1,$2,'PRODUCTION_PLAN',$3,$4,$5)", [randomUUID(), interviewId, (last.rows[0].v as number) + 1, JSON.stringify(plan), now]);
       await c.query("UPDATE pipeline_states SET production = 'QUEUED', updated_at = $2 WHERE interview_id = $1", [interviewId, now]);
       return { revision };
+    });
+  }
+
+  /**
+   * 브리핑 확인과 제작 요청을 한 트랜잭션으로 묶는다(TASK-20, AC-2).
+   * 확정·revision 증가·제작 계획·파이프라인 QUEUED·작업 큐 등록이 모두 되거나 모두 안 된다.
+   * 확인한 브리핑 버전이 최신이 아니면(정정이 그 사이에 있었으면) STALE_BRIEFING 으로 거부하고 아무것도 만들지 않는다.
+   * 같은 브리핑 버전의 재확인은 이미 만든 작업을 돌려주며 중복 작업을 만들지 않는다.
+   */
+  async confirmBriefing(
+    ownerId: string, interviewId: string, o: { briefingVersion: number; plan: unknown; job: { kind: string; stages: string[]; idempotencyKey: string } }, now: Date,
+  ): Promise<{ jobId: string; duplicate: boolean; revision: number }> {
+    return this.tx(async (c) => {
+      const iv = await this.lock(c, ownerId, interviewId);
+      const last = await c.query("SELECT COALESCE(MAX(version), 0) AS v FROM record_versions WHERE interview_id = $1 AND kind = 'SUMMARY'", [interviewId]);
+      if (Number(last.rows[0].v) !== o.briefingVersion || o.briefingVersion < 1) throw new RecordError('STALE_BRIEFING', '확인한 브리핑이 최신이 아님');
+      const prior = await c.query('SELECT id FROM jobs WHERE idempotency_key = $1', [o.job.idempotencyKey]);
+      if (prior.rows[0]) return { jobId: prior.rows[0].id as string, duplicate: true, revision: iv.revision };
+      if (iv.status === 'CONFIRMED') throw new RecordError('CONFIRMED_LOCKED', '이미 다른 브리핑으로 확정된 기록');
+      const revision = iv.revision + 1;
+      await c.query("UPDATE interviews SET status = 'CONFIRMED', revision = $2, updated_at = $3 WHERE id = $1", [interviewId, revision, now]);
+      const pv = await c.query("SELECT COALESCE(MAX(version), 0) AS v FROM record_versions WHERE interview_id = $1 AND kind = 'PRODUCTION_PLAN'", [interviewId]);
+      await c.query("INSERT INTO record_versions (id, interview_id, kind, version, content, created_at) VALUES ($1,$2,'PRODUCTION_PLAN',$3,$4,$5)", [randomUUID(), interviewId, Number(pv.rows[0].v) + 1, JSON.stringify(o.plan), now]);
+      await c.query("UPDATE pipeline_states SET production = 'QUEUED', updated_at = $2 WHERE interview_id = $1", [interviewId, now]);
+      const job = await c.query('INSERT INTO jobs (kind, subject_id, stages, idempotency_key) VALUES ($1,$2,$3,$4) RETURNING id', [o.job.kind, interviewId, o.job.stages, o.job.idempotencyKey]);
+      await c.query("INSERT INTO job_events (job_id, event) VALUES ($1, 'ENQUEUED')", [job.rows[0].id]);
+      return { jobId: job.rows[0].id as string, duplicate: false, revision };
     });
   }
 

@@ -304,4 +304,43 @@ describe.skipIf(!url)('RecordStore (실제 PostgreSQL 임시 스키마)', () => 
       expect((await store.appendVersion(o, interview.id, 'SUMMARY', { t: 'b' }, now)).version).toBe(2);
     });
   });
+  describe('TASK-20 브리핑 확인과 제작 요청의 원자적 연결', () => {
+    const job = (iv: string, v: number) => ({ kind: 'VIDEO_PRODUCTION', stages: ['PRODUCE'], idempotencyKey: `produce:${iv}:${v}` });
+    it('확인 전에는 작업이 없고, 확인하면 확정·계획·QUEUED·작업이 함께 생기며 재확인은 중복 작업을 만들지 않는다', async () => {
+      const o = newOwner();
+      const now = kst('2026-10-21T10:00:00');
+      const { interview } = await store.startInterview(o, now);
+      await store.appendVersion(o, interview.id, 'SUMMARY', { kind: 'BRIEFING', n: 1 }, now);
+      expect(Number((await pool.query('SELECT count(*) FROM jobs WHERE subject_id = $1', [interview.id])).rows[0].count)).toBe(0);
+      const a = await store.confirmBriefing(o, interview.id, { briefingVersion: 1, plan: { lines: ['x'] }, job: job(interview.id, 1) }, now);
+      const b = await store.confirmBriefing(o, interview.id, { briefingVersion: 1, plan: { lines: ['x'] }, job: job(interview.id, 1) }, now);
+      expect(b).toMatchObject({ duplicate: true, jobId: a.jobId });
+      const snap = await store.loadById(o, interview.id, now);
+      expect(snap!.interview.status).toBe('CONFIRMED');
+      expect(snap!.pipeline.production).toBe('QUEUED');
+      expect(snap!.versions.filter((v) => v.kind === 'PRODUCTION_PLAN')).toHaveLength(1);
+      expect(Number((await pool.query('SELECT count(*) FROM jobs WHERE subject_id = $1', [interview.id])).rows[0].count)).toBe(1);
+    });
+    it('오래된 브리핑 버전 확인은 거부되고 아무것도 만들지 않는다', async () => {
+      const o = newOwner();
+      const now = kst('2026-10-21T10:00:00');
+      const { interview } = await store.startInterview(o, now);
+      await store.appendVersion(o, interview.id, 'SUMMARY', { n: 1 }, now);
+      await store.appendVersion(o, interview.id, 'SUMMARY', { n: 2 }, now);
+      await rejects(store.confirmBriefing(o, interview.id, { briefingVersion: 1, plan: {}, job: job(interview.id, 1) }, now), 'STALE_BRIEFING');
+      expect((await store.loadById(o, interview.id, now))!.interview.status).toBe('IN_PROGRESS');
+      expect(Number((await pool.query('SELECT count(*) FROM jobs WHERE subject_id = $1', [interview.id])).rows[0].count)).toBe(0);
+    });
+    it('작업 등록이 실패하면 확정도 되돌아간다(같은 트랜잭션)', async () => {
+      const o = newOwner();
+      const now = kst('2026-10-21T10:00:00');
+      const { interview } = await store.startInterview(o, now);
+      await store.appendVersion(o, interview.id, 'SUMMARY', { n: 1 }, now);
+      await expect(store.confirmBriefing(o, interview.id, { briefingVersion: 1, plan: {}, job: { kind: 'VIDEO_PRODUCTION', stages: [], idempotencyKey: 'bad-empty-stages' } }, now)).rejects.toThrow();
+      const snap = await store.loadById(o, interview.id, now);
+      expect(snap!.interview.status).toBe('IN_PROGRESS');
+      expect(snap!.pipeline.production).toBe('NONE');
+      expect(snap!.versions.some((v) => v.kind === 'PRODUCTION_PLAN')).toBe(false);
+    });
+  });
 });

@@ -89,7 +89,7 @@ export function buildInterviewInstruction(o: { history?: HistoryLine[]; attachme
 
 export type StatementKind = 'FACT' | 'MATERIAL' | 'OPINION' | 'UNCERTAIN';
 export type StatementSource = 'USER' | 'ATTACHMENT';
-export interface Statement { kind: StatementKind; source: StatementSource; text: string }
+export interface Statement { kind: StatementKind; source: StatementSource; text: string; /** 사용자가 직접 강조한 내용(브리핑 영상 선정에서 우선). */ emphasis?: boolean }
 
 /** Pro 정리 단계(브리핑·대본) 지시문 조각. 모델 출력은 JSON 배열이며 parseStatements 로 검증한다. */
 export const ORGANIZE_INSTRUCTION = [
@@ -116,7 +116,7 @@ export function parseStatements(raw: string): ParseResult {
     const s = e as Partial<Statement> | null;
     if (!s || typeof s.text !== 'string' || !s.text.trim() || !KINDS.has(s.kind as StatementKind) || (s.source !== 'USER' && s.source !== 'ATTACHMENT')) return { ok: false, code: 'BAD_SHAPE', index: i };
     if ((s.source === 'ATTACHMENT') !== (s.kind === 'MATERIAL') && s.kind !== 'UNCERTAIN') return { ok: false, code: 'ATTACHMENT_AS_FACT', index: i };
-    out.push({ kind: s.kind as StatementKind, source: s.source, text: s.text.trim() });
+    out.push({ kind: s.kind as StatementKind, source: s.source, text: s.text.trim(), ...(s.emphasis === true ? { emphasis: true } : {}) });
   }
   return { ok: true, statements: out };
 }

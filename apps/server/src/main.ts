@@ -30,6 +30,7 @@ const app = buildApp({
   sessionSecret: config.sessionSecret,
   fileStorageDir: config.fileStorageDir,
   records: new RecordStore(pool),
+  briefing: { infer: null }, // Pro 정리(구독 경로) 어댑터는 연결 전: 브리핑 생성은 PRO_UNAVAILABLE 로 막히고 제작 작업은 만들어지지 않는다
   entries: { list: async () => (await pool.query('SELECT id, entry_date, body FROM sample_entries ORDER BY entry_date DESC')).rows },
   interview: {
     usage: new PgLiveUsageStore(pool),
