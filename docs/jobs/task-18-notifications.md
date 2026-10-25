@@ -12,7 +12,7 @@
 
 ## 운영
 - `VAPID_KEYS_FILE`: JSON `{"subject":"mailto:…","publicKey":"…","privateKey":"…"}` 서버 파일 경로. 저장소·로그에 키를 남기지 않는다. 없으면 발송은 `PUSH_NOT_CONFIGURED` 로 실패 처리(전달 성공으로 오인하지 않음)되고 웹은 연결 불가를 안내한다.
-- 워커(`npm run start:worker`)가 예약·스윕·전달을 수행한다. 마이그레이션 `0007_notifications.sql`.
+- 워커(`npm run start:worker`)가 예약·스윕·전달을 수행한다. 마이그레이션 `0008_notifications.sql`.
 - 서비스 워커 `apps/web/public/sw.js` 가 푸시를 표시하고 클릭 시 알림 URL 로 이동한다.
 
 ## 시험
