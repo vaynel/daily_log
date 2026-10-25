@@ -207,7 +207,7 @@ describe.skipIf(!url)('RecordStore (실제 PostgreSQL 임시 스키마)', () => 
       await rejects(store.saveAttachment(o, interview.id, 'att1', { ...ref, checksum: 'zzz' }, now), 'IDEMPOTENCY_CONFLICT');
       await rejects(store.saveAttachment(o, interview.id, 'att2', { ...ref, itemId: '00000000-0000-4000-8000-000000000000' }, now), 'NOT_FOUND');
       const snap = await store.load(o, '2026-10-21', now);
-      expect(snap!.attachments).toEqual([{ id: rs[0]!.id, itemId: item.id, storageKey: 's/1.png', checksum: 'abc' }]);
+      expect(snap!.attachments).toEqual([{ id: rs[0]!.id, itemId: item.id, storageKey: 's/1.png', checksum: 'abc', kind: 'PHOTO', name: null }]);
     });
   });
 
