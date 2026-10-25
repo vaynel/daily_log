@@ -6,7 +6,7 @@ import { attachmentBlock, buildInterviewInstruction, INTERVIEW_INSTRUCTION, pars
 describe('지시문 구성', () => {
   it('Live·순차 경로가 같은 인터뷰 지시문을 쓰고, v2 규칙(물음표 1개·두 문장·첨부 내용 못 봄·5영역)이 들어 있다', () => {
     expect(INSTRUCTION).toBe(INTERVIEW_INSTRUCTION);
-    for (const s of ['물음표(?)는 한 턴에 딱 1개', '60자 이내', '내용은 볼 수 없다', '한 일·배운 것·막힌 것과 해결·느낀 점·내일 할 일', '넘어가자고', '[좋은 예]', '[나쁜 예']) expect(INTERVIEW_INSTRUCTION).toContain(s);
+    for (const s of ['물음표(?)는 한 턴에 딱 1개', '60자 이내', '내용은 볼 수 없다', '하루의 흐름(아침·낮·저녁)', '먼저 개발 이야기로 시작하거나 몰아가지 않는다', '넘어가자고', '[좋은 예]', '[나쁜 예']) expect(INTERVIEW_INSTRUCTION).toContain(s);
   });
 
   it('맥락 격리: 입력으로 준 오늘 대화·첨부만 실리고 전날 근거 금지가 명시된다', () => {
@@ -67,9 +67,9 @@ const GOOD: EvalTurn[] = [
   { user: '정리부터 하려고요', ai: '좋은 순서네요. 오늘 이야기는 여기까지로 해도 될까요?' },
 ];
 
-/** OPENING 예시는 질문 하나짜리여야 한다(첫 인사 턴에도 규칙 1 적용). */
+/** OPENING 예시는 질문 하나짜리여야 한다(첫 인사 턴에도 규칙 1 적용). 일기 톤: 하루 전체로 시작. */
 it('지시문의 OPENING 예시는 물음표 하나다', () => {
-  const m = INTERVIEW_INSTRUCTION.match(/\(예: "(오늘 만든 것[^"]*)"\)/);
+  const m = INTERVIEW_INSTRUCTION.match(/\(예: "(오늘 하루는[^"]*)"\)/);
   expect(m).not.toBeNull();
   expect((m![1]!.match(/[?？]/g) ?? []).length).toBe(1);
 });
