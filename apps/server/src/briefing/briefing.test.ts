@@ -51,7 +51,11 @@ describe('영상 선정·필터(D17-02, AC-4·5)', () => {
     expect(sel).toContain('오늘 제일 중요한 건 배포였다');
   });
   it('plan 에는 제외 항목이 들어가지 않는다', () => {
-    expect(planOf(items, 3)).toEqual({ source: 'BRIEFING', briefingVersion: 3, lines: ['에코 버그를 고쳤다', '뿌듯했다', 'SQL 인젝션 예방 방법을 공부했다'] });
+    const plan = planOf(items, 3);
+    expect(plan.lines).toEqual(['에코 버그를 고쳤다', '뿌듯했다', 'SQL 인젝션 예방 방법을 공부했다']);
+    expect(plan).toMatchObject({ source: 'BRIEFING', briefingVersion: 3 });
+    expect(plan.items.map((i) => i.text)).toEqual(plan.lines);
+    expect(plan.items.every((i) => /^s\d+$/.test(i.id))).toBe(true);
   });
 });
 

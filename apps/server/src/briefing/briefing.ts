@@ -163,10 +163,16 @@ export interface ProductionPlan {
   briefingVersion: number;
   /** 캐릭터 A가 1인칭 담담한 독백으로 말할 공개용 문장. 불확실·첨부 자료·제외 항목은 들어가지 않는다. */
   lines: string[];
+  /** lines 와 같은 순서의 근거 항목. 장면 계획(TASK-21)이 장면마다 이 id 로 원문 근거를 연결한다. */
+  items: { id: string; text: string; emphasis: boolean; topic?: 'SECURITY' }[];
 }
 
 export function planOf(items: BriefingItem[], briefingVersion: number): ProductionPlan {
-  return { source: 'BRIEFING', briefingVersion, lines: items.filter((i) => i.inVideo && i.excludedReason === null).map((i) => i.text) };
+  const chosen = items.filter((i) => i.inVideo && i.excludedReason === null);
+  return {
+    source: 'BRIEFING', briefingVersion, lines: chosen.map((i) => i.text),
+    items: chosen.map((i) => ({ id: i.id, text: i.text, emphasis: i.emphasis, ...(i.topic ? { topic: i.topic } : {}) })),
+  };
 }
 
 export const VIDEO_JOB_KIND = 'VIDEO_PRODUCTION';
