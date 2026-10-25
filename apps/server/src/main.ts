@@ -8,6 +8,8 @@ import { PgLiveUsageStore } from './interview/usage.js';
 import { RecordStore } from './records/store.js';
 import { readKeyFile } from './voice/keys.js';
 import { loadLiveConfig, type LiveConfig } from './voice/live.js';
+import { NotificationService } from './notify/service.js';
+import { UnconfiguredSender, loadVapidKeys } from './notify/sender.js';
 
 const config = loadConfigOrExit();
 const auth = loadAuthConfig();
@@ -20,7 +22,10 @@ const key = readKeyFile('DAILY_LOG_GEMINI_KEY_FILE', process.env.DAILY_LOG_GEMIN
 if ('problem' in key) liveProblem = key.problem;
 else live = loadLiveConfig(key.key, process.env);
 
+const vapid = config.vapidKeysFile ? loadVapidKeys(config.vapidKeysFile) : null;
 const app = buildApp({
+  notifications: new NotificationService({ pool, sender: new UnconfiguredSender() }),
+  vapidPublicKey: vapid?.publicKey ?? null,
   auth,
   sessionSecret: config.sessionSecret,
   fileStorageDir: config.fileStorageDir,
