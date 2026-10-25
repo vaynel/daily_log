@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { INSTRUCTION } from '../voice/pipeline.js';
-import { evaluateConversation, type EvalTurn } from './eval.js';
+import { evaluateConversation, MAX_REPLY_CHARS, type EvalTurn } from './eval.js';
 import { attachmentBlock, buildInterviewInstruction, INTERVIEW_INSTRUCTION, parseStatements } from './policy.js';
 
 describe('지시문 구성', () => {
-  it('Live·순차 경로가 같은 인터뷰 지시문을 쓰고, 한 턴 한 질문·70자·5영역 규칙이 들어 있다', () => {
+  it('Live·순차 경로가 같은 인터뷰 지시문을 쓰고, v2 규칙(물음표 1개·두 문장·첨부 내용 못 봄·5영역)이 들어 있다', () => {
     expect(INSTRUCTION).toBe(INTERVIEW_INSTRUCTION);
-    for (const s of ['질문을 딱 하나만', '70자 안팎', '다섯 영역', '이미 대답한 주제', '넘어가자고']) expect(INTERVIEW_INSTRUCTION).toContain(s);
+    for (const s of ['물음표(?)는 한 턴에 딱 1개', '60자 이내', '내용은 볼 수 없다', '한 일·배운 것·막힌 것과 해결·느낀 점·내일 할 일', '넘어가자고', '[좋은 예]', '[나쁜 예']) expect(INTERVIEW_INSTRUCTION).toContain(s);
   });
 
   it('맥락 격리: 입력으로 준 오늘 대화·첨부만 실리고 전날 근거 금지가 명시된다', () => {
     const out = buildInterviewInstruction({ history: [{ role: 'user', text: '오늘 테스트를 짰어요' }], attachments: [{ kind: 'MARKDOWN', name: 'notes.md' }] });
     expect(out).toContain('오늘 테스트를 짰어요');
     expect(out).toContain('notes.md');
-    expect(out).toContain('이전 날');
+    expect(out).toContain('어제 일은 사용자가 먼저 말했을 때만');
     expect(out).not.toContain('어제 한 일'); // 어제 기록 같은 외부 입력은 호출자가 넘기지 않으면 들어갈 경로가 없다
   });
 
@@ -67,6 +67,13 @@ const GOOD: EvalTurn[] = [
   { user: '정리부터 하려고요', ai: '좋은 순서네요. 오늘 이야기는 여기까지로 해도 될까요?' },
 ];
 
+/** OPENING 예시는 질문 하나짜리여야 한다(첫 인사 턴에도 규칙 1 적용). */
+it('지시문의 OPENING 예시는 물음표 하나다', () => {
+  const m = INTERVIEW_INSTRUCTION.match(/\(예: "(오늘 만든 것[^"]*)"\)/);
+  expect(m).not.toBeNull();
+  expect((m![1]!.match(/[?？]/g) ?? []).length).toBe(1);
+});
+
 describe('대표 대화 평가표(AC-1·2·3·4·5·6)', () => {
   it('한 질문·짧은 답·구체 질문·형태 다양성을 지킨 10턴 대화는 위반이 없다', () => {
     expect(GOOD.length).toBeGreaterThanOrEqual(10);
@@ -106,5 +113,25 @@ describe('대표 대화 평가표(AC-1·2·3·4·5·6)', () => {
 
   it('사용자 말을 그대로 따라 하는 답을 잡는다', () => {
     expect(evaluateConversation([{ user: '무음 감지 기능을 만들었어요', ai: '무음 감지 기능을 만들었어요, 그렇군요. 다음은요?' }])).toEqual([{ turn: 1, violation: 'ECHO' }]);
+  });
+
+  it('PM 1차(run1) 위반 유형 회귀: 질문 여러 개·134자급 긴 답·첨부 사진 내용 지어내기를 모두 잡는다', () => {
+    // run1.json 원본은 이 러너에 없다. PM 보고의 실제 문구("사진 보니까 복잡한 내용들이 많이 적혀 있던데")와 같은 유형으로 재구성한 전사다.
+    const run1: EvalTurn[] = [
+      { user: '화이트보드 사진 올렸어요', ai: '사진 보니까 복잡한 내용들이 많이 적혀 있던데요.' },
+      { user: '에코 버그 고쳤어요', ai: '에코 버그를 잡으셨다니 대단해요! 원인은 어떻게 찾으셨어요? 코드 문제였나요?' },
+      { user: '로그 보다가요', ai: '로그를 꼼꼼히 보셨군요, 정말 훌륭한 접근이에요. 그런 방식으로 원인을 좁혀 가는 것은 디버깅에서 아주 중요한 습관인데 어떤 로그가 결정적이었는지 말씀해 주시겠어요?' },
+    ];
+    const v = evaluateConversation(run1).map((x) => `${x.turn}:${x.violation}`);
+    expect(v).toEqual(expect.arrayContaining(['1:ASSERTS_ATTACHMENT', '2:MULTI_QUESTION', '3:TOO_LONG']));
+    expect(MAX_REPLY_CHARS).toBe(70);
+  });
+
+  it('첨부 내용을 본 것처럼 말하는 여러 표현을 잡고, 못 본다고 답하는 v2 예시는 허용한다', () => {
+    const one = (ai: string) => evaluateConversation([{ user: '자료 올렸어요', ai }]).map((x) => x.violation);
+    for (const ai of ['자료를 보니 캐시 얘기였네요. 어떤 부분이 핵심이었어요?', '메모에 캐시라고 적혀 있던데 맞아요?', '사진 보면 꽤 복잡해 보여요. 뭘 그린 거예요?']) {
+      expect(one(ai)).toContain('ASSERTS_ATTACHMENT');
+    }
+    expect(one('사진은 제가 내용까지는 못 봐서요. 거기 적은 것 중에 제일 핵심이 뭐였어요?')).toEqual([]);
   });
 });

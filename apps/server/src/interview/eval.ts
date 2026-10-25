@@ -4,10 +4,12 @@
  */
 export type Violation = 'MULTI_QUESTION' | 'TOO_LONG' | 'VAGUE_QUESTION' | 'REPEATED_SHAPE' | 'PRIOR_DAY' | 'REPEATED_TOPIC' | 'ASSERTS_ATTACHMENT' | 'ECHO';
 
-export const MAX_REPLY_CHARS = 100;
+export const MAX_REPLY_CHARS = 70;
 const VAGUE = /(어땠나요|어떤가요|어땠어요\?|어떠셨나요|어떻게 생각하세요)\s*[?？]?\s*$/;
 const PRIOR_DAY = /(어제|전날|지난번|저번에|그저께)/;
 const ASSERT_ATTACHMENT = /(자료를|자료는|글을|문서를|책을).{0,12}(읽으셨|이해하셨|공부하셨|해 보셨|따라 하셨)(?![^.?!]*[?？])/;
+/** 첨부 내용을 본 것처럼 말하는 표현: "사진 보니까", "자료를 보니", "~라고 적혀 있던데", "복잡한 내용이 많던데". 이름만 알고 내용은 볼 수 없다. */
+const SEEMS_TO_SEE_ATTACHMENT = /(사진|이미지|그림|화이트보드|자료|문서|노트|메모|파일|첨부)(을|를|은|는|이|에서|에)?\s*(보니|보면|봤더니|봤는데|살펴보니|읽어\s?보니|확인해\s?보니)|(적혀|쓰여|써|나와|그려져)\s?있(던데|더라|네요|는데|어서|었)|(내용|글씨|그림)이?\s*(많|복잡|빼곡)/;
 
 export const questionCount = (t: string) => (t.match(/[?？]/g) ?? []).length;
 /** 마지막 질문 문장의 앞 두 어절. 같은 틀("어떤 부분이 …")의 반복을 잡는다. */
@@ -31,7 +33,7 @@ export function evaluateConversation(turns: EvalTurn[], o: EvalOptions = {}): { 
     if (VAGUE.test(t.ai.trim())) add(n, 'VAGUE_QUESTION');
     if (i > 0 && questionCount(t.ai) > 0 && questionCount(turns[i - 1]!.ai) > 0 && shape(t.ai) === shape(turns[i - 1]!.ai)) add(n, 'REPEATED_SHAPE');
     if (PRIOR_DAY.test(t.ai) && !turns.slice(0, i + 1).some((x) => PRIOR_DAY.test(x.user))) add(n, 'PRIOR_DAY');
-    if (ASSERT_ATTACHMENT.test(t.ai)) add(n, 'ASSERTS_ATTACHMENT');
+    if (ASSERT_ATTACHMENT.test(t.ai) || SEEMS_TO_SEE_ATTACHMENT.test(t.ai)) add(n, 'ASSERTS_ATTACHMENT');
     const u = norm(t.user);
     if (u.length >= 8 && norm(t.ai).includes(u)) add(n, 'ECHO');
     for (const s of o.skipped ?? []) if (n > s.afterTurn && t.ai.includes(s.keyword)) add(n, 'REPEATED_TOPIC');
