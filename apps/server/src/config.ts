@@ -5,6 +5,8 @@ export interface Config {
   port: number;
   host: string;
   workerPollIntervalMs: number;
+  /** VAPID 키 JSON 파일 경로(서버 파일에서만 읽음). 없으면 푸시 발송 비활성. */
+  vapidKeysFile: string | null;
 }
 
 const REQUIRED = {
@@ -42,6 +44,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     port,
     host: env.HOST?.trim() || '127.0.0.1',
     workerPollIntervalMs: poll,
+    vapidKeysFile: env.VAPID_KEYS_FILE?.trim() || null,
   };
 }
 

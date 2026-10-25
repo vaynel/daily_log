@@ -3,11 +3,16 @@ import { loadAuthConfig } from './auth/config.js';
 import { loadConfigOrExit } from './config.js';
 import { createPool } from './db/pool.js';
 import { RecordStore } from './records/store.js';
+import { NotificationService } from './notify/service.js';
+import { UnconfiguredSender, loadVapidKeys } from './notify/sender.js';
 
 const config = loadConfigOrExit();
 const auth = loadAuthConfig();
 const pool = createPool(config.databaseUrl);
+const vapid = config.vapidKeysFile ? loadVapidKeys(config.vapidKeysFile) : null;
 const app = buildApp({
+  notifications: new NotificationService({ pool, sender: new UnconfiguredSender() }),
+  vapidPublicKey: vapid?.publicKey ?? null,
   auth,
   sessionSecret: config.sessionSecret,
   fileStorageDir: config.fileStorageDir,

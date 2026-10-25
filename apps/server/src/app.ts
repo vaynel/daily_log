@@ -5,6 +5,8 @@ import { AttachmentService } from './attachments/service.js';
 import { registerRecordRoutes } from './attachments/routes.js';
 import { registerRecordViewRoutes } from './records/routes.js';
 import type { RecordStore } from './records/store.js';
+import { registerNotifyRoutes } from './notify/routes.js';
+import type { NotificationService } from './notify/service.js';
 
 export interface AppOptions {
   auth?: AuthConfig | null;
@@ -14,6 +16,8 @@ export interface AppOptions {
   fetchImpl?: typeof fetch;
   records?: RecordStore;
   now?: () => Date;
+  notifications?: NotificationService;
+  vapidPublicKey?: string | null;
 }
 
 export function buildApp(opts: AppOptions = {}) {
@@ -30,5 +34,6 @@ export function buildApp(opts: AppOptions = {}) {
     registerRecordRoutes(app, { store: opts.records, attachments: new AttachmentService(opts.records, opts.fileStorageDir ?? ''), now: opts.now });
     registerRecordViewRoutes(app, { store: opts.records, fileStorageDir: opts.fileStorageDir ?? '', now: opts.now });
   }
+  if (opts.notifications) registerNotifyRoutes(app, { service: opts.notifications, vapidPublicKey: opts.vapidPublicKey });
   return app;
 }
