@@ -20,3 +20,8 @@
   자동 재시도 사용 횟수는 계승(초기화 없음), 완료 단계 결과 보존. 결과 불명 요청이 남은 작업은 `UNRESOLVED_EXTERNAL`로 거부.
 - 불명 정산: `resolveExternal(jobId, stage, outcome, {commandId, actor})` — 확인 근거 필수.
 - 단계 처리기 등록은 후속 Task가 `worker.ts`의 `handlers`에 추가한다(현재 비어 있음).
+
+## 실제 프로세스 재시작 시험 (AC-2)
+`npm run build && npm run test:queue-restart` (`npm run check`에 포함). 시험 스키마에서 워커를 별도 Node 자식 프로세스로 띄우고 처리 중 `SIGKILL` 한 뒤 새 프로세스가 임대 만료 후 `recover()`로 이어받는다.
+- plain: 단계 a 완료 → b 처리 중 종료 → 재시작 후 a 미실행, b(시도 2)·c 완료, `auto_retries_used` DB 유지(중단은 일시 오류로 1회 소모).
+- paid: a 일시 오류로 재시도 1회 사용 → 유료 b 요청 전송 후 종료 → 재시작 후 b 재전송 없이 조회로 확정, 재시도 횟수 1 유지, 원장 항목 1건.
