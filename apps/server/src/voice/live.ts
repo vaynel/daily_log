@@ -26,6 +26,8 @@ export interface LiveConfig {
   model: string;
   url: string;
   voice: string;
+  /** 음성 인식·생성 언어 고정(BCP-47). 미지정 시 Live 가 다른 언어로 전사할 수 있다. */
+  languageCode: string;
   instruction: string;
   pricing: LivePricing;
   /** 브라우저가 보내는 PCM16 mono 샘플레이트. */
@@ -40,6 +42,9 @@ export interface LiveConfig {
   tailMs: number;
   prerollMs: number;
   rmsThreshold: number;
+  /** AI 음성 재생 시작 직후 이 시간 동안은 스피커 에코로 보고 큰 소리가 아니면 업스트림에 무음으로 대체한다. */
+  echoGraceMs: number;
+  echoRmsThreshold: number;
   maxSessionMs: number;
   connectTimeoutMs: number;
 }
@@ -71,6 +76,7 @@ export function loadLiveConfig(key: string, env: NodeJS.ProcessEnv = process.env
     model: env.DAILY_LOG_VOICE_LIVE_MODEL?.trim() || 'gemini-3.1-flash-live-preview',
     url: env.DAILY_LOG_VOICE_LIVE_URL?.trim() || GEMINI_LIVE_URL,
     voice: env.DAILY_LOG_VOICE_LIVE_VOICE?.trim() || 'Kore',
+    languageCode: env.DAILY_LOG_VOICE_LIVE_LANGUAGE?.trim() || 'ko-KR',
     instruction: INSTRUCTION,
     pricing,
     inputRate: num(env.DAILY_LOG_VOICE_LIVE_INPUT_RATE, 16000, 8000, 48000),
@@ -81,6 +87,8 @@ export function loadLiveConfig(key: string, env: NodeJS.ProcessEnv = process.env
     tailMs: 1500,
     prerollMs: 300,
     rmsThreshold: 0.02,
+    echoGraceMs: num(env.DAILY_LOG_VOICE_LIVE_ECHO_GRACE_MS, 500, 0, 5000),
+    echoRmsThreshold: 0.3,
     maxSessionMs: num(env.DAILY_LOG_VOICE_LIVE_MAX_SESSION_SEC, 900, 10, 7200) * 1000,
     connectTimeoutMs: 10000,
   };
@@ -101,6 +109,8 @@ export interface LiveTurn {
   outputTokens: number;
   costKrw: number;
   interrupted: boolean;
+  /** 스피커 에코로 AI가 스스로 끊긴 것으로 의심되는 턴(AI 재생 시작 직후 끼어들기 또는 비정상적으로 짧은 지연). */
+  suspectedEcho?: boolean;
 }
 
 export interface LiveSessionRecord {
@@ -213,6 +223,7 @@ export class LiveRun {
   private silentMs = 0;
   private tailMs = 0;
   private lastVoiceAt: number | null = null;
+  private aiStartAt: number | null = null;
   private lastVoicedInboundMs = 0;
   // 턴 계측
   private cur: {
@@ -292,7 +303,7 @@ export class LiveRun {
       model: `models/${c.model}`,
       generationConfig: {
         responseModalities: ['AUDIO'],
-        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: c.voice } } },
+        speechConfig: { languageCode: c.languageCode, voiceConfig: { prebuiltVoiceConfig: { voiceName: c.voice } } },
       },
       systemInstruction: { parts: [{ text: c.instruction }] },
       realtimeInputConfig: { automaticActivityDetection: { disabled: false } },
@@ -361,7 +372,10 @@ export class LiveRun {
     // 월 원장 예약 중에는 업스트림에 보내지 않고 모아 둔다.
     if (this.reserving) { this.cand.push(buf); return; }
     const ms = (buf.length / 2 / this.c.inputRate) * 1000;
-    const voiced = rmsOf(buf) > this.c.rmsThreshold;
+    let rms = rmsOf(buf);
+    // AI 재생 직후의 작은 소리는 스피커 에코일 가능성이 커서 무음으로 바꿔 보낸다(큰 소리만 끼어들기로 인정).
+    if (this.aiStartAt !== null && recvAt - this.aiStartAt < this.c.echoGraceMs && rms <= this.c.echoRmsThreshold) { buf.fill(0); rms = 0; }
+    const voiced = rms > this.c.rmsThreshold;
     if (voiced) this.lastVoiceAt = recvAt;
 
     if (this.mode === 'ACTIVE') {
@@ -475,6 +489,7 @@ export class LiveRun {
         if (this.client.readyState === WebSocket.OPEN) this.client.send(Buffer.from(b64, 'base64'), { binary: true });
         if (t.firstSentAt === null) {
           t.firstSentAt = this.d.now();
+          this.aiStartAt = t.firstSentAt;
           const lat = t.speechEndAt === null ? null : Math.max(0, Math.round(t.firstSentAt - t.speechEndAt));
           this.send({ type: 'first_audio', n: this.rec.turns.length + 1, latencyMs: lat });
         }
@@ -520,10 +535,12 @@ export class LiveRun {
     const lat = t.firstSentAt !== null && t.speechEndAt !== null ? Math.max(0, Math.round(t.firstSentAt - t.speechEndAt)) : null;
     const up = t.firstRecvAt !== null && t.speechEndAt !== null ? Math.max(0, Math.round(t.firstRecvAt - t.speechEndAt)) : null;
     const overhead = t.firstRecvAt !== null && t.firstSentAt !== null ? Math.round(t.inboundMs + (t.firstSentAt - t.firstRecvAt)) : null;
+    const sinceAi = this.aiStartAt === null ? null : this.d.now() - this.aiStartAt;
+    const suspectedEcho = (interrupted && sinceAi !== null && sinceAi < 1500) || (lat !== null && lat < 100);
     const turn: LiveTurn = {
       n: this.rec.turns.length + 1, at: (this.d.clock ?? (() => new Date()))().toISOString(),
       userText: t.userText.trim(), replyText: t.replyText.trim(), latencyMs: lat, upstreamLatencyMs: up, serverOverheadMs: overhead,
-      inputTokens: t.usage?.inputTokens ?? 0, outputTokens: t.usage?.outputTokens ?? 0, costKrw: round2(t.costKrw), interrupted,
+      inputTokens: t.usage?.inputTokens ?? 0, outputTokens: t.usage?.outputTokens ?? 0, costKrw: round2(t.costKrw), interrupted, ...(suspectedEcho ? { suspectedEcho } : {}),
     };
     t.turn = turn;
     this.lastFinal = t;

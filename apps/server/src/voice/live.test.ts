@@ -26,7 +26,7 @@ async function rig(o: { mock?: Partial<MockLiveOptions>; env?: Record<string, st
   cleanups.push(() => mock.close());
   const logs: string[] = [];
   const dir = mkdtempSync(path.join(os.tmpdir(), 'dl-live-'));
-  const config: LiveConfig = loadLiveConfig(o.key ?? KEY, { DAILY_LOG_VOICE_LIVE_URL: mock.url, ...o.env });
+  const config: LiveConfig = loadLiveConfig(o.key ?? KEY, { DAILY_LOG_VOICE_LIVE_URL: mock.url, DAILY_LOG_VOICE_LIVE_ECHO_GRACE_MS: '0', ...o.env });
   const app = buildVoiceApp({
     transports: mockTransports().t, sessionDir: dir, budgetKrw: o.budgetKrw ?? 1000, monthly: o.monthly, live: o.disabled ? null : config,
     logger: { level: 'info', stream: new Writable({ write(c, _e, cb) { logs.push(String(c)); cb(); } }) },
@@ -110,6 +110,7 @@ describe('AC-1/2 브라우저↔서버↔Live 중계와 지연 계측', () => {
     const setup = r.mock.state.setups[0]!;
     expect(r.mock.state.setups).toHaveLength(1);
     expect((setup.systemInstruction as { parts: { text: string }[] }).parts[0]!.text).toBe(INSTRUCTION);
+    expect(setup).toMatchObject({ generationConfig: { speechConfig: { languageCode: 'ko-KR' } } });
     expect(setup).toMatchObject({ inputAudioTranscription: {}, outputAudioTranscription: {}, generationConfig: { responseModalities: ['AUDIO'] } });
     expect(setup.contextWindowCompression).toMatchObject({ slidingWindow: { targetTokens: 4000 } });
     // 버튼 없이 한 연결에서 이어졌다.
@@ -135,11 +136,12 @@ describe('AC-1/2 브라우저↔서버↔Live 중계와 지연 계측', () => {
   }, 30000);
 
   it('AI가 말하는 중 사용자가 말하면 끼어들기 이벤트가 오고 기록된다', async () => {
-    const r = await rig({ mock: { audioChunks: 40, chunkIntervalMs: 20, firstAudioDelayMs: 20 } });
+    const r = await rig({ env: { DAILY_LOG_VOICE_LIVE_ECHO_GRACE_MS: '500' }, mock: { audioChunks: 40, chunkIntervalMs: 20, firstAudioDelayMs: 20 } });
     const b = new Browser(r.base);
     const { sessionId } = await b.wait('ready');
     await b.tone(600); await b.silence(120);
     await b.wait('first_audio');
+    await new Promise((r) => setTimeout(r, 600)); // 에코 무시 구간(500ms) 이후
     await b.tone(600, 20); // 응답 도중 다시 말한다
     await b.wait('interrupted');
     await b.silence(400);
@@ -397,4 +399,21 @@ describe.skipIf(!process.env.DATABASE_URL)('Live 호출의 월 원장 연동 (TA
     expect(snap.unknownKrw + snap.confirmedKrw).toBeGreaterThan(0);
     expect(snap.reservedKrw).toBe(0);
   }, 20000);
+
+  it('AI 재생 직후 짧은 구간의 작은 소리(스피커 에코)는 끼어들기로 처리하지 않는다', async () => {
+    const r = await rig({ env: { DAILY_LOG_VOICE_LIVE_ECHO_GRACE_MS: '500' }, mock: { audioChunks: 40, chunkIntervalMs: 20, firstAudioDelayMs: 20 } });
+    const b = new Browser(r.base);
+    const { sessionId } = await b.wait('ready');
+    await b.tone(600); await b.silence(120);
+    await b.wait('first_audio');
+    await b.tone(200, 20); // 재생 시작 직후(<500ms) 에코 수준 소리
+    await b.silence(400);
+    await b.wait('turn', (e) => e.n === 1, 8000);
+    b.ws.send(JSON.stringify({ type: 'end' }));
+    await b.wait('stopped');
+    const rec = JSON.parse(readFileSync(path.join(r.dir, `live-${sessionId}.json`), 'utf8'));
+    expect(rec.interrupts).toBe(0);
+    expect(r.mock.state.interrupts).toBe(0);
+    expect(rec.turns[0].interrupted).toBe(false);
+  }, 30000);
 });
