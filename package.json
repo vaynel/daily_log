@@ -23,6 +23,7 @@
     "test:queue-restart": "node scripts/queue-restart-e2e.mjs",
     "test:calendar-e2e": "node scripts/calendar-e2e.mjs",
     "test:voice-e2e": "node scripts/voice-e2e.mjs",
+    "test:interview-e2e": "node scripts/interview-e2e.mjs",
     "test:voice-live-e2e": "node scripts/voice-live-e2e.mjs",
     "test:paging-e2e": "node scripts/paging-e2e.mjs",
     "scan:secrets": "node scripts/scan-secrets.mjs"

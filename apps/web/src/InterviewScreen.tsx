@@ -54,6 +54,7 @@ export function InterviewScreen() {
   const lastVoice = useRef(0);
   const sawVoice = useRef(false);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const go = useCallback((p: Phase) => { phaseRef.current = p; setPhase(p); }, []);
 
@@ -104,6 +105,7 @@ export function InterviewScreen() {
   }, []);
 
   const finish = useCallback((reason: string, message?: string) => {
+    if (stopTimer.current) { clearTimeout(stopTimer.current); stopTimer.current = null; }
     running.current = false;
     releaseMic();
     const info = describeStop(reason);
@@ -141,6 +143,7 @@ export function InterviewScreen() {
 
   const startTalk = useCallback(async () => {
     if (!recordId || running.current) return;
+    if (stopTimer.current) { clearTimeout(stopTimer.current); stopTimer.current = null; }
     setMicProblem(null); setStop(null); setNotice(''); setConfirmEnd(false);
     go('asking-mic');
     let opened;
@@ -180,7 +183,7 @@ export function InterviewScreen() {
     const s = ws.current;
     if (s && s.readyState === WebSocket.OPEN) {
       try { s.send(JSON.stringify({ type: 'pause' })); } catch { /* 닫힘 */ }
-      setTimeout(() => { if (running.current) finish('USER_PAUSE'); }, 2500);
+      stopTimer.current = setTimeout(() => { if (running.current) finish('USER_PAUSE'); }, 2500);
     } else finish('USER_PAUSE');
   }, [finish]);
 
@@ -189,13 +192,14 @@ export function InterviewScreen() {
     const s = ws.current;
     if (s && s.readyState === WebSocket.OPEN) {
       try { s.send(JSON.stringify({ type: 'end' })); } catch { /* 닫힘 */ }
-      setTimeout(() => { if (running.current) finish('USER_END'); }, 2500);
+      stopTimer.current = setTimeout(() => { if (running.current) finish('USER_END'); }, 2500);
     } else finish('USER_END');
   }, [finish]);
 
   useEffect(() => () => {
     running.current = false;
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    if (stopTimer.current) clearTimeout(stopTimer.current);
     const s = ws.current; ws.current = null;
     try { s?.close(); } catch { /* 닫힘 */ }
     mic.current?.stop(); player.current?.stop();
