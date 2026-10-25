@@ -66,7 +66,7 @@ export function InterviewScreen() {
       setState(s); setLoadError(false);
       if (!running.current) {
         setUsedMs(s.usage.usedMs);
-        if (!s.canTalk && s.blockReason) { go('blocked'); setStop(describeStop(s.blockReason)); }
+        if (!s.canTalk && s.blockReason && phaseRef.current !== 'ended') { go('blocked'); setStop(describeStop(s.blockReason)); }
         else if (phaseRef.current === 'blocked') { go('idle'); setStop(null); }
       }
     } catch { setLoadError(true); }
