@@ -103,7 +103,10 @@ export class JobQueue {
   }
   private async setState(jobId: string, state: JobState, wait: WaitReason | null, code: string | null, from?: JobState) {
     await this.pool.query(
-      `UPDATE jobs SET state=$2, wait_reason=$3, error_code=$4, lease_until=NULL, updated_at=now() WHERE id=$1 AND ($5::text IS NULL OR state=$5)`,
+      `UPDATE jobs SET state=$2, wait_reason=$3, error_code=$4,
+         quality_reasons=CASE WHEN $2='SUCCEEDED' THEN '{}'::text[] ELSE quality_reasons END,
+         quality_repair_stages=CASE WHEN $2='SUCCEEDED' THEN '{}'::text[] ELSE quality_repair_stages END,
+         lease_until=NULL, updated_at=now() WHERE id=$1 AND ($5::text IS NULL OR state=$5)`,
       [jobId, state, wait, code, from ?? null]);
   }
 

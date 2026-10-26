@@ -23,7 +23,7 @@ describe.skipIf(!url)('렌더 → 검수 → 부분 재제작 통합', () => {
     await pool.query("INSERT INTO interviews(id,owner_id,life_date,started_at,status) VALUES($1,'fixture','2030-01-01',now(),'CONFIRMED')", [id]);
     await pool.query("INSERT INTO pipeline_states(interview_id,updated_at) VALUES($1,now())", [id]);
     let captions = 0, images = 0;
-    const renderInput = mockInput([1]);
+    const renderInput = { ...mockInput([1]), scriptVersion: 2 };
     const handlers: Record<string, StageHandler> = {
       image: { execute: async () => ({ result: ++images }) },
       captions: { execute: async () => ({ result: ++captions }) },
@@ -48,6 +48,7 @@ describe.skipIf(!url)('렌더 → 검수 → 부분 재제작 통합', () => {
     expect(readdirSync(dir).filter(f => f.endsWith('.mp4'))).toHaveLength(2);
     const reports = (await pool.query('SELECT report FROM job_quality_reviews WHERE job_id=$1 ORDER BY id', [j.id])).rows;
     expect(reports.map(r => r.report.passed)).toEqual([false, true]);
+    expect((await q.stages(j.id)).find(s => s.stage === 'render')!.result.scriptVersion).toBe(2);
     expect(displayStatus('CONFIRMED', (await pool.query('SELECT * FROM pipeline_states WHERE interview_id=$1', [id])).rows[0])).toBe('COMPLETED');
   }, 60_000);
   it('소진·예산 대기를 둘 다 표시하며 검수 미통과 결과는 공개 불가다', () => {

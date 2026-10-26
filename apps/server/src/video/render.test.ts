@@ -163,7 +163,10 @@ describe('단일 렌더러 · 세로 영상 합성 (모의 자산, 실제 FFmpeg
       const h = createRenderHandler({ gate: new RenderGate(), render: deps({ overlay: slow, workDir: path.join(dir, 'work-stage') }), loadInput: async (id) => (id === 's' ? input : null), outFile: () => out, heartbeatMs: 40 });
       const res = await h.execute(ctx());
       expect(beats).toBeGreaterThanOrEqual(3);
-      expect(res.result).toMatchObject({ file: 'v.mp4', sha256: sha(out) });
+      const rendered = res.result as { file: string; sha256: string };
+      expect(rendered.file).toBe('v.j.q0.mp4');
+      expect(rendered.sha256).toBe(sha(path.join(path.dirname(out), rendered.file)));
+      expect(existsSync(out)).toBe(false); // legacy target is not overwritten by a new generation
       const none = createRenderHandler({ gate: new RenderGate(), render: deps(), loadInput: async () => null, outFile: () => out, heartbeatMs: 40 });
       await expect(none.execute(ctx())).rejects.toBeInstanceOf(NonRetryableError);
     }, 120_000);

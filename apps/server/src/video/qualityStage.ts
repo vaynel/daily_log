@@ -27,8 +27,8 @@ export function createQualityHandler(d: QualityStageDeps): StageHandler {
       try {
         await d.pool.query("UPDATE pipeline_states SET production='RUNNING', review='PENDING', updated_at=now() WHERE interview_id::text=$1", [ctx.subjectId]);
         const i = await d.loadInput(ctx);
-        const rendered = ctx.results[d.renderStage ?? 'render'] as { file?: string; sha256?: string } | undefined;
-        if (!rendered || rendered.file !== i.file || rendered.sha256 !== i.sha256) throw new NonRetryableError('QUALITY_ARTIFACT_MISMATCH');
+        const rendered = ctx.results[d.renderStage ?? 'render'] as { file?: string; sha256?: string; scriptVersion?: number } | undefined;
+        if (!rendered || rendered.file !== i.file || rendered.sha256 !== i.sha256 || rendered.scriptVersion !== i.scriptVersion) throw new NonRetryableError('QUALITY_ARTIFACT_MISMATCH');
         const file = d.resolveFile(i.file);
         const actualHash = createHash('sha256').update(await readFile(file)).digest('hex');
         if (actualHash !== i.sha256) throw new NonRetryableError('QUALITY_ARTIFACT_CHANGED');

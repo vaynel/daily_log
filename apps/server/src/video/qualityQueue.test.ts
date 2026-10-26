@@ -73,4 +73,15 @@ describe.skipIf(!url)('품질 재제작 실제 PostgreSQL 큐', () => {
     expect(await q.tick()).toBeNull();
   });
 
+  it('대기 후 같은 결과를 재검수하여 통과하면 이전 대기 사유를 제거한다', async () => {
+    let passed = false;
+    const h = { captions: { execute: async () => ({ result: 1 }) }, render: { execute: async () => ({ result: 2 }) }, quality: { execute: async () => { if (!passed) throw reject(false); return { result: { passed: true } }; } } };
+    const q = mk(h); const j = await q.enqueue({ kind: 'video', subjectId: 'fixture', stages: Object.keys(h), idempotencyKey: 'quality-clear' });
+    await q.tick();
+    passed = true;
+    await q.requestManualRetry(j.id, { commandId: 'quality-recheck', actor: 'fixture-user' });
+    await q.tick();
+    expect(await q.get(j.id)).toMatchObject({ state: 'SUCCEEDED', qualityReasons: [], qualityRegenerationsUsed: 0 });
+  });
+
 });
