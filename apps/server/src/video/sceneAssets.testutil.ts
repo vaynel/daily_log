@@ -40,3 +40,22 @@ export function mockImageProvider(o: { fail?: () => Error | null; echo?: boolean
   };
   return { provider, calls };
 }
+
+/** 휴대폰 사진처럼 JPEG 뒤에 부가 데이터(두 번째 JPEG)를 붙인다. */
+export function withTrailingJpeg(jpeg: Buffer, extra: Buffer): Buffer {
+  return Buffer.concat([jpeg, extra]);
+}
+
+async function lavfiJpeg(filter: string): Promise<Buffer> {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'dl-fx-'));
+  try {
+    await run('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', filter, '-frames:v', '1', '-q:v', '2', path.join(dir, 'p.jpg')]);
+    return await readFile(path.join(dir, 'p.jpg'));
+  } finally { await rm(dir, { recursive: true, force: true }); }
+}
+
+export const solidJpeg = (color: string, size: string) => lavfiJpeg(`color=c=${color}:s=${size}`);
+
+/** 회색 바탕 위의 캐릭터 대역: 검은 윤곽 안에 흰 몸(윤곽 안쪽 흰색은 지워지면 안 된다). */
+export const characterOnGray = () =>
+  lavfiJpeg('color=c=0xC8C8C8:s=540x960,drawbox=x=170:y=300:w=200:h=500:color=black:t=fill,drawbox=x=180:y=310:w=180:h=480:color=white:t=fill');

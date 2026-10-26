@@ -7,8 +7,8 @@ import type { MonthlyLedger } from '../budget/ledger.js';
 import { TransportError } from '../voice/transports.js';
 import { AssetStore, sha256 } from './assetStore.js';
 import { sanitizeVisual, stripPhoto } from './imageInput.js';
-import { buildLayers, composeFrame, generateBackground, generatePose, IMAGE_ESTIMATE_KRW, REFERENCE_SHEET_SHA256, type AssetDeps } from './sceneAssets.js';
-import { fixturePhoto, mockImageProvider, withExifMarker } from './sceneAssets.testutil.js';
+import { buildLayers, composeFrame, FRAME_H, FRAME_W, MAX_TEXT_REGEN, generateBackground, generatePose, IMAGE_ESTIMATE_KRW, REFERENCE_SHEET_SHA256, type AssetDeps } from './sceneAssets.js';
+import { characterOnGray, fixturePhoto, mockImageProvider, solidJpeg, withExifMarker, withTrailingJpeg } from './sceneAssets.testutil.js';
 import type { Scene } from './scenePlan.js';
 
 const SHEET = path.resolve(import.meta.dirname, '../../../../assets/character/A-ref-v1.jpg');
@@ -189,3 +189,85 @@ describe('AC-4 장애: 기존 자산 보존과 대기·실패 표시', () => {
     expect((await store.status(a.key))?.state).toBe('NEEDS_CHECK');
   });
 });
+
+describe('재작업 R3', () => {
+  it('뒤에 부가 데이터(두 번째 JPEG)가 붙은 휴대폰 사진도 stripPhoto 가 처리한다', async () => {
+    const tail = withTrailingJpeg(photo, await fixturePhoto('320x240'));
+    const out = await stripPhoto(tail);
+    expect(out.subarray(0, 2).toString('hex')).toBe('ffd8');
+    expect(out.includes('SECRET-MARKER')).toBe(false);
+    const { deps, mock } = rig();
+    expect((await generateBackground(deps, { photo: tail, visual: '방' })).ok).toBe(true);
+    expect(mock.calls[0]!.images[0]!.includes('SECRET-MARKER')).toBe(false);
+  });
+
+  it('배경 프롬프트는 간판·입간판을 글자 없는 빈 판으로 그리라고 지시한다', async () => {
+    const { deps, mock } = rig();
+    await generateBackground(deps, { photo, visual: '카페 입구' });
+    expect(mock.calls[0]!.prompt).toContain('빈 판');
+    expect(mock.calls[0]!.prompt).toContain('상단 간판');
+  });
+
+  it('글자 의심 시 1회만 재생성하고(비용 상한), 통과하면 READY 로 둔다', async () => {
+    let n = 0;
+    const { deps, mock, fl, store } = rig();
+    const r = await generateBackground({ ...deps, detectText: async () => ++n === 1 }, { photo, visual: '카페' });
+    if (!r.ok) throw new Error('생성 실패');
+    expect(mock.calls).toHaveLength(1 + MAX_TEXT_REGEN);
+    expect(mock.calls[1]!.prompt).toContain('이전 결과에 읽을 수 있는 글자');
+    expect(mock.calls[0]!.prompt).not.toContain('이전 결과에 읽을 수 있는 글자');
+    expect(fl.entries.map((e) => e.state)).toEqual(['CONFIRMED', 'CONFIRMED']);
+    expect(r.needsCheck).toBeUndefined();
+    expect((await store.status(r.key))?.state).toBe('READY');
+  });
+
+  it('재생성 후에도 글자 의심이면 NEEDS_CHECK(TEXT_SUSPECT) 로 표시하고 더 호출하지 않는다', async () => {
+    const { deps, mock, store } = rig();
+    const d = { ...deps, detectText: async () => true };
+    const r = await generateBackground(d, { photo, visual: '카페' });
+    if (!r.ok) throw new Error('생성 실패');
+    expect(r.needsCheck).toBe(true);
+    expect(mock.calls).toHaveLength(2);
+    expect(await store.status(r.key)).toMatchObject({ state: 'NEEDS_CHECK', code: 'TEXT_SUSPECT' });
+    const again = await generateBackground(d, { photo, visual: '카페' });
+    expect(again).toMatchObject({ ok: true, reused: true, needsCheck: true });
+    expect(mock.calls).toHaveLength(2);
+  });
+
+  it('글자 의심 재생성이 예산 부족이면 첫 결과를 보존하고 NEEDS_CHECK 로 표시한다', async () => {
+    const { deps, mock, store } = rig(IMAGE_ESTIMATE_KRW);
+    const r = await generateBackground({ ...deps, detectText: async () => true }, { photo, visual: '카페' });
+    if (!r.ok) throw new Error('첫 결과가 보존되어야 함');
+    expect(mock.calls).toHaveLength(1);
+    expect(r.needsCheck).toBe(true);
+    expect(await store.readImage(r.key)).not.toBeNull();
+    expect((await store.status(r.key))?.state).toBe('NEEDS_CHECK');
+  });
+
+  it('composeFrame: 캐릭터 회색 바탕은 투명 처리되고 캐릭터는 화면 높이 40~50%, 바닥 쪽에 놓인다', async () => {
+    const bg = await solidJpeg('0xE03020', '720x1280');
+    const frame = await composeFrame(bg, await characterOnGray());
+    const px = await rawFrame(frame);
+    const at = (x: number, y: number) => { const i = (y * FRAME_W + x) * 4; return [px[i]!, px[i + 1]!, px[i + 2]!]; };
+    const isRed = (c: number[]) => c[0]! > 180 && c[1]! < 90 && c[2]! < 90;
+    // 캐릭터 몸 한가운데는 배경색이 아니다(흰 몸/검은 윤곽).
+    expect(isRed(at(FRAME_W / 2, 1000))).toBe(false);
+    // 캐릭터 가장자리 밖, 예전에는 회색 사각형이던 자리는 배경색이다.
+    expect(isRed(at(FRAME_W / 2 - 250, 1000))).toBe(true);
+    expect(isRed(at(FRAME_W / 2 + 250, 700))).toBe(true);
+    // 세로 범위: 배경색이 아닌 행을 찾아 높이와 바닥 위치를 확인한다.
+    let top = -1, bottom = -1;
+    for (let y = 0; y < FRAME_H; y++) if (!isRed(at(FRAME_W / 2, y))) { if (top < 0) top = y; bottom = y; }
+    const height = bottom - top + 1;
+    expect(height / FRAME_H).toBeGreaterThanOrEqual(0.4);
+    expect(height / FRAME_H).toBeLessThanOrEqual(0.5);
+    expect(FRAME_H - 1 - bottom).toBeLessThanOrEqual(80);
+    expect(FRAME_H - 1 - bottom).toBeGreaterThanOrEqual(20);
+  });
+});
+
+async function rawFrame(jpeg: Buffer): Promise<Buffer> {
+  const f = path.join(mkdtempSync(path.join(os.tmpdir(), 'dl-raw-')), 'f.jpg');
+  writeFileSync(f, jpeg);
+  return execFileSync('ffmpeg', ['-v', 'error', '-i', f, '-f', 'rawvideo', '-pix_fmt', 'rgba', '-'], { maxBuffer: FRAME_W * FRAME_H * 4 + 4096 });
+}
