@@ -21,12 +21,13 @@ function gutter(z: ZoomChunk): string {
   return `<div id="zoomgutter" style="position:absolute;left:${GUTTER.left - SAFE_MARGIN_PX}px;top:0;width:${GUTTER.width}px;white-space:pre;text-align:right;font:500 ${Math.round(z.fontPx * 0.8)}px/${(z.fontPx * 1.4) / Math.round(z.fontPx * 0.8)} ${FONT_STACK};color:#8ab4ff">${marks}</div>`;
 }
 
-export function frameHtml(o: { cue?: SubtitleCue; zoom?: ZoomChunk }): string {
+/** transparent=true 면 바탕을 비워 장면 프레임 위에 얹는 오버레이(TASK-25)로 쓴다. */
+export function frameHtml(o: { cue?: SubtitleCue; zoom?: ZoomChunk; transparent?: boolean }): string {
   const sub = o.cue
     ? `<div id="sub" style="position:absolute;left:${SAFE_MARGIN_PX}px;width:${TEXT_WIDTH_PX}px;top:${SUBTITLE_BOX.top}px;height:${SUBTITLE_BOX.bottom - SUBTITLE_BOX.top}px;display:flex;align-items:center;justify-content:center;text-align:center"><span style="white-space:pre;font:700 ${o.cue.fontPx}px/1.35 ${FONT_STACK};color:#fff;text-shadow:0 0 6px #000,0 0 6px #000">${esc(o.cue.text)}</span></div>`
     : '';
   const zoom = o.zoom
     ? `<div id="zoom" style="position:absolute;left:${SAFE_MARGIN_PX}px;width:${TEXT_WIDTH_PX}px;top:${ZOOM_BOX.top}px;height:${ZOOM_BOX.bottom - ZOOM_BOX.top}px;overflow:visible"><div id="zoomtext" style="white-space:pre;display:inline-block;font:500 ${o.zoom.fontPx}px/1.4 ${o.zoom.mono ? MONO_STACK : FONT_STACK};color:#f4f4f4;background:#1d1f24;padding:0">${esc(o.zoom.displayLines.join('\n'))}</div>${gutter(o.zoom)}</div>`
     : '';
-  return `<!doctype html><meta charset="utf-8"><body style="margin:0;width:${CANVAS.width}px;height:${CANVAS.height}px;position:relative;overflow:hidden;background:#2b2f36">${zoom}${sub}</body>`;
+  return `<!doctype html><meta charset="utf-8"><body style="margin:0;width:${CANVAS.width}px;height:${CANVAS.height}px;position:relative;overflow:hidden;background:${o.transparent ? 'transparent' : '#2b2f36'}">${zoom}${sub}</body>`;
 }

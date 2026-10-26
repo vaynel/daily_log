@@ -22,6 +22,8 @@ export interface StageContext {
   attempt: number;
   /** 유료 단계의 외부 요청 식별자. 제공자 멱등키·조회 키로 쓴다. */
   externalRequestId: string;
+  /** 긴 단계가 처리 중 임대를 연장한다. 임대가 끝난 작업은 recover 가 다시 시작하므로 오래 걸리는 단계는 주기적으로 호출해야 한다. */
+  heartbeat(): Promise<boolean>;
   /** 앞서 완료된 단계의 결과(보존된 값). */
   results: Record<string, unknown>;
 }
@@ -151,6 +153,12 @@ export class JobQueue {
     return (await this.get(job.id))!;
   }
 
+  /** 처리 중인 작업의 임대를 leaseMs 만큼 다시 늘린다(RUNNING 일 때만). */
+  async renewLease(jobId: string): Promise<boolean> {
+    const r = await this.pool.query(`UPDATE jobs SET lease_until = now() + ($2 || ' milliseconds')::interval WHERE id=$1 AND state='RUNNING'`, [jobId, String(this.d.leaseMs ?? 60000)]);
+    return r.rowCount === 1;
+  }
+
   private async process(job: JobRow) {
     const handlers = this.d.handlers[job.kind];
     if (!handlers) return this.fail(job, 'NO_HANDLER');
@@ -173,7 +181,7 @@ export class JobQueue {
   }
 
   private async runStage(job: JobRow, stage: string, h: StageHandler, row: Row | undefined): Promise<Step> {
-    const ctxBase = { jobId: job.id, subjectId: job.subjectId, stage, results: await this.results(job.id) };
+    const ctxBase = { jobId: job.id, subjectId: job.subjectId, stage, results: await this.results(job.id), heartbeat: () => this.renewLease(job.id) };
     // 외부 요청이 나갔고 결과가 확정되지 않은 단계는 다시 보내지 않고 조회로 넘긴다.
     if (row && (row.state === 'SENT' || row.state === 'UNKNOWN')) {
       return this.resolveUnsettled(job, stage, h, row, { ...ctxBase, attempt: Number(row.attempts), externalRequestId: row.external_request_id });
