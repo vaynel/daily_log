@@ -4,6 +4,7 @@ import path from 'node:path';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { DRIVE_SCOPE, LOGIN_SCOPE, type AuthConfig } from './config.js';
 import { b64url, challengeOf, OidcClient, OidcError } from './oidc.js';
+import type { DriveConnectionStore } from '../backup/connections.js';
 import { parseCookies, serializeCookie, sign, verify, type SessionClaims } from './session.js';
 
 const SESSION_COOKIE = 'dl_session';
@@ -30,6 +31,8 @@ export interface AuthPluginOptions {
   fileStorageDir: string;
   entries: EntryStore;
   fetchImpl?: typeof fetch;
+  /** 있으면 Drive 갱신 토큰을 암호화 저장하고 연결 상태를 이 저장소 기준으로 보여 준다(없으면 세션 표시만). */
+  drive?: DriveConnectionStore;
 }
 
 export type AuthFailure = { status: 401 | 403 | 503; code: 'unauthenticated' | 'session_expired' | 'account_not_allowed' | 'auth_not_configured' };
@@ -129,7 +132,9 @@ export function registerAuth(app: FastifyInstance, opts: AuthPluginOptions) {
     const r = authenticate(req);
     if ('status' in r) return fail(reply, r);
     reply.header('cache-control', 'no-store');
-    return { email: r.user.email, name: r.user.name ?? null, driveConnected: r.user.drive === true };
+    // 저장소가 있으면 DB 상태가 기준이다: 만료·해제된 연결은 세션 쿠키가 남아 있어도 연결로 보이지 않는다.
+    const driveState = opts.drive ? await opts.drive.state(r.user.sub) : undefined;
+    return { email: r.user.email, name: r.user.name ?? null, driveConnected: driveState ? driveState === 'CONNECTED' : r.user.drive === true, ...(driveState ? { driveState } : {}) };
   });
 
   // ---- Drive 동의(로그인과 분리) ----
@@ -157,12 +162,26 @@ export function registerAuth(app: FastifyInstance, opts: AuthPluginOptions) {
     try {
       const tok = await oidc.exchange(q.code, flow.value.verifier, oidc.driveRedirectUri);
       if (!(tok.scope ?? '').split(' ').includes(DRIVE_SCOPE)) return reply.redirect(`${back}?drive=denied`);
-      // Drive 토큰의 보관·사용은 후속 Task(Drive 연동). 여기서는 동의 완료 상태만 세션에 기록한다.
+      // 갱신 토큰은 암호화해 DB 에만 저장한다(쿠키·로그에 넣지 않음). 재동의 응답에 갱신 토큰이 없으면 기존 연결이 살아 있을 때만 유지한다.
+      if (opts.drive) {
+        if (tok.refresh_token) await opts.drive.save(r.user.sub, r.user.email, tok.refresh_token, tok.scope ?? DRIVE_SCOPE);
+        else if ((await opts.drive.state(r.user.sub)) !== 'CONNECTED') return reply.redirect(`${back}?drive=failed`);
+      }
       setSession(reply, { sub: r.user.sub, email: r.user.email, name: r.user.name, drive: true });
       return reply.redirect(`${back}?drive=connected`);
     } catch {
       return reply.redirect(`${back}?drive=failed`);
     }
+  });
+
+  // 연결 해제: 서버의 토큰을 지우고 Google 쪽 철회를 시도한다. 이미 올린 백업 파일·기록은 지우지 않는다.
+  app.post('/auth/drive/disconnect', async (req, reply) => {
+    const r = authenticate(req);
+    if ('status' in r) return fail(reply, r);
+    const token = opts.drive ? await opts.drive.disconnect(r.user.sub) : null;
+    const revoked = token && oidc ? await oidc.revoke(token) : false;
+    setSession(reply, { sub: r.user.sub, email: r.user.email, name: r.user.name, drive: false });
+    return reply.header('cache-control', 'no-store').send({ ok: true, driveConnected: false, revoked, backupsKept: true });
   });
 
   // ---- 보호 자원 (위 onRequest 훅이 먼저 인증한다) ----

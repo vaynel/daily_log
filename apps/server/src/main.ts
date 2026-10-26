@@ -11,6 +11,12 @@ import { RecordStore } from './records/store.js';
 import { readKeyFile } from './voice/keys.js';
 import { loadLiveConfig, type LiveConfig } from './voice/live.js';
 import { NotificationService } from './notify/service.js';
+import { OidcClient } from './auth/oidc.js';
+import { PgDriveConnections } from './backup/connections.js';
+import { createDriveFactory } from './backup/drive.js';
+import { BackupService } from './backup/service.js';
+import { TokenVault } from './backup/vault.js';
+import { JobQueue } from './jobs/queue.js';
 import { UnconfiguredSender, loadVapidKeys } from './notify/sender.js';
 
 const config = loadConfigOrExit();
@@ -27,11 +33,18 @@ else live = loadLiveConfig(key.key, process.env);
 // 브리핑 Pro 정리(구독 경로). 설정이 없거나 잘못되면 null → 브리핑 생성은 PRO_UNAVAILABLE 로 막히고 제작 작업은 만들어지지 않는다.
 const briefingInfer = await createProInfer(process.env, loadSiwcRuntime);
 
+const connections = new PgDriveConnections(pool, new TokenVault(process.env.DRIVE_TOKEN_KEY?.trim() || config.sessionSecret));
+// 웹 서버는 작업을 만들고 상태를 보여 줄 뿐이며 단계 실행은 워커가 한다(handlers 없음).
+const backupQueue = new JobQueue({ pool, ledger: new MonthlyLedger(pool), handlers: {} });
+const backup = new BackupService({ pool, queue: backupQueue, fileStorageDir: config.fileStorageDir, connections, drive: createDriveFactory({ connections, oidc: auth ? new OidcClient(auth) : null }) });
+
 const vapid = config.vapidKeysFile ? loadVapidKeys(config.vapidKeysFile) : null;
 const app = buildApp({
   notifications: new NotificationService({ pool, sender: new UnconfiguredSender() }),
   vapidPublicKey: vapid?.publicKey ?? null,
   auth,
+  drive: connections,
+  backup,
   sessionSecret: config.sessionSecret,
   fileStorageDir: config.fileStorageDir,
   records: new RecordStore(pool),
