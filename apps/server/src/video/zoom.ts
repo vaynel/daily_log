@@ -36,9 +36,18 @@ function foldLine(line: string, maxCols: number): string[] {
   if (cols(line) <= maxCols) return [line];
   const out: string[] = [];
   let cur = '';
-  for (const ch of line) {
-    if (cols(cur + ch) > maxCols) { out.push(cur); cur = ''; }
-    cur += ch;
+  // 단어(글자·숫자·_ 연속), 공백 덩어리, 구두점 한 글자 단위로 나눠 토큰 중간에서 끊지 않는다.
+  for (const token of line.match(/\s+|[\p{L}\p{N}_]+|[^\s\p{L}\p{N}_]/gu) ?? []) {
+    if (cols(cur + token) <= maxCols) { cur += token; continue; }
+    // 줄 끝에 걸린 공백은 보이지 않으므로 현재 줄에 붙여 둔다.
+    if (/^\s+$/.test(token)) { cur += token; continue; }
+    if (cur) { out.push(cur); cur = ''; }
+    if (cols(token) <= maxCols) { cur = token; continue; }
+    // 한 토큰이 한 줄보다 길 때만 문자 단위로 나눈다.
+    for (const ch of token) {
+      if (cols(cur + ch) > maxCols) { out.push(cur); cur = ''; }
+      cur += ch;
+    }
   }
   if (cur) out.push(cur);
   return out;

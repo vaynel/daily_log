@@ -222,6 +222,33 @@ describe('학습 확대 화면 (AC-3)', () => {
     expect(c.pieces[0]!.displayLines.join('')).toBe(line);
     expect(c.pieces[0]!.original).toBe(line);
   });
+  it('접을 때 토큰 중간이 아니라 공백·구두점 경계에서 줄을 바꾼다', () => {
+    const lines = [
+      'const rows = await db.query("SELECT id, name FROM users WHERE status = $1 ORDER BY created_at", [id, status]);',
+      'const [firstUser, secondUser] = await Promise.all([loadUser(id), loadUser(other)]);',
+    ];
+    const original = lines.join('\n');
+    const c = chunkMaterial({ sceneKey: 'sc2', kind: 'CODE', original });
+    const display = c.pieces.flatMap((p) => p.displayLines);
+    expect(display.length).toBeGreaterThan(lines.length);
+    expect(reassemble(c.pieces)).toBe(original);
+    for (const [i, l] of lines.entries()) {
+      const words = l.match(/[\p{L}\p{N}_]+/gu)!;
+      const shown = display.filter((d) => l.includes(d.trim()) && d.trim());
+      // 원문 단어가 모두 한 줄 안에 온전히 들어 있다.
+      for (const w of words) expect(shown.some((d) => d.match(/[\p{L}\p{N}_]+/gu)?.includes(w)), `${i}:${w}`).toBe(true);
+    }
+    expect(display.join('')).toBe(original.replace('\n', ''));
+  });
+  it('한 토큰이 한 줄보다 길 때만 문자 단위로 나눈다', () => {
+    const token = 'x'.repeat(200);
+    const original = `a = ${token}`;
+    const c = chunkMaterial({ sceneKey: 'sc2', kind: 'CODE', original });
+    const display = c.pieces[0]!.displayLines;
+    expect(display.length).toBeGreaterThan(1);
+    expect(display.join('')).toBe(original);
+    expect(display[0]).toBe('a = ');
+  });
   it('시간이 모자라면 내용을 줄이지 않고 실패한다', () => {
     const m: LearningMaterial = { sceneKey: 'sc2', kind: 'CODE', original: long };
     expect(planZoom(m, { startSec: 0, endSec: 3 })).toMatchObject({ ok: false, code: 'TOO_MANY_CHUNKS' });
