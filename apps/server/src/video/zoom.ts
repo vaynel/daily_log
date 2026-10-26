@@ -16,7 +16,9 @@ export interface ZoomChunk {
   displayLines: string[];
   fontPx: number;
   mono: boolean;
-  /** 접힌 줄이 있으면 true — 화면에 이어짐 표시(↳)를 그린다. */
+  /** displayLines와 같은 길이. true인 줄은 앞 줄에서 접혀 이어지는 줄 — 화면 왼쪽 거터에 ↳를 그린다(원문 글자 아님). */
+  continued: boolean[];
+  /** 접힌 줄이 있으면 true. */
   wrapped: boolean;
   startSec: number;
   endSec: number;
@@ -87,6 +89,7 @@ export function chunkMaterial(m: LearningMaterial): { sceneKey: string; kind: Ma
     pieces: pieces.map((p) => ({
       original: lines.slice(p.start, p.end).join('\n'),
       displayLines: shown.slice(p.start, p.end).flat(),
+      continued: shown.slice(p.start, p.end).flatMap((s) => s.map((_, k) => k > 0)),
       fontPx, mono, wrapped: shown.slice(p.start, p.end).some((s) => s.length > 1),
     })),
   };

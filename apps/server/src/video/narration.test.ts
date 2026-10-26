@@ -9,6 +9,7 @@ import { loadVoiceConfig, synthesizeNarration, type NarrationTts } from './narra
 import { runNarrationStage } from './narrationStage.js';
 import { DEFAULT_NARRATION, type Scene, type ScenePlan } from './scenePlan.js';
 import { buildSubtitles, checkSubtitles, maxUnitsPerLine, textUnits, wrapLines, TEXT_WIDTH_PX, type SubtitleCue } from './subtitles.js';
+import { frameHtml, GUTTER_MARK } from './frame.js';
 import { chunkMaterial, planZoom, reassemble, type LearningMaterial } from './zoom.js';
 
 const VOICE_FILE = fileURLToPath(new URL('../../../../assets/voice/voice.json', import.meta.url));
@@ -219,8 +220,22 @@ describe('학습 확대 화면 (AC-3)', () => {
     const line = `const result = await fetchUserProfile(${'argument, '.repeat(12)}last);`;
     const c = chunkMaterial({ sceneKey: 'sc2', kind: 'CODE', original: line });
     expect(c.pieces[0]!.wrapped).toBe(true);
+    const p0 = c.pieces[0]!;
+    expect(p0.continued).toHaveLength(p0.displayLines.length);
+    expect(p0.continued[0]).toBe(false);
+    expect(p0.continued.slice(1).every(Boolean)).toBe(true);
     expect(c.pieces[0]!.displayLines.join('')).toBe(line);
     expect(c.pieces[0]!.original).toBe(line);
+  });
+  it('접힌 줄에만 거터 ↳를 그리고 본문 텍스트에는 원문 글자만 둔다', () => {
+    const line = `const result = await fetchUserProfile(${'argument, '.repeat(12)}last);`;
+    const z = chunkMaterial({ sceneKey: 'sc2', kind: 'CODE', original: line }).pieces[0]!;
+    const html = frameHtml({ zoom: { ...z, startSec: 0, endSec: 3 } });
+    const gutter = html.match(/id="zoomgutter"[^>]*>([^<]*)</)![1]!;
+    expect(gutter.split('\n')).toEqual(z.continued.map((c) => (c ? GUTTER_MARK : '')));
+    expect(html.match(/id="zoomtext"[^>]*>([^<]*)</)![1]).not.toContain(GUTTER_MARK);
+    const plain = chunkMaterial({ sceneKey: 'sc2', kind: 'CODE', original: 'a = 1;' }).pieces[0]!;
+    expect(frameHtml({ zoom: { ...plain, startSec: 0, endSec: 3 } })).not.toContain('zoomgutter');
   });
   it('접을 때 토큰 중간이 아니라 공백·구두점 경계에서 줄을 바꾼다', () => {
     const lines = [
