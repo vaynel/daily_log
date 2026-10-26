@@ -6,3 +6,4 @@
 - `voice/voice.json`: 목소리 v1 (gemini-3.8-flash-tts, 기본 Achird·예비 Zubenelgenubi, 읽기 지시 고정).
 - 미선정 후보(B·C, 다른 목소리)는 저장소에 넣지 않으며 사용 금지. 장면에 실제 상표·글자 노출 금지.
 - 생성 도구: gemini-3.1-flash-image(이미지), 원본 보관: 서버 ~/daily-log-assets/task-14 (SHA256SUMS).
+- `character/poses/`: 포즈 라이브러리 v1 16컷(2026-10-26, gemini-3.1-flash-image, 기준 시트 참조). 파일명 `<smile|surprised|thinking|sleepy>-<front|three-quarter|side|back>.jpg`. 바탕은 흰색·크림색이 섞여 있어 합성 시 키잉 필요. 생각·졸림 컷의 `???`·`Zz`는 기호(글자 아님).
