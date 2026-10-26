@@ -1,0 +1,51 @@
+TASK-26 targeted validation; synthetic inputs; actual PostgreSQL/FFmpeg; no paid requests.
+Runtime PostgreSQL: isolated local 18.4 under /workspace/data/task26-pg because DATABASE_URL was not injected.
+
+COMMAND OUTPUT: focused
+
+> @daily-log/server@0.0.0 test
+> vitest run src/video/quality.test.ts src/video/qualityQueue.test.ts src/video/qualityStage.test.ts src/jobs/queue.test.ts
+
+
+ RUN  v4.1.11 /workspace/apps/server
+
+
+ Test Files  4 passed (4)
+      Tests  29 passed (29)
+   Start at  14:03:37
+   Duration  7.78s (transform 725ms, setup 0ms, import 1.21s, tests 5.77s, environment 1ms)
+
+
+
+COMMAND OUTPUT: render-contract
+
+> @daily-log/server@0.0.0 test
+> vitest run src/video/render.test.ts -t 큐 단계 처리기
+
+
+ RUN  v4.1.11 /workspace/apps/server
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 13 skipped (14)
+   Start at  13:59:29
+   Duration  7.96s (transform 218ms, setup 0ms, import 740ms, tests 7.09s, environment 0ms)
+
+
+
+COMMAND OUTPUT: restart
+PASS SIGKILL during q1 -> fresh process recover: quality=1, processing_retry=1, FAILED/QUALITY_EXHAUSTED, source attempts=1, reviews=2
+
+
+Browser rerun (after render workload completed):
+PASS AFTER: actual React detail, synthetic rejected + exhausted + budget fixture, 900x1100
+
+Earlier observed failures (fixed; not treated as passes):
+- Initial inspection test: module absent before implementation.
+- Budget wake regression: expected wakeWaiting=0, got 1; fixed aggregate regeneration estimate.
+- Transcript regression: mismatched speech was accepted; fixed transcript/script comparison.
+- Blocker regression: SUCCEEDED retained PERMISSION; fixed clearing on success.
+- Render version regression: result.scriptVersion was undefined; now persisted and required by review.
+- Initial full suite: legacy render handler test opened v.mp4; updated for immutable v.j.q0.mp4 contract.
+- A full run overlapped new regression tests with older loaded modules; 2 failures retained in local check-in-progress.log. Fresh final run uses fixed source tree.
+- One concurrent Chromium rerun crashed at newPage; isolated rerun above passed.

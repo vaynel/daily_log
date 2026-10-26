@@ -1,0 +1,71 @@
+Final fixed-source validation, 2026-10-26 UTC
+Code under test: 0ca9709 (full 40-character submission commit is recorded in Mandu after evidence commit).
+npm run check: exit 1 ONLY at last test:notify-e2e startup: screenshot Vite occupied port 5173.
+All preceding lint/typecheck/server tests/web tests/CLI tests/build/spike/records-crash/queue-restart phases passed.
+After stopping our screenshot Vite, test:notify-e2e rerun exit 0 (PC + Android-emulated).
+CLI suite skips 4 Windows-only cases on Linux; not claimed as tested.
+No raw auth test request logs are included in this sanitized summary.
+
+> daily-log@0.0.0 check
+> npm run lint && npm run typecheck && npm test && npm run build && npm run test:spike && npm run test:records-crash && npm run test:queue-restart && npm run test:notify-e2e
+> daily-log@0.0.0 lint
+> eslint .
+> daily-log@0.0.0 typecheck
+> npm run typecheck -ws
+> @daily-log/server@0.0.0 typecheck
+> tsc --noEmit
+> @daily-log/web@0.0.0 typecheck
+> tsc --noEmit
+> daily-log@0.0.0 test
+> npm run test -ws --if-present && npm run test:siwc
+> @daily-log/server@0.0.0 test
+> vitest run
+ Test Files  29 passed (29)
+      Tests  394 passed (394)
+> @daily-log/web@0.0.0 test
+> vitest run --passWithNoTests
+ Test Files  5 passed (5)
+      Tests  29 passed (29)
+> daily-log@0.0.0 test:siwc
+> node --test scripts/siwc/*.test.mjs scripts/voice-measure.test.mjs
+# tests 41
+# pass 37
+# fail 0
+# skipped 4
+# duration_ms 2217.856011
+> daily-log@0.0.0 build
+> npm run build -ws
+> @daily-log/server@0.0.0 build
+> tsc -p tsconfig.build.json && node ../../scripts/copy-migrations.mjs
+> @daily-log/web@0.0.0 build
+> tsc --noEmit && vite build
+> daily-log@0.0.0 test:spike
+> node --test scripts/pro-spike.test.mjs
+# tests 5
+# pass 5
+# fail 0
+# skipped 0
+# duration_ms 481.956572
+> daily-log@0.0.0 test:records-crash
+> node scripts/records-crash-e2e.mjs
+1) SIGKILL 시점 마지막 확인된 저장: 5
+2) 트랜잭션 중간 SIGKILL: 부분 항목·첨부 0건, 이전 저장분 그대로
+PASS
+> daily-log@0.0.0 test:queue-restart
+> node scripts/queue-restart-e2e.mjs
+[plain] SIGKILL 시점: auto_retries_used=0 단계=a:DONE,b:RUNNING 실행=EXEC a 1|EXEC b 1
+[plain] 재시작 후: RECOVERED 1 | EXEC b 2 | HANG b | EXEC c 1 | FINAL SUCCEEDED retries=1
+1) PASS 완료 단계 a 미재실행, 재시도 횟수 DB 유지(0→복구 시 1), b·c 완료
+[paid] SIGKILL 시점: auto_retries_used=1 단계=a:DONE,b:SENT 실행=EXEC a 1|EXEC a 2|EXEC b 1
+[paid] 재시작 후: RECOVERED 1 | LOOKUP b | EXEC c 1 | FINAL SUCCEEDED retries=1
+2) PASS 사용한 재시도 1 유지, 유료 b 재전송 없음(LOOKUP 확정), 원장 1건 CONFIRMED/RETRY
+queue-restart-e2e PASS
+> daily-log@0.0.0 test:notify-e2e
+> node scripts/notify-e2e.mjs
+
+Notify E2E isolated rerun:
+
+> daily-log@0.0.0 test:notify-e2e
+> node scripts/notify-e2e.mjs
+
+{"e2e":[{"profile":"pc","result":"PASS"},{"profile":"android-emulated","result":"PASS"}]}

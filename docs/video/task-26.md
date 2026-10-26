@@ -41,3 +41,12 @@ node scripts/quality-ui-e2e.mjs AFTER
 - 실제 워커 프로세스를 재제작 렌더 도중 SIGKILL한 후 새 프로세스로 복구하여 품질=1, 처리 오류=1, 최종 QUALITY_EXHAUSTED를 확인했다.
 - 브라우저는 제공된 PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH를 사용했다. 스크린샷은 합성 API fixture를 표시한 실제 React 화면이며 실제 계정/실데이터 화면이 아니다.
 - 읽은 근거: Mandu 작업/실행 패킷, immutable `/run/mandu/MANDU-HANDOFF.json`, TASK-15/25 보고, 기존 큐·원장·제외 규칙·렌더·기록 코드 및 로컬 설계 문서. scoped MCP에 Wiki/Flowchart/list_team 도구가 없어 해당 원문과 최신 팀 조회는 미실행. 실행 패킷의 확정 요구에 따라 구현했다.
+
+## 최종 실행 결과
+
+- 서버 Vitest **394/394**, 웹 **29/29** 통과. 품질 16건과 기존 큐 13건의 별도 실행도 **29/29** 통과. lint·typecheck·서버/웹 build 통과.
+- CLI 시험 41건 중 37 통과, Windows 전용 4건은 Linux에서 skip. spike 5/5, records-crash, 기존 queue-restart 통과.
+- `npm run check`는 마지막 알림 E2E에서 촬영용 Vite의 5173 포트 충돌로 exit 1이었다. 촬영 서버 종료 후 `npm run test:notify-e2e`만 재실행하여 PC/Android-emulated 모두 PASS(exit 0). 전체 명령을 exit 0이라고 보고하지 않는다.
+- 최종 코드의 품질 전용 실제 SIGKILL 재시작 E2E PASS. 합성 API fixture를 사용하는 실제 React/Chromium UI 검사도 단독 재실행 PASS. Android 실기기 검증은 아님.
+- 실행 결과: [verification.txt](task-26-evidence/verification.txt), [targeted.txt](task-26-evidence/targeted.txt). 실패 재현·수정 이력과 실행 범위를 함께 남겼다.
+- Mandu에 BEFORE/AFTER 스크린샷 실제 바이트를 제공 도구로 첨부했다. 제출은 로컬 브랜치/40자리 Git 커밋이며 원격 push·배포·artifact publication은 수행하지 않았다.
