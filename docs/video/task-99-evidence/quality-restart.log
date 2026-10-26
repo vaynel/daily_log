@@ -1,0 +1,2 @@
+PASS SIGKILL during q1 -> fresh process recover: quality=1, processing_retry=1, FAILED/QUALITY_EXHAUSTED, source attempts=1, reviews=2
+exit_code=0

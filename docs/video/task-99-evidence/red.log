@@ -1,0 +1,39 @@
+
+> @daily-log/server@0.0.0 test
+> vitest run src/video/quality.test.ts src/video/qualityQueue.test.ts src/video/qualityStage.test.ts
+
+
+ RUN  v4.1.11 /workspace/apps/server
+
+ ❯ src/video/qualityStage.test.ts (3 tests | 1 failed) 2548ms
+     × cross-scene: 실제 MP4 실패 파일·근거 보존, 자막만 재제작, 재검수 통과 후 완료 6ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/video/qualityStage.test.ts > 렌더 → 검수 → 부분 재제작 통합 > cross-scene: 실제 MP4 실패 파일·근거 보존, 자막만 재제작, 재검수 통과 후 완료
+error: duplicate key value violates unique constraint "interviews_owner_id_life_date_key"
+ ❯ ../../node_modules/pg-pool/index.js:45:11
+ ❯ src/video/qualityStage.test.ts:23:5
+     21|   it.each(['single-scene', 'cross-scene'])('%s: 실제 MP4 실패 파일·근거 보존, 자막…
+     22|     const id = randomUUID();
+     23|     await pool.query("INSERT INTO interviews(id,owner_id,life_date,sta…
+       |     ^
+     24|     await pool.query("INSERT INTO pipeline_states(interview_id,updated…
+     25|     let captions = 0, images = 0;
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 2 passed (3)
+      Tests  1 failed | 32 passed (33)
+   Start at  15:23:12
+   Duration  4.31s (transform 366ms, setup 0ms, import 542ms, tests 3.34s, environment 0ms)
+
+npm error Lifecycle script `test` failed with error:
+npm error code 1
+npm error path /workspace/apps/server
+npm error workspace @daily-log/server@0.0.0
+npm error location /workspace/apps/server
+npm error command failed
+npm error command sh -c vitest run src/video/quality.test.ts src/video/qualityQueue.test.ts src/video/qualityStage.test.ts
+exit_code=1

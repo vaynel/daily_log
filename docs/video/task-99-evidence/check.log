@@ -1,0 +1,900 @@
+
+> daily-log@0.0.0 check
+> npm run lint && npm run typecheck && npm test && npm run build && npm run test:spike && npm run test:records-crash && npm run test:queue-restart && npm run test:notify-e2e
+
+
+> daily-log@0.0.0 lint
+> eslint .
+
+
+> daily-log@0.0.0 typecheck
+> npm run typecheck -ws
+
+
+> @daily-log/server@0.0.0 typecheck
+> tsc --noEmit
+
+
+> @daily-log/web@0.0.0 typecheck
+> tsc --noEmit
+
+
+> daily-log@0.0.0 test
+> npm run test -ws --if-present && npm run test:siwc
+
+
+> @daily-log/server@0.0.0 test
+> vitest run
+
+
+ RUN  v4.1.11 /workspace/apps/server
+
+{"level":30,"time":1793028328285,"pid":970,"hostname":"92e2175cd459","reqId":"req-1","req":{"method":"GET","url":"/auth/login","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328321,"pid":970,"hostname":"92e2175cd459","reqId":"req-1","res":{"statusCode":302},"responseTime":35.45880999999997,"msg":"request completed"}
+{"level":30,"time":1793028328340,"pid":970,"hostname":"92e2175cd459","reqId":"req-2","req":{"method":"GET","url":"/auth/callback?state=Y-m3tQ0Wc9sP3rZdm822zBjEj3jRdq5wKoXSyKioJ58&code=74346743-f8d5-47fc-8db3-5e2bf1120e6e","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328361,"pid":970,"hostname":"92e2175cd459","reqId":"req-2","res":{"statusCode":302},"responseTime":20.892548000000033,"msg":"request completed"}
+{"level":30,"time":1793028328363,"pid":970,"hostname":"92e2175cd459","reqId":"req-3","req":{"method":"GET","url":"/auth/session","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328365,"pid":970,"hostname":"92e2175cd459","reqId":"req-3","res":{"statusCode":200},"responseTime":1.637303000000088,"msg":"request completed"}
+{"level":30,"time":1793028328366,"pid":970,"hostname":"92e2175cd459","reqId":"req-4","req":{"method":"GET","url":"/api/entries","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328367,"pid":970,"hostname":"92e2175cd459","reqId":"req-4","res":{"statusCode":200},"responseTime":0.7352139999999281,"msg":"request completed"}
+{"level":30,"time":1793028328368,"pid":970,"hostname":"92e2175cd459","reqId":"req-5","req":{"method":"GET","url":"/api/attachments/photo.png","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328372,"pid":970,"hostname":"92e2175cd459","reqId":"req-5","res":{"statusCode":200},"responseTime":4.092074000000025,"msg":"request completed"}
+{"level":30,"time":1793028328374,"pid":970,"hostname":"92e2175cd459","reqId":"req-6","req":{"method":"GET","url":"/api/videos/day1.mp4","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328376,"pid":970,"hostname":"92e2175cd459","reqId":"req-6","res":{"statusCode":200},"responseTime":2.008081000000061,"msg":"request completed"}
+{"level":30,"time":1793028328377,"pid":970,"hostname":"92e2175cd459","reqId":"req-7","req":{"method":"POST","url":"/auth/logout","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328377,"pid":970,"hostname":"92e2175cd459","reqId":"req-7","res":{"statusCode":200},"responseTime":0.6300529999999753,"msg":"request completed"}
+{"level":30,"time":1793028328381,"pid":970,"hostname":"92e2175cd459","reqId":"req-8","req":{"method":"GET","url":"/auth/login","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328381,"pid":970,"hostname":"92e2175cd459","reqId":"req-8","res":{"statusCode":302},"responseTime":0.7319449999999961,"msg":"request completed"}
+{"level":30,"time":1793028328385,"pid":970,"hostname":"92e2175cd459","reqId":"req-9","req":{"method":"GET","url":"/auth/callback?state=1YRqE4mzUofhRbZnm-cGL6JdlZDjJfZ4j9CAgMav2y8&code=6171acc7-22f1-414b-a8c8-44cd461c662b","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328397,"pid":970,"hostname":"92e2175cd459","reqId":"req-9","res":{"statusCode":302},"responseTime":11.801030999999966,"msg":"request completed"}
+{"level":30,"time":1793028328400,"pid":970,"hostname":"92e2175cd459","reqId":"req-a","req":{"method":"GET","url":"/auth/login","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328401,"pid":970,"hostname":"92e2175cd459","reqId":"req-a","res":{"statusCode":302},"responseTime":0.8643600000000333,"msg":"request completed"}
+{"level":30,"time":1793028328404,"pid":970,"hostname":"92e2175cd459","reqId":"req-b","req":{"method":"GET","url":"/auth/callback?state=-IeET3pMfmDscC17J2SveB53O5UdH3KhE19iKSyqLTw&code=d29fd541-7d14-4833-a662-93bb961f3951","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328415,"pid":970,"hostname":"92e2175cd459","reqId":"req-b","res":{"statusCode":302},"responseTime":10.468780000000038,"msg":"request completed"}
+{"level":30,"time":1793028328416,"pid":970,"hostname":"92e2175cd459","reqId":"req-c","req":{"method":"GET","url":"/api/attachments/..%2Fsecret.txt","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328416,"pid":970,"hostname":"92e2175cd459","reqId":"req-c","res":{"statusCode":400},"responseTime":0.43305899999995745,"msg":"request completed"}
+{"level":30,"time":1793028328418,"pid":970,"hostname":"92e2175cd459","reqId":"req-d","req":{"method":"GET","url":"/api/attachments/%2e%2e%2Fsecret.txt","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328418,"pid":970,"hostname":"92e2175cd459","reqId":"req-d","res":{"statusCode":400},"responseTime":0.4161499999999023,"msg":"request completed"}
+{"level":30,"time":1793028328419,"pid":970,"hostname":"92e2175cd459","reqId":"req-e","req":{"method":"GET","url":"/api/videos/.env","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328419,"pid":970,"hostname":"92e2175cd459","reqId":"req-e","res":{"statusCode":400},"responseTime":0.46616500000004635,"msg":"request completed"}
+{"level":30,"time":1793028328420,"pid":970,"hostname":"92e2175cd459","reqId":"req-f","req":{"method":"GET","url":"/api/attachments/a%2Fb","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328421,"pid":970,"hostname":"92e2175cd459","reqId":"req-f","res":{"statusCode":400},"responseTime":0.8020579999999882,"msg":"request completed"}
+{"level":30,"time":1793028328422,"pid":970,"hostname":"92e2175cd459","reqId":"req-g","req":{"method":"GET","url":"/api/attachments/missing.png","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328423,"pid":970,"hostname":"92e2175cd459","reqId":"req-g","res":{"statusCode":404},"responseTime":1.2219029999999975,"msg":"request completed"}
+{"level":30,"time":1793028328425,"pid":970,"hostname":"92e2175cd459","reqId":"req-h","req":{"method":"GET","url":"/api/entries","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328425,"pid":970,"hostname":"92e2175cd459","reqId":"req-h","res":{"statusCode":401},"responseTime":0.2745479999999816,"msg":"request completed"}
+{"level":30,"time":1793028328426,"pid":970,"hostname":"92e2175cd459","reqId":"req-i","req":{"method":"GET","url":"/api/attachments/photo.png","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328427,"pid":970,"hostname":"92e2175cd459","reqId":"req-i","res":{"statusCode":401},"responseTime":0.22652399999992667,"msg":"request completed"}
+{"level":30,"time":1793028328427,"pid":970,"hostname":"92e2175cd459","reqId":"req-j","req":{"method":"GET","url":"/api/videos/day1.mp4","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328428,"pid":970,"hostname":"92e2175cd459","reqId":"req-j","res":{"statusCode":401},"responseTime":0.2015999999999849,"msg":"request completed"}
+{"level":30,"time":1793028328429,"pid":970,"hostname":"92e2175cd459","reqId":"req-k","req":{"method":"GET","url":"/api/unknown-future-route","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328429,"pid":970,"hostname":"92e2175cd459","reqId":"req-k","res":{"statusCode":401},"responseTime":0.2506900000000769,"msg":"request completed"}
+{"level":30,"time":1793028328430,"pid":970,"hostname":"92e2175cd459","reqId":"req-l","req":{"method":"GET","url":"/api/attachments/..%2Fsecret.txt","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328430,"pid":970,"hostname":"92e2175cd459","reqId":"req-l","res":{"statusCode":401},"responseTime":0.17249100000003637,"msg":"request completed"}
+{"level":30,"time":1793028328431,"pid":970,"hostname":"92e2175cd459","reqId":"req-m","req":{"method":"GET","url":"/%61pi/entries","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328431,"pid":970,"hostname":"92e2175cd459","reqId":"req-m","res":{"statusCode":401},"responseTime":0.17448699999999917,"msg":"request completed"}
+{"level":30,"time":1793028328432,"pid":970,"hostname":"92e2175cd459","reqId":"req-n","req":{"method":"GET","url":"/%61pi/attachments/photo.png","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328432,"pid":970,"hostname":"92e2175cd459","reqId":"req-n","res":{"statusCode":401},"responseTime":0.2636690000000499,"msg":"request completed"}
+{"level":30,"time":1793028328433,"pid":970,"hostname":"92e2175cd459","reqId":"req-o","req":{"method":"GET","url":"/%61pi/videos/day1.mp4","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328433,"pid":970,"hostname":"92e2175cd459","reqId":"req-o","res":{"statusCode":401},"responseTime":0.23232900000004975,"msg":"request completed"}
+{"level":30,"time":1793028328434,"pid":970,"hostname":"92e2175cd459","reqId":"req-p","req":{"method":"GET","url":"/%2561pi/entries","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328434,"pid":970,"hostname":"92e2175cd459","reqId":"req-p","res":{"statusCode":401},"responseTime":0.19233600000006845,"msg":"request completed"}
+{"level":30,"time":1793028328435,"pid":970,"hostname":"92e2175cd459","reqId":"req-q","req":{"method":"GET","url":"/api%2Fentries","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328435,"pid":970,"hostname":"92e2175cd459","reqId":"req-q","res":{"statusCode":401},"responseTime":0.1673680000000104,"msg":"request completed"}
+{"level":30,"time":1793028328436,"pid":970,"hostname":"92e2175cd459","reqId":"req-r","req":{"method":"GET","url":"/%41pi/entries","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328436,"pid":970,"hostname":"92e2175cd459","reqId":"req-r","res":{"statusCode":401},"responseTime":0.15389699999991535,"msg":"request completed"}
+{"level":30,"time":1793028328437,"pid":970,"hostname":"92e2175cd459","reqId":"req-s","req":{"method":"GET","url":"//api/entries","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328438,"pid":970,"hostname":"92e2175cd459","reqId":"req-s","res":{"statusCode":401},"responseTime":0.37847199999998793,"msg":"request completed"}
+{"level":30,"time":1793028328438,"pid":970,"hostname":"92e2175cd459","reqId":"req-t","req":{"method":"GET","url":"/api/entries;x","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328438,"pid":970,"hostname":"92e2175cd459","reqId":"req-t","res":{"statusCode":401},"responseTime":0.1483970000000454,"msg":"request completed"}
+{"level":30,"time":1793028328439,"pid":970,"hostname":"92e2175cd459","reqId":"req-u","req":{"method":"GET","url":"/api/entries","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328439,"pid":970,"hostname":"92e2175cd459","reqId":"req-u","res":{"statusCode":401},"responseTime":0.15132700000003751,"msg":"request completed"}
+{"level":30,"time":1793028328439,"pid":970,"hostname":"92e2175cd459","reqId":"req-v","req":{"method":"GET","url":"/nope","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328440,"pid":970,"hostname":"92e2175cd459","reqId":"req-v","res":{"statusCode":401},"responseTime":0.13035600000000613,"msg":"request completed"}
+{"level":30,"time":1793028328440,"pid":970,"hostname":"92e2175cd459","reqId":"req-w","req":{"method":"GET","url":"/api/entries","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328440,"pid":970,"hostname":"92e2175cd459","reqId":"req-w","res":{"statusCode":401},"responseTime":0.13397499999996398,"msg":"request completed"}
+{"level":30,"time":1793028328441,"pid":970,"hostname":"92e2175cd459","reqId":"req-x","req":{"method":"GET","url":"/api/entries","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328441,"pid":970,"hostname":"92e2175cd459","reqId":"req-x","res":{"statusCode":401},"responseTime":0.1333349999999882,"msg":"request completed"}
+{"level":30,"time":1793028328441,"pid":970,"hostname":"92e2175cd459","reqId":"req-y","req":{"method":"GET","url":"/auth/login","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328442,"pid":970,"hostname":"92e2175cd459","reqId":"req-y","res":{"statusCode":302},"responseTime":0.4516649999999345,"msg":"request completed"}
+{"level":30,"time":1793028328444,"pid":970,"hostname":"92e2175cd459","reqId":"req-z","req":{"method":"GET","url":"/auth/callback?state=Bp7h-JToNb22grV11Ouuz6ylKLWzkvhD03Hm9RamY34&code=d0a60634-75ca-43e0-9983-223353617578","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328451,"pid":970,"hostname":"92e2175cd459","reqId":"req-z","res":{"statusCode":302},"responseTime":6.49351200000001,"msg":"request completed"}
+{"level":30,"time":1793028328461,"pid":970,"hostname":"92e2175cd459","reqId":"req-1","req":{"method":"GET","url":"/api/entries","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328452,"pid":970,"hostname":"92e2175cd459","reqId":"req-10","req":{"method":"GET","url":"/api/videos/day1.mp4","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328452,"pid":970,"hostname":"92e2175cd459","reqId":"req-10","res":{"statusCode":401},"responseTime":0.27633700000001227,"msg":"request completed"}
+{"level":30,"time":1793028328453,"pid":970,"hostname":"92e2175cd459","reqId":"req-11","req":{"method":"GET","url":"/api/videos/day1.mp4","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328453,"pid":970,"hostname":"92e2175cd459","reqId":"req-11","res":{"statusCode":401},"responseTime":0.16020700000001398,"msg":"request completed"}
+{"level":30,"time":1793028328453,"pid":970,"hostname":"92e2175cd459","reqId":"req-12","req":{"method":"GET","url":"/api/videos/day1.mp4","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328453,"pid":970,"hostname":"92e2175cd459","reqId":"req-12","res":{"statusCode":401},"responseTime":0.25900899999999183,"msg":"request completed"}
+{"level":30,"time":1793028328453,"pid":970,"hostname":"92e2175cd459","reqId":"req-13","req":{"method":"GET","url":"/api/videos/day1.mp4","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328454,"pid":970,"hostname":"92e2175cd459","reqId":"req-13","res":{"statusCode":401},"responseTime":0.1984499999999798,"msg":"request completed"}
+{"level":30,"time":1793028328464,"pid":970,"hostname":"92e2175cd459","reqId":"req-14","req":{"method":"GET","url":"/auth/login","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328465,"pid":970,"hostname":"92e2175cd459","reqId":"req-14","res":{"statusCode":302},"responseTime":0.5878380000000334,"msg":"request completed"}
+{"level":30,"time":1793028328461,"pid":970,"hostname":"92e2175cd459","reqId":"req-1","res":{"statusCode":503},"responseTime":0.22837300000003324,"msg":"request completed"}
+{"level":30,"time":1793028328461,"pid":970,"hostname":"92e2175cd459","reqId":"req-2","req":{"method":"GET","url":"/api/videos/day1.mp4","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328462,"pid":970,"hostname":"92e2175cd459","reqId":"req-2","res":{"statusCode":503},"responseTime":0.16026300000009996,"msg":"request completed"}
+{"level":30,"time":1793028328462,"pid":970,"hostname":"92e2175cd459","reqId":"req-3","req":{"method":"GET","url":"/healthz","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328462,"pid":970,"hostname":"92e2175cd459","reqId":"req-3","res":{"statusCode":200},"responseTime":0.24835299999995186,"msg":"request completed"}
+{"level":30,"time":1793028328467,"pid":970,"hostname":"92e2175cd459","reqId":"req-15","req":{"method":"GET","url":"/auth/callback?state=6PtuoOcNfyGTlL33w7m3URnVKzs86HO33CSZuTAv7ug&code=cd2737e5-685b-4911-8231-d4f428647c94","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328473,"pid":970,"hostname":"92e2175cd459","reqId":"req-15","res":{"statusCode":302},"responseTime":6.4838210000000345,"msg":"request completed"}
+{"level":30,"time":1793028328475,"pid":970,"hostname":"92e2175cd459","reqId":"req-16","req":{"method":"GET","url":"/auth/login","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328476,"pid":970,"hostname":"92e2175cd459","reqId":"req-16","res":{"statusCode":302},"responseTime":0.5194679999999607,"msg":"request completed"}
+{"level":30,"time":1793028328478,"pid":970,"hostname":"92e2175cd459","reqId":"req-17","req":{"method":"GET","url":"/auth/callback?state=2Yr-9OVEXxMEaY_EGpUaWvlrqzaqobu4cRZL6Qtw1nM&code=4406e7f3-a539-48a4-aa11-d19e70838b30","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328483,"pid":970,"hostname":"92e2175cd459","reqId":"req-17","res":{"statusCode":302},"responseTime":5.357376000000045,"msg":"request completed"}
+{"level":30,"time":1793028328484,"pid":970,"hostname":"92e2175cd459","reqId":"req-18","req":{"method":"GET","url":"/api/attachments/photo.png","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328484,"pid":970,"hostname":"92e2175cd459","reqId":"req-18","res":{"statusCode":401},"responseTime":0.1473759999998947,"msg":"request completed"}
+{"level":30,"time":1793028328484,"pid":970,"hostname":"92e2175cd459","reqId":"req-19","req":{"method":"GET","url":"/api/videos/day1.mp4","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328484,"pid":970,"hostname":"92e2175cd459","reqId":"req-19","res":{"statusCode":401},"responseTime":0.10560199999986253,"msg":"request completed"}
+{"level":30,"time":1793028328485,"pid":970,"hostname":"92e2175cd459","reqId":"req-1a","req":{"method":"GET","url":"/api/entries","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328485,"pid":970,"hostname":"92e2175cd459","reqId":"req-1a","res":{"statusCode":401},"responseTime":0.10053900000002614,"msg":"request completed"}
+{"level":30,"time":1793028328485,"pid":970,"hostname":"92e2175cd459","reqId":"req-1b","req":{"method":"GET","url":"/api/attachments/photo.png","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328486,"pid":970,"hostname":"92e2175cd459","reqId":"req-1b","res":{"statusCode":403},"responseTime":0.15981299999998555,"msg":"request completed"}
+{"level":30,"time":1793028328486,"pid":970,"hostname":"92e2175cd459","reqId":"req-1c","req":{"method":"GET","url":"/api/videos/day1.mp4","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328487,"pid":970,"hostname":"92e2175cd459","reqId":"req-1c","res":{"statusCode":403},"responseTime":0.2021709999999075,"msg":"request completed"}
+{"level":30,"time":1793028328487,"pid":970,"hostname":"92e2175cd459","reqId":"req-1d","req":{"method":"GET","url":"/api/entries","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328487,"pid":970,"hostname":"92e2175cd459","reqId":"req-1d","res":{"statusCode":403},"responseTime":0.184154000000035,"msg":"request completed"}
+{"level":30,"time":1793028328487,"pid":970,"hostname":"92e2175cd459","reqId":"req-1e","req":{"method":"GET","url":"/auth/session","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328488,"pid":970,"hostname":"92e2175cd459","reqId":"req-1e","res":{"statusCode":403},"responseTime":0.22282799999993586,"msg":"request completed"}
+{"level":30,"time":1793028328488,"pid":970,"hostname":"92e2175cd459","reqId":"req-1f","req":{"method":"GET","url":"/auth/login","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328489,"pid":970,"hostname":"92e2175cd459","reqId":"req-1f","res":{"statusCode":302},"responseTime":0.3395700000000943,"msg":"request completed"}
+{"level":30,"time":1793028328490,"pid":970,"hostname":"92e2175cd459","reqId":"req-1g","req":{"method":"GET","url":"/auth/callback?state=2JNrRC3dbKkEN3lQnWO1fBb3ozKfNiEbmKK0vcQpD38&code=dc9324ca-8af2-4de1-a595-ae1c75d07da8","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328496,"pid":970,"hostname":"92e2175cd459","reqId":"req-1g","res":{"statusCode":302},"responseTime":5.4584480000000895,"msg":"request completed"}
+{"level":30,"time":1793028328496,"pid":970,"hostname":"92e2175cd459","reqId":"req-1h","req":{"method":"GET","url":"/auth/login","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328497,"pid":970,"hostname":"92e2175cd459","reqId":"req-1h","res":{"statusCode":302},"responseTime":0.3909480000002077,"msg":"request completed"}
+{"level":30,"time":1793028328499,"pid":970,"hostname":"92e2175cd459","reqId":"req-1i","req":{"method":"GET","url":"/auth/callback?state=KSSjLsYSFNvlSNtJRE8jPxrDo5SYot9Y_ODXD9cAPtc&code=7edd4aeb-069d-4d13-bee8-acec4dbd23c4","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793028328504,"pid":970,"hostname":"92e2175cd459","reqId":"req-1i","code":"id_token_bad_aud","msg":"login failed"}
+{"level":30,"time":1793028328504,"pid":970,"hostname":"92e2175cd459","reqId":"req-1i","res":{"statusCode":302},"responseTime":5.619314999999915,"msg":"request completed"}
+{"level":30,"time":1793028328505,"pid":970,"hostname":"92e2175cd459","reqId":"req-1j","req":{"method":"GET","url":"/auth/login","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328505,"pid":970,"hostname":"92e2175cd459","reqId":"req-1j","res":{"statusCode":302},"responseTime":0.3357260000000224,"msg":"request completed"}
+{"level":30,"time":1793028328507,"pid":970,"hostname":"92e2175cd459","reqId":"req-1k","req":{"method":"GET","url":"/auth/callback?state=yc09er-Z_y9qVlxd0TRgNYv-Kedtuym6BZzvSZLIqpE&code=7b623291-42ba-4d37-bc3b-2fce3d5a3663","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793028328512,"pid":970,"hostname":"92e2175cd459","reqId":"req-1k","code":"id_token_bad_nonce","msg":"login failed"}
+{"level":30,"time":1793028328512,"pid":970,"hostname":"92e2175cd459","reqId":"req-1k","res":{"statusCode":302},"responseTime":5.299277000000075,"msg":"request completed"}
+{"level":30,"time":1793028328512,"pid":970,"hostname":"92e2175cd459","reqId":"req-1l","req":{"method":"GET","url":"/auth/login","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328513,"pid":970,"hostname":"92e2175cd459","reqId":"req-1l","res":{"statusCode":302},"responseTime":0.28754400000002533,"msg":"request completed"}
+{"level":30,"time":1793028328514,"pid":970,"hostname":"92e2175cd459","reqId":"req-1m","req":{"method":"GET","url":"/auth/callback?state=UoHtfbs4VmCESHAuT7NkP9Fjii69W-MDMYui6H8LMh8&code=d9e4686b-58f8-4c25-9ba1-9017e45df0bf","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793028328518,"pid":970,"hostname":"92e2175cd459","reqId":"req-1m","code":"id_token_expired","msg":"login failed"}
+{"level":30,"time":1793028328518,"pid":970,"hostname":"92e2175cd459","reqId":"req-1m","res":{"statusCode":302},"responseTime":4.665772999999945,"msg":"request completed"}
+{"level":30,"time":1793028328519,"pid":970,"hostname":"92e2175cd459","reqId":"req-1n","req":{"method":"GET","url":"/auth/login","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328519,"pid":970,"hostname":"92e2175cd459","reqId":"req-1n","res":{"statusCode":302},"responseTime":0.35791599999993196,"msg":"request completed"}
+{"level":30,"time":1793028328521,"pid":970,"hostname":"92e2175cd459","reqId":"req-1o","req":{"method":"GET","url":"/auth/callback?state=eujwPAvYcj3mOGEOgYU20MTmt3zFALaT9quPYei1eJw&code=72d5cd08-4402-4242-ba1b-511efcf45012","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793028328527,"pid":970,"hostname":"92e2175cd459","reqId":"req-1o","code":"id_token_bad_signature","msg":"login failed"}
+{"level":30,"time":1793028328527,"pid":970,"hostname":"92e2175cd459","reqId":"req-1o","res":{"statusCode":302},"responseTime":6.35873400000014,"msg":"request completed"}
+{"level":30,"time":1793028328528,"pid":970,"hostname":"92e2175cd459","reqId":"req-1p","req":{"method":"GET","url":"/auth/login","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328528,"pid":970,"hostname":"92e2175cd459","reqId":"req-1p","res":{"statusCode":302},"responseTime":0.4039180000002034,"msg":"request completed"}
+{"level":30,"time":1793028328530,"pid":970,"hostname":"92e2175cd459","reqId":"req-1q","req":{"method":"GET","url":"/auth/callback?state=SDyWkHSavf6U_UvQsdHe3Wf5Q3vvlzS9_CRMsFLrGBU&code=2b4f4d04-e130-437d-826f-033f38edf4ed","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793028328536,"pid":970,"hostname":"92e2175cd459","reqId":"req-1q","code":"id_token_bad_iss","msg":"login failed"}
+{"level":30,"time":1793028328536,"pid":970,"hostname":"92e2175cd459","reqId":"req-1q","res":{"statusCode":302},"responseTime":6.15616399999999,"msg":"request completed"}
+{"level":30,"time":1793028328537,"pid":970,"hostname":"92e2175cd459","reqId":"req-1r","req":{"method":"GET","url":"/auth/login","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328537,"pid":970,"hostname":"92e2175cd459","reqId":"req-1r","res":{"statusCode":302},"responseTime":0.46145000000001346,"msg":"request completed"}
+{"level":30,"time":1793028328539,"pid":970,"hostname":"92e2175cd459","reqId":"req-1s","req":{"method":"GET","url":"/auth/callback?state=qtz_HJMs4U7-dvPqLYFHWOtccVLd68gNp0R1jNVfJmM&code=7d8ee8e6-3a9d-4f43-8350-c8a18bd2734e","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793028328544,"pid":970,"hostname":"92e2175cd459","reqId":"req-1s","code":"id_token_bad_alg","msg":"login failed"}
+{"level":30,"time":1793028328544,"pid":970,"hostname":"92e2175cd459","reqId":"req-1s","res":{"statusCode":302},"responseTime":5.078167000000121,"msg":"request completed"}
+{"level":30,"time":1793028328545,"pid":970,"hostname":"92e2175cd459","reqId":"req-1t","req":{"method":"GET","url":"/auth/login","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328546,"pid":970,"hostname":"92e2175cd459","reqId":"req-1t","res":{"statusCode":302},"responseTime":0.3892550000000483,"msg":"request completed"}
+{"level":30,"time":1793028328547,"pid":970,"hostname":"92e2175cd459","reqId":"req-1u","req":{"method":"GET","url":"/auth/callback?state=forged&code=9267d10f-0890-48f1-8ee7-c791f7fe8fee","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328548,"pid":970,"hostname":"92e2175cd459","reqId":"req-1u","res":{"statusCode":302},"responseTime":0.2817569999999705,"msg":"request completed"}
+{"level":30,"time":1793028328548,"pid":970,"hostname":"92e2175cd459","reqId":"req-1v","req":{"method":"GET","url":"/auth/callback?state=hVFi0i3G_WG5RJHS5_0jZyrnwCK9kx35daGlZsFSba4&code=9267d10f-0890-48f1-8ee7-c791f7fe8fee","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328548,"pid":970,"hostname":"92e2175cd459","reqId":"req-1v","res":{"statusCode":302},"responseTime":0.1709289999998873,"msg":"request completed"}
+{"level":30,"time":1793028328549,"pid":970,"hostname":"92e2175cd459","reqId":"req-1w","req":{"method":"GET","url":"/auth/callback?state=hVFi0i3G_WG5RJHS5_0jZyrnwCK9kx35daGlZsFSba4&code=9267d10f-0890-48f1-8ee7-c791f7fe8fee","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328554,"pid":970,"hostname":"92e2175cd459","reqId":"req-1w","res":{"statusCode":302},"responseTime":5.634059999999863,"msg":"request completed"}
+{"level":30,"time":1793028328555,"pid":970,"hostname":"92e2175cd459","reqId":"req-1x","req":{"method":"GET","url":"/auth/callback?state=hVFi0i3G_WG5RJHS5_0jZyrnwCK9kx35daGlZsFSba4&code=9267d10f-0890-48f1-8ee7-c791f7fe8fee","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":40,"time":1793028328556,"pid":970,"hostname":"92e2175cd459","reqId":"req-1x","code":"token_exchange_failed","msg":"login failed"}
+{"level":30,"time":1793028328565,"pid":970,"hostname":"92e2175cd459","reqId":"req-1","req":{"method":"GET","url":"/auth/login","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328556,"pid":970,"hostname":"92e2175cd459","reqId":"req-1x","res":{"statusCode":302},"responseTime":1.6138949999999568,"msg":"request completed"}
+{"level":30,"time":1793028328557,"pid":970,"hostname":"92e2175cd459","reqId":"req-1y","req":{"method":"GET","url":"/auth/session","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328557,"pid":970,"hostname":"92e2175cd459","reqId":"req-1y","res":{"statusCode":401},"responseTime":0.26472499999999854,"msg":"request completed"}
+{"level":30,"time":1793028328558,"pid":970,"hostname":"92e2175cd459","reqId":"req-1z","req":{"method":"GET","url":"/api/entries","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328558,"pid":970,"hostname":"92e2175cd459","reqId":"req-1z","res":{"statusCode":401},"responseTime":0.21193399999992835,"msg":"request completed"}
+{"level":30,"time":1793028328558,"pid":970,"hostname":"92e2175cd459","reqId":"req-20","req":{"method":"GET","url":"/api/videos/day1.mp4","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328559,"pid":970,"hostname":"92e2175cd459","reqId":"req-20","res":{"statusCode":401},"responseTime":0.23839200000020355,"msg":"request completed"}
+{"level":30,"time":1793028328567,"pid":970,"hostname":"92e2175cd459","reqId":"req-1","res":{"statusCode":302},"responseTime":2.2162229999999,"msg":"request completed"}
+{"level":30,"time":1793028328569,"pid":970,"hostname":"92e2175cd459","reqId":"req-2","req":{"method":"GET","url":"/auth/callback?state=8acH_RJfQFPYc4clAgSaeuLBtALbfx80KB3nJtggqjI&code=0a3b8e87-67cb-4588-9fd0-1e5965395e73","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328575,"pid":970,"hostname":"92e2175cd459","reqId":"req-2","res":{"statusCode":302},"responseTime":5.963725000000068,"msg":"request completed"}
+{"level":30,"time":1793028328575,"pid":970,"hostname":"92e2175cd459","reqId":"req-3","req":{"method":"GET","url":"/auth/session","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028328575,"pid":970,"hostname":"92e2175cd459","reqId":"req-3","res":{"statusCode":200},"responseTime":0.34127699999999095,"msg":"request completed"}
+{"level":30,"time":1793028329677,"pid":970,"hostname":"92e2175cd459","reqId":"req-4","req":{"method":"GET","url":"/auth/session","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028329679,"pid":970,"hostname":"92e2175cd459","reqId":"req-21","req":{"method":"GET","url":"/auth/login","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028329677,"pid":970,"hostname":"92e2175cd459","reqId":"req-4","res":{"statusCode":401},"responseTime":0.466776000000209,"msg":"request completed"}
+{"level":30,"time":1793028329679,"pid":970,"hostname":"92e2175cd459","reqId":"req-21","res":{"statusCode":302},"responseTime":0.4668229999997493,"msg":"request completed"}
+{"level":30,"time":1793028329681,"pid":970,"hostname":"92e2175cd459","reqId":"req-22","req":{"method":"GET","url":"/auth/callback?state=yhqfLZL_WpPPbI0GF7bKdB7M71y5gMwvbRG6Wx1gy6U&code=08c48a64-c3aa-4a0f-b875-77a40861bfeb","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028329688,"pid":970,"hostname":"92e2175cd459","reqId":"req-22","res":{"statusCode":302},"responseTime":6.338240999999925,"msg":"request completed"}
+{"level":30,"time":1793028329688,"pid":970,"hostname":"92e2175cd459","reqId":"req-23","req":{"method":"GET","url":"/auth/session","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028329689,"pid":970,"hostname":"92e2175cd459","reqId":"req-23","res":{"statusCode":200},"responseTime":0.29379599999992934,"msg":"request completed"}
+{"level":30,"time":1793028329690,"pid":970,"hostname":"92e2175cd459","reqId":"req-24","req":{"method":"GET","url":"/api/entries","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028329690,"pid":970,"hostname":"92e2175cd459","reqId":"req-24","res":{"statusCode":200},"responseTime":0.31952700000010736,"msg":"request completed"}
+{"level":30,"time":1793028329691,"pid":970,"hostname":"92e2175cd459","reqId":"req-25","req":{"method":"GET","url":"/auth/drive/connect","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028329691,"pid":970,"hostname":"92e2175cd459","reqId":"req-25","res":{"statusCode":401},"responseTime":0.30848199999991266,"msg":"request completed"}
+{"level":30,"time":1793028329691,"pid":970,"hostname":"92e2175cd459","reqId":"req-26","req":{"method":"GET","url":"/auth/login","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028329692,"pid":970,"hostname":"92e2175cd459","reqId":"req-26","res":{"statusCode":302},"responseTime":0.429356000000098,"msg":"request completed"}
+{"level":30,"time":1793028329694,"pid":970,"hostname":"92e2175cd459","reqId":"req-27","req":{"method":"GET","url":"/auth/callback?state=syMZd8Py_oHy-2gNMl2AktyBrovuboyjQiP5SauNjvE&code=195fe083-8fb9-4fdf-ac9b-48515f5c3458","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028329700,"pid":970,"hostname":"92e2175cd459","reqId":"req-27","res":{"statusCode":302},"responseTime":6.416389999999865,"msg":"request completed"}
+{"level":30,"time":1793028329700,"pid":970,"hostname":"92e2175cd459","reqId":"req-28","req":{"method":"GET","url":"/auth/drive/connect","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028329701,"pid":970,"hostname":"92e2175cd459","reqId":"req-28","res":{"statusCode":302},"responseTime":0.657177000000047,"msg":"request completed"}
+{"level":30,"time":1793028329703,"pid":970,"hostname":"92e2175cd459","reqId":"req-29","req":{"method":"GET","url":"/auth/drive/callback?state=LzN5REibtcKlLo0p2PiRkOuFs2F2NjLbBKf-mOCi5aw&code=fe75517d-405a-434d-a0f6-3d1e8bfb6cb6","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028329705,"pid":970,"hostname":"92e2175cd459","reqId":"req-29","res":{"statusCode":302},"responseTime":2.299620999999661,"msg":"request completed"}
+{"level":30,"time":1793028329706,"pid":970,"hostname":"92e2175cd459","reqId":"req-2a","req":{"method":"GET","url":"/auth/session","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028329706,"pid":970,"hostname":"92e2175cd459","reqId":"req-2a","res":{"statusCode":200},"responseTime":0.37431199999991804,"msg":"request completed"}
+{"level":30,"time":1793028329707,"pid":970,"hostname":"92e2175cd459","reqId":"req-2b","req":{"method":"GET","url":"/auth/login","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028329707,"pid":970,"hostname":"92e2175cd459","reqId":"req-2b","res":{"statusCode":302},"responseTime":0.42703100000017,"msg":"request completed"}
+{"level":30,"time":1793028329709,"pid":970,"hostname":"92e2175cd459","reqId":"req-2c","req":{"method":"GET","url":"/auth/callback?state=CUBUI7RuIvQGVtb3XEs_3kWFgNdgY5GvngzxMlXtsm8&code=5898b1af-0860-4173-bdf5-577369b25d47","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028329715,"pid":970,"hostname":"92e2175cd459","reqId":"req-2c","res":{"statusCode":302},"responseTime":5.647991000000275,"msg":"request completed"}
+{"level":30,"time":1793028329715,"pid":970,"hostname":"92e2175cd459","reqId":"req-2d","req":{"method":"GET","url":"/auth/drive/connect","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028329716,"pid":970,"hostname":"92e2175cd459","reqId":"req-2d","res":{"statusCode":302},"responseTime":0.4112479999998868,"msg":"request completed"}
+{"level":30,"time":1793028329717,"pid":970,"hostname":"92e2175cd459","reqId":"req-2e","req":{"method":"GET","url":"/auth/drive/callback?state=mvwl3UdrNWq5TfM-doY4UNXymtPelTjJzaN-dBiR3J4&error=access_denied","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028329718,"pid":970,"hostname":"92e2175cd459","reqId":"req-2e","res":{"statusCode":302},"responseTime":0.33338599999979124,"msg":"request completed"}
+{"level":30,"time":1793028329718,"pid":970,"hostname":"92e2175cd459","reqId":"req-2f","req":{"method":"GET","url":"/auth/session","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028329718,"pid":970,"hostname":"92e2175cd459","reqId":"req-2f","res":{"statusCode":200},"responseTime":0.2627309999998033,"msg":"request completed"}
+{"level":30,"time":1793028329719,"pid":970,"hostname":"92e2175cd459","reqId":"req-2g","req":{"method":"GET","url":"/api/entries","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028329719,"pid":970,"hostname":"92e2175cd459","reqId":"req-2g","res":{"statusCode":200},"responseTime":0.2668719999996938,"msg":"request completed"}
+{"level":30,"time":1793028329719,"pid":970,"hostname":"92e2175cd459","reqId":"req-2h","req":{"method":"GET","url":"/auth/login","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028329720,"pid":970,"hostname":"92e2175cd459","reqId":"req-2h","res":{"statusCode":302},"responseTime":0.30211099999996804,"msg":"request completed"}
+{"level":30,"time":1793028329721,"pid":970,"hostname":"92e2175cd459","reqId":"req-2i","req":{"method":"GET","url":"/auth/callback?state=GbjfCHoYc4pJ8TR7OSHWQMMsOQ1j-wfvk6rSigLzmwE&code=92121f33-0b32-4e76-a3ce-1220acb4999b","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028329726,"pid":970,"hostname":"92e2175cd459","reqId":"req-2i","res":{"statusCode":302},"responseTime":4.8296479999999065,"msg":"request completed"}
+{"level":30,"time":1793028329726,"pid":970,"hostname":"92e2175cd459","reqId":"req-2j","req":{"method":"GET","url":"/auth/drive/connect","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028329727,"pid":970,"hostname":"92e2175cd459","reqId":"req-2j","res":{"statusCode":302},"responseTime":0.37609900000006746,"msg":"request completed"}
+{"level":30,"time":1793028329728,"pid":970,"hostname":"92e2175cd459","reqId":"req-2k","req":{"method":"GET","url":"/auth/callback?state=9H9Hmfc6Sgt0S-nf0t8V-BJY1oEFH-8x1u6Ibgn3Fc0&code=6a542dac-32b2-43ed-af2d-78c691da4723","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028329729,"pid":970,"hostname":"92e2175cd459","reqId":"req-2k","res":{"statusCode":302},"responseTime":0.25024200000007113,"msg":"request completed"}
+{"level":30,"time":1793028331059,"pid":991,"hostname":"92e2175cd459","reqId":"req-1","req":{"method":"GET","url":"/api/notifications/settings","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028331064,"pid":991,"hostname":"92e2175cd459","reqId":"req-1","res":{"statusCode":200},"responseTime":4.113338999999996,"msg":"request completed"}
+{"level":30,"time":1793028331065,"pid":991,"hostname":"92e2175cd459","reqId":"req-2","req":{"method":"PUT","url":"/api/notifications/settings","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028331070,"pid":991,"hostname":"92e2175cd459","reqId":"req-2","res":{"statusCode":200},"responseTime":4.367027000000007,"msg":"request completed"}
+{"level":30,"time":1793028331070,"pid":991,"hostname":"92e2175cd459","reqId":"req-3","req":{"method":"GET","url":"/api/notifications/settings","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028331071,"pid":991,"hostname":"92e2175cd459","reqId":"req-3","res":{"statusCode":200},"responseTime":1.0914579999999887,"msg":"request completed"}
+{"level":30,"time":1793028331109,"pid":991,"hostname":"92e2175cd459","reqId":"req-4","req":{"method":"PUT","url":"/api/notifications/settings","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028331114,"pid":991,"hostname":"92e2175cd459","reqId":"req-4","res":{"statusCode":200},"responseTime":5.1107110000000375,"msg":"request completed"}
+{"level":30,"time":1793028331129,"pid":991,"hostname":"92e2175cd459","reqId":"req-5","req":{"method":"PUT","url":"/api/notifications/settings","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028331130,"pid":991,"hostname":"92e2175cd459","reqId":"req-5","res":{"statusCode":400},"responseTime":0.897837000000095,"msg":"request completed"}
+{"level":30,"time":1793028331131,"pid":991,"hostname":"92e2175cd459","reqId":"req-6","req":{"method":"PUT","url":"/api/notifications/settings","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028331132,"pid":991,"hostname":"92e2175cd459","reqId":"req-6","res":{"statusCode":400},"responseTime":0.678286000000071,"msg":"request completed"}
+{"level":30,"time":1793028331132,"pid":991,"hostname":"92e2175cd459","reqId":"req-7","req":{"method":"PUT","url":"/api/notifications/settings","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028331133,"pid":991,"hostname":"92e2175cd459","reqId":"req-7","res":{"statusCode":400},"responseTime":0.5953620000000228,"msg":"request completed"}
+{"level":30,"time":1793028331133,"pid":991,"hostname":"92e2175cd459","reqId":"req-8","req":{"method":"PUT","url":"/api/notifications/settings","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028331134,"pid":991,"hostname":"92e2175cd459","reqId":"req-8","res":{"statusCode":400},"responseTime":0.5415229999999838,"msg":"request completed"}
+{"level":30,"time":1793028331134,"pid":991,"hostname":"92e2175cd459","reqId":"req-9","req":{"method":"PUT","url":"/api/notifications/settings","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028331135,"pid":991,"hostname":"92e2175cd459","reqId":"req-9","res":{"statusCode":400},"responseTime":0.8921970000000101,"msg":"request completed"}
+{"level":30,"time":1793028331136,"pid":991,"hostname":"92e2175cd459","reqId":"req-a","req":{"method":"PUT","url":"/api/notifications/settings","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028331136,"pid":991,"hostname":"92e2175cd459","reqId":"req-a","res":{"statusCode":400},"responseTime":0.5929409999999962,"msg":"request completed"}
+{"level":30,"time":1793028331137,"pid":991,"hostname":"92e2175cd459","reqId":"req-b","req":{"method":"PUT","url":"/api/notifications/settings","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028331137,"pid":991,"hostname":"92e2175cd459","reqId":"req-b","res":{"statusCode":401},"responseTime":0.2035720000000083,"msg":"request completed"}
+{"level":30,"time":1793028331165,"pid":991,"hostname":"92e2175cd459","reqId":"req-c","req":{"method":"PUT","url":"/api/notifications/settings","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028331169,"pid":991,"hostname":"92e2175cd459","reqId":"req-c","res":{"statusCode":200},"responseTime":3.6995070000000396,"msg":"request completed"}
+{"level":30,"time":1793028331908,"pid":991,"hostname":"92e2175cd459","reqId":"req-1","req":{"method":"GET","url":"/api/notifications/status","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028331913,"pid":991,"hostname":"92e2175cd459","reqId":"req-1","res":{"statusCode":200},"responseTime":3.9445839999998498,"msg":"request completed"}
+{"level":30,"time":1793028360397,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1","req":{"method":"GET","url":"/api/records","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360404,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1","res":{"statusCode":200},"responseTime":6.0271300000000565,"msg":"request completed"}
+{"level":30,"time":1793028360408,"pid":2920,"hostname":"92e2175cd459","reqId":"req-2","req":{"method":"GET","url":"/api/records","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360409,"pid":2920,"hostname":"92e2175cd459","reqId":"req-2","res":{"statusCode":200},"responseTime":1.5192759999999907,"msg":"request completed"}
+{"level":30,"time":1793028360410,"pid":2920,"hostname":"92e2175cd459","reqId":"req-3","req":{"method":"GET","url":"/api/records/879ed170-037d-40d4-8009-91ac396ac9db","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360411,"pid":2920,"hostname":"92e2175cd459","reqId":"req-3","res":{"statusCode":404},"responseTime":1.2016889999999876,"msg":"request completed"}
+{"level":30,"time":1793028360412,"pid":2920,"hostname":"92e2175cd459","reqId":"req-4","req":{"method":"GET","url":"/api/records","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360412,"pid":2920,"hostname":"92e2175cd459","reqId":"req-4","res":{"statusCode":401},"responseTime":0.25975000000005366,"msg":"request completed"}
+{"level":30,"time":1793028360438,"pid":2920,"hostname":"92e2175cd459","reqId":"req-5","req":{"method":"GET","url":"/api/records/6fd78388-53f5-4fcd-a52c-6619f980eaaa","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360491,"pid":2920,"hostname":"92e2175cd459","reqId":"req-5","res":{"statusCode":200},"responseTime":52.371287999999936,"msg":"request completed"}
+{"level":30,"time":1793028360496,"pid":2920,"hostname":"92e2175cd459","reqId":"req-6","req":{"method":"GET","url":"/api/records/6fd78388-53f5-4fcd-a52c-6619f980eaaa/attachments/16058b7d-33d7-4f1a-a61e-7a38dca60314/file","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360502,"pid":2920,"hostname":"92e2175cd459","reqId":"req-6","res":{"statusCode":200},"responseTime":5.9855799999999135,"msg":"request completed"}
+{"level":30,"time":1793028360503,"pid":2920,"hostname":"92e2175cd459","reqId":"req-7","req":{"method":"GET","url":"/api/records/6fd78388-53f5-4fcd-a52c-6619f980eaaa/attachments/16058b7d-33d7-4f1a-a61e-7a38dca60314/file","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360505,"pid":2920,"hostname":"92e2175cd459","reqId":"req-7","res":{"statusCode":404},"responseTime":1.5895629999999983,"msg":"request completed"}
+{"level":30,"time":1793028360512,"pid":2920,"hostname":"92e2175cd459","reqId":"req-8","req":{"method":"GET","url":"/api/records/04ddb35c-a21c-49c6-829b-8dcf67b1abc8","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360570,"pid":2920,"hostname":"92e2175cd459","reqId":"req-8","res":{"statusCode":200},"responseTime":57.95779700000003,"msg":"request completed"}
+{"level":30,"time":1793028360594,"pid":2920,"hostname":"92e2175cd459","reqId":"req-9","req":{"method":"GET","url":"/api/records/e6cd4830-397b-4b9e-85c4-8279e5841a6f","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360632,"pid":2920,"hostname":"92e2175cd459","reqId":"req-9","res":{"statusCode":200},"responseTime":37.21569099999999,"msg":"request completed"}
+{"level":30,"time":1793028360640,"pid":2920,"hostname":"92e2175cd459","reqId":"req-a","req":{"method":"GET","url":"/api/records/fe4166c4-34c2-4fa7-a7e9-522475fe8f3d","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360646,"pid":2920,"hostname":"92e2175cd459","reqId":"req-a","res":{"statusCode":200},"responseTime":6.252347999999984,"msg":"request completed"}
+{"level":30,"time":1793028360663,"pid":2920,"hostname":"92e2175cd459","reqId":"req-b","req":{"method":"GET","url":"/api/records/7be129ed-deee-4fdf-a6f6-356f0cad5b51","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360676,"pid":2920,"hostname":"92e2175cd459","reqId":"req-b","res":{"statusCode":200},"responseTime":13.305484000000092,"msg":"request completed"}
+{"level":30,"time":1793028360726,"pid":2920,"hostname":"92e2175cd459","reqId":"req-c","req":{"method":"GET","url":"/api/records/4b749cb9-f440-4420-8790-b1239eb25923","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360745,"pid":2920,"hostname":"92e2175cd459","reqId":"req-c","res":{"statusCode":200},"responseTime":18.492827999999918,"msg":"request completed"}
+{"level":30,"time":1793028360747,"pid":2920,"hostname":"92e2175cd459","reqId":"req-d","req":{"method":"GET","url":"/api/records/4b749cb9-f440-4420-8790-b1239eb25923/result/file","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360756,"pid":2920,"hostname":"92e2175cd459","reqId":"req-d","res":{"statusCode":404},"responseTime":8.596666000000027,"msg":"request completed"}
+{"level":30,"time":1793028360758,"pid":2920,"hostname":"92e2175cd459","reqId":"req-e","req":{"method":"GET","url":"/api/records/4b749cb9-f440-4420-8790-b1239eb25923/result/file","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360763,"pid":2920,"hostname":"92e2175cd459","reqId":"req-e","res":{"statusCode":404},"responseTime":4.941277000000014,"msg":"request completed"}
+{"level":30,"time":1793028360764,"pid":2920,"hostname":"92e2175cd459","reqId":"req-f","req":{"method":"GET","url":"/api/records/4b749cb9-f440-4420-8790-b1239eb25923","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360771,"pid":2920,"hostname":"92e2175cd459","reqId":"req-f","res":{"statusCode":200},"responseTime":6.663739000000078,"msg":"request completed"}
+{"level":30,"time":1793028360771,"pid":2920,"hostname":"92e2175cd459","reqId":"req-g","req":{"method":"GET","url":"/api/records/4b749cb9-f440-4420-8790-b1239eb25923/result/file","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360775,"pid":2920,"hostname":"92e2175cd459","reqId":"req-g","res":{"statusCode":200},"responseTime":3.789496999999983,"msg":"request completed"}
+{"level":30,"time":1793028360782,"pid":2920,"hostname":"92e2175cd459","reqId":"req-h","req":{"method":"GET","url":"/api/records/b51cab3b-a310-4694-9c5a-e5b8b59de032/result/file","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360785,"pid":2920,"hostname":"92e2175cd459","reqId":"req-h","res":{"statusCode":404},"responseTime":2.5434249999999565,"msg":"request completed"}
+{"level":30,"time":1793028360805,"pid":2920,"hostname":"92e2175cd459","reqId":"req-i","req":{"method":"GET","url":"/api/records?limit=100","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360811,"pid":2920,"hostname":"92e2175cd459","reqId":"req-i","res":{"statusCode":200},"responseTime":5.616841000000022,"msg":"request completed"}
+{"level":30,"time":1793028360811,"pid":2920,"hostname":"92e2175cd459","reqId":"req-j","req":{"method":"GET","url":"/api/records/d671b75c-0b93-45a0-8bf6-f48c82d171b4","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360821,"pid":2920,"hostname":"92e2175cd459","reqId":"req-j","res":{"statusCode":200},"responseTime":9.150666999999999,"msg":"request completed"}
+{"level":30,"time":1793028360822,"pid":2920,"hostname":"92e2175cd459","reqId":"req-k","req":{"method":"GET","url":"/api/records?limit=100","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360825,"pid":2920,"hostname":"92e2175cd459","reqId":"req-k","res":{"statusCode":200},"responseTime":3.2514380000000074,"msg":"request completed"}
+{"level":30,"time":1793028360825,"pid":2920,"hostname":"92e2175cd459","reqId":"req-l","req":{"method":"GET","url":"/api/records/c3f3bf5a-70e8-4e79-b3b5-328bfb460bce","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360834,"pid":2920,"hostname":"92e2175cd459","reqId":"req-l","res":{"statusCode":200},"responseTime":8.245359000000008,"msg":"request completed"}
+{"level":30,"time":1793028360835,"pid":2920,"hostname":"92e2175cd459","reqId":"req-m","req":{"method":"GET","url":"/api/records?limit=100","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360837,"pid":2920,"hostname":"92e2175cd459","reqId":"req-m","res":{"statusCode":200},"responseTime":1.9959430000000111,"msg":"request completed"}
+{"level":30,"time":1793028360837,"pid":2920,"hostname":"92e2175cd459","reqId":"req-n","req":{"method":"GET","url":"/api/records/c3f3bf5a-70e8-4e79-b3b5-328bfb460bce","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360844,"pid":2920,"hostname":"92e2175cd459","reqId":"req-n","res":{"statusCode":200},"responseTime":7.147077999999965,"msg":"request completed"}
+{"level":30,"time":1793028360858,"pid":2920,"hostname":"92e2175cd459","reqId":"req-o","req":{"method":"GET","url":"/api/records","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360861,"pid":2920,"hostname":"92e2175cd459","reqId":"req-o","res":{"statusCode":200},"responseTime":2.9598029999999653,"msg":"request completed"}
+{"level":30,"time":1793028360862,"pid":2920,"hostname":"92e2175cd459","reqId":"req-p","req":{"method":"GET","url":"/api/records?cursor=2023-12-21","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360865,"pid":2920,"hostname":"92e2175cd459","reqId":"req-p","res":{"statusCode":200},"responseTime":2.8828750000000127,"msg":"request completed"}
+{"level":30,"time":1793028360865,"pid":2920,"hostname":"92e2175cd459","reqId":"req-q","req":{"method":"GET","url":"/api/records?cursor=2023-11-01","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360868,"pid":2920,"hostname":"92e2175cd459","reqId":"req-q","res":{"statusCode":200},"responseTime":3.2730719999999565,"msg":"request completed"}
+{"level":30,"time":1793028360869,"pid":2920,"hostname":"92e2175cd459","reqId":"req-r","req":{"method":"GET","url":"/api/records?cursor=2023-09-12","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360872,"pid":2920,"hostname":"92e2175cd459","reqId":"req-r","res":{"statusCode":200},"responseTime":2.8333399999999074,"msg":"request completed"}
+{"level":30,"time":1793028360873,"pid":2920,"hostname":"92e2175cd459","reqId":"req-s","req":{"method":"GET","url":"/api/records?cursor=2023-07-24","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360876,"pid":2920,"hostname":"92e2175cd459","reqId":"req-s","res":{"statusCode":200},"responseTime":3.105833999999959,"msg":"request completed"}
+{"level":30,"time":1793028360876,"pid":2920,"hostname":"92e2175cd459","reqId":"req-t","req":{"method":"GET","url":"/api/records?cursor=2023-06-04","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360879,"pid":2920,"hostname":"92e2175cd459","reqId":"req-t","res":{"statusCode":200},"responseTime":2.721767,"msg":"request completed"}
+{"level":30,"time":1793028360879,"pid":2920,"hostname":"92e2175cd459","reqId":"req-u","req":{"method":"GET","url":"/api/records?cursor=2023-04-15","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360882,"pid":2920,"hostname":"92e2175cd459","reqId":"req-u","res":{"statusCode":200},"responseTime":2.443622000000005,"msg":"request completed"}
+{"level":30,"time":1793028360882,"pid":2920,"hostname":"92e2175cd459","reqId":"req-v","req":{"method":"GET","url":"/api/records?cursor=2023-02-24","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360885,"pid":2920,"hostname":"92e2175cd459","reqId":"req-v","res":{"statusCode":200},"responseTime":2.6917490000000726,"msg":"request completed"}
+{"level":30,"time":1793028360885,"pid":2920,"hostname":"92e2175cd459","reqId":"req-w","req":{"method":"GET","url":"/api/records?cursor=2023-01-05","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360888,"pid":2920,"hostname":"92e2175cd459","reqId":"req-w","res":{"statusCode":200},"responseTime":3.126002999999855,"msg":"request completed"}
+{"level":30,"time":1793028360889,"pid":2920,"hostname":"92e2175cd459","reqId":"req-x","req":{"method":"GET","url":"/api/records?cursor=2022-11-16","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360892,"pid":2920,"hostname":"92e2175cd459","reqId":"req-x","res":{"statusCode":200},"responseTime":2.6729629999999815,"msg":"request completed"}
+{"level":30,"time":1793028360892,"pid":2920,"hostname":"92e2175cd459","reqId":"req-y","req":{"method":"GET","url":"/api/records?cursor=2022-09-27","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360895,"pid":2920,"hostname":"92e2175cd459","reqId":"req-y","res":{"statusCode":200},"responseTime":2.5204479999999876,"msg":"request completed"}
+{"level":30,"time":1793028360895,"pid":2920,"hostname":"92e2175cd459","reqId":"req-z","req":{"method":"GET","url":"/api/records?cursor=2022-08-08","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360897,"pid":2920,"hostname":"92e2175cd459","reqId":"req-z","res":{"statusCode":200},"responseTime":2.2094629999999142,"msg":"request completed"}
+{"level":30,"time":1793028360897,"pid":2920,"hostname":"92e2175cd459","reqId":"req-10","req":{"method":"GET","url":"/api/records?cursor=2022-06-19","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360899,"pid":2920,"hostname":"92e2175cd459","reqId":"req-10","res":{"statusCode":200},"responseTime":2.0679640000000745,"msg":"request completed"}
+{"level":30,"time":1793028360900,"pid":2920,"hostname":"92e2175cd459","reqId":"req-11","req":{"method":"GET","url":"/api/records?cursor=2022-04-30","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360902,"pid":2920,"hostname":"92e2175cd459","reqId":"req-11","res":{"statusCode":200},"responseTime":2.15280800000005,"msg":"request completed"}
+{"level":30,"time":1793028360902,"pid":2920,"hostname":"92e2175cd459","reqId":"req-12","req":{"method":"GET","url":"/api/records?cursor=2022-03-11","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360904,"pid":2920,"hostname":"92e2175cd459","reqId":"req-12","res":{"statusCode":200},"responseTime":2.0293209999999817,"msg":"request completed"}
+{"level":30,"time":1793028360905,"pid":2920,"hostname":"92e2175cd459","reqId":"req-13","req":{"method":"GET","url":"/api/records?cursor=2022-01-20","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360907,"pid":2920,"hostname":"92e2175cd459","reqId":"req-13","res":{"statusCode":200},"responseTime":1.9634810000000016,"msg":"request completed"}
+{"level":30,"time":1793028360907,"pid":2920,"hostname":"92e2175cd459","reqId":"req-14","req":{"method":"GET","url":"/api/records?cursor=2021-12-01","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360910,"pid":2920,"hostname":"92e2175cd459","reqId":"req-14","res":{"statusCode":200},"responseTime":2.6939390000000003,"msg":"request completed"}
+{"level":30,"time":1793028360910,"pid":2920,"hostname":"92e2175cd459","reqId":"req-15","req":{"method":"GET","url":"/api/records?cursor=2021-10-12","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360912,"pid":2920,"hostname":"92e2175cd459","reqId":"req-15","res":{"statusCode":200},"responseTime":1.9042259999998805,"msg":"request completed"}
+{"level":30,"time":1793028360912,"pid":2920,"hostname":"92e2175cd459","reqId":"req-16","req":{"method":"GET","url":"/api/records?cursor=2021-08-23","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360915,"pid":2920,"hostname":"92e2175cd459","reqId":"req-16","res":{"statusCode":200},"responseTime":2.079029999999875,"msg":"request completed"}
+{"level":30,"time":1793028360915,"pid":2920,"hostname":"92e2175cd459","reqId":"req-17","req":{"method":"GET","url":"/api/records?cursor=2021-07-04","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360917,"pid":2920,"hostname":"92e2175cd459","reqId":"req-17","res":{"statusCode":200},"responseTime":2.1496279999998933,"msg":"request completed"}
+{"level":30,"time":1793028360918,"pid":2920,"hostname":"92e2175cd459","reqId":"req-18","req":{"method":"GET","url":"/api/records?cursor=2021-05-15","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360920,"pid":2920,"hostname":"92e2175cd459","reqId":"req-18","res":{"statusCode":200},"responseTime":2.349570000000085,"msg":"request completed"}
+{"level":30,"time":1793028360921,"pid":2920,"hostname":"92e2175cd459","reqId":"req-19","req":{"method":"GET","url":"/api/records?cursor=2021-03-26","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360926,"pid":2920,"hostname":"92e2175cd459","reqId":"req-19","res":{"statusCode":200},"responseTime":5.068498999999974,"msg":"request completed"}
+{"level":30,"time":1793028360927,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1a","req":{"method":"GET","url":"/api/records?cursor=2021-02-04","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360929,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1a","res":{"statusCode":200},"responseTime":2.0756779999999253,"msg":"request completed"}
+{"level":30,"time":1793028360929,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1b","req":{"method":"GET","url":"/api/records?cursor=2020-12-16","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360931,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1b","res":{"statusCode":200},"responseTime":1.9071559999999863,"msg":"request completed"}
+{"level":30,"time":1793028360931,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1c","req":{"method":"GET","url":"/api/records?cursor=2020-10-27","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360933,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1c","res":{"statusCode":200},"responseTime":1.8526460000000498,"msg":"request completed"}
+{"level":30,"time":1793028360934,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1d","req":{"method":"GET","url":"/api/records?cursor=2020-09-07","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360936,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1d","res":{"statusCode":200},"responseTime":1.9431749999998829,"msg":"request completed"}
+{"level":30,"time":1793028360936,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1e","req":{"method":"GET","url":"/api/records?cursor=2020-07-19","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360939,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1e","res":{"statusCode":200},"responseTime":2.3237360000000535,"msg":"request completed"}
+{"level":30,"time":1793028360939,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1f","req":{"method":"GET","url":"/api/records?cursor=2020-05-30","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360942,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1f","res":{"statusCode":200},"responseTime":3.0072499999998854,"msg":"request completed"}
+{"level":30,"time":1793028360943,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1g","req":{"method":"GET","url":"/api/records?cursor=2020-04-10","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360945,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1g","res":{"statusCode":200},"responseTime":2.299009000000069,"msg":"request completed"}
+{"level":30,"time":1793028360945,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1h","req":{"method":"GET","url":"/api/records?cursor=2020-02-20","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360947,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1h","res":{"statusCode":200},"responseTime":1.9683970000000954,"msg":"request completed"}
+{"level":30,"time":1793028360952,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1i","req":{"method":"GET","url":"/api/records?limit=100","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360957,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1i","res":{"statusCode":200},"responseTime":4.969194000000016,"msg":"request completed"}
+{"level":30,"time":1793028360959,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1j","req":{"method":"GET","url":"/api/records?limit=100&cursor=2023-11-01","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360962,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1j","res":{"statusCode":200},"responseTime":3.844735000000128,"msg":"request completed"}
+{"level":30,"time":1793028360963,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1k","req":{"method":"GET","url":"/api/records?limit=100&cursor=2023-07-24","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360966,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1k","res":{"statusCode":200},"responseTime":3.1950080000001435,"msg":"request completed"}
+{"level":30,"time":1793028360967,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1l","req":{"method":"GET","url":"/api/records?limit=100&cursor=2023-04-15","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360970,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1l","res":{"statusCode":200},"responseTime":2.97581799999989,"msg":"request completed"}
+{"level":30,"time":1793028360970,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1m","req":{"method":"GET","url":"/api/records?limit=100&cursor=2023-01-05","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360973,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1m","res":{"statusCode":200},"responseTime":2.5915390000000116,"msg":"request completed"}
+{"level":30,"time":1793028360973,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1n","req":{"method":"GET","url":"/api/records?limit=100&cursor=2022-09-27","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360976,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1n","res":{"statusCode":200},"responseTime":2.845192999999881,"msg":"request completed"}
+{"level":30,"time":1793028360977,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1o","req":{"method":"GET","url":"/api/records?limit=100&cursor=2022-06-19","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360979,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1o","res":{"statusCode":200},"responseTime":2.9121880000000147,"msg":"request completed"}
+{"level":30,"time":1793028360980,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1p","req":{"method":"GET","url":"/api/records?limit=100&cursor=2022-03-11","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360982,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1p","res":{"statusCode":200},"responseTime":2.371943000000101,"msg":"request completed"}
+{"level":30,"time":1793028360983,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1q","req":{"method":"GET","url":"/api/records?limit=100&cursor=2021-12-01","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360985,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1q","res":{"statusCode":200},"responseTime":2.341965000000073,"msg":"request completed"}
+{"level":30,"time":1793028360986,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1r","req":{"method":"GET","url":"/api/records?limit=100&cursor=2021-08-23","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360989,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1r","res":{"statusCode":200},"responseTime":2.9969160000000556,"msg":"request completed"}
+{"level":30,"time":1793028360989,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1s","req":{"method":"GET","url":"/api/records?limit=100&cursor=2021-05-15","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360992,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1s","res":{"statusCode":200},"responseTime":2.5317849999999,"msg":"request completed"}
+{"level":30,"time":1793028360992,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1t","req":{"method":"GET","url":"/api/records?limit=100&cursor=2021-02-04","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360995,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1t","res":{"statusCode":200},"responseTime":2.0470849999999245,"msg":"request completed"}
+{"level":30,"time":1793028360995,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1u","req":{"method":"GET","url":"/api/records?limit=100&cursor=2020-10-27","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028360997,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1u","res":{"statusCode":200},"responseTime":2.5111749999998665,"msg":"request completed"}
+{"level":30,"time":1793028360998,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1v","req":{"method":"GET","url":"/api/records?limit=100&cursor=2020-07-19","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028361002,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1v","res":{"statusCode":200},"responseTime":4.077550999999858,"msg":"request completed"}
+{"level":30,"time":1793028361004,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1w","req":{"method":"GET","url":"/api/records?limit=100&cursor=2020-04-10","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028361013,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1w","res":{"statusCode":200},"responseTime":9.02753900000016,"msg":"request completed"}
+{"level":30,"time":1793028361016,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1x","req":{"method":"GET","url":"/api/records?limit=101","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028361016,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1x","res":{"statusCode":400},"responseTime":0.30111799999986033,"msg":"request completed"}
+{"level":30,"time":1793028361016,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1y","req":{"method":"GET","url":"/api/records?limit=0","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028361017,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1y","res":{"statusCode":400},"responseTime":0.21559099999990394,"msg":"request completed"}
+{"level":30,"time":1793028361017,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1z","req":{"method":"GET","url":"/api/records?limit=abc","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028361017,"pid":2920,"hostname":"92e2175cd459","reqId":"req-1z","res":{"statusCode":400},"responseTime":0.18885799999998198,"msg":"request completed"}
+{"level":30,"time":1793028361017,"pid":2920,"hostname":"92e2175cd459","reqId":"req-20","req":{"method":"GET","url":"/api/records?cursor=2026-02-30","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028361018,"pid":2920,"hostname":"92e2175cd459","reqId":"req-20","res":{"statusCode":400},"responseTime":0.19637199999988297,"msg":"request completed"}
+{"level":30,"time":1793028361018,"pid":2920,"hostname":"92e2175cd459","reqId":"req-21","req":{"method":"GET","url":"/api/records?cursor=x","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028361018,"pid":2920,"hostname":"92e2175cd459","reqId":"req-21","res":{"statusCode":400},"responseTime":0.16185099999984232,"msg":"request completed"}
+{"level":30,"time":1793028361018,"pid":2920,"hostname":"92e2175cd459","reqId":"req-22","req":{"method":"GET","url":"/api/records?cursor=2030-01-01","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028361021,"pid":2920,"hostname":"92e2175cd459","reqId":"req-22","res":{"statusCode":200},"responseTime":2.868441999999959,"msg":"request completed"}
+{"level":30,"time":1793028546121,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1","req":{"method":"POST","url":"/api/records","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546125,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1","res":{"statusCode":401},"responseTime":2.9751890000000003,"msg":"request completed"}
+{"level":30,"time":1793028546127,"pid":4040,"hostname":"92e2175cd459","reqId":"req-2","req":{"method":"POST","url":"/api/records/00000000-0000-4000-8000-000000000000/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546127,"pid":4040,"hostname":"92e2175cd459","reqId":"req-2","res":{"statusCode":401},"responseTime":0.3746569999999565,"msg":"request completed"}
+{"level":30,"time":1793028546129,"pid":4040,"hostname":"92e2175cd459","reqId":"req-3","req":{"method":"POST","url":"/api/records","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546147,"pid":4040,"hostname":"92e2175cd459","reqId":"req-3","res":{"statusCode":200},"responseTime":17.731653999999935,"msg":"request completed"}
+{"level":30,"time":1793028546148,"pid":4040,"hostname":"92e2175cd459","reqId":"req-4","req":{"method":"POST","url":"/api/records/cd4115a9-d168-4c21-850b-2ab8d1a142ce/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546162,"pid":4040,"hostname":"92e2175cd459","reqId":"req-4","res":{"statusCode":201},"responseTime":13.613396999999964,"msg":"request completed"}
+{"level":30,"time":1793028546163,"pid":4040,"hostname":"92e2175cd459","reqId":"req-5","req":{"method":"POST","url":"/api/records/cd4115a9-d168-4c21-850b-2ab8d1a142ce/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546169,"pid":4040,"hostname":"92e2175cd459","reqId":"req-5","res":{"statusCode":201},"responseTime":6.493257000000085,"msg":"request completed"}
+{"level":30,"time":1793028546170,"pid":4040,"hostname":"92e2175cd459","reqId":"req-6","req":{"method":"POST","url":"/api/records/cd4115a9-d168-4c21-850b-2ab8d1a142ce/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546175,"pid":4040,"hostname":"92e2175cd459","reqId":"req-6","res":{"statusCode":201},"responseTime":4.985219000000029,"msg":"request completed"}
+{"level":30,"time":1793028546175,"pid":4040,"hostname":"92e2175cd459","reqId":"req-7","req":{"method":"GET","url":"/api/records/cd4115a9-d168-4c21-850b-2ab8d1a142ce/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546180,"pid":4040,"hostname":"92e2175cd459","reqId":"req-7","res":{"statusCode":200},"responseTime":4.586006999999995,"msg":"request completed"}
+{"level":30,"time":1793028546182,"pid":4040,"hostname":"92e2175cd459","reqId":"req-8","req":{"method":"GET","url":"/api/attachments/a047bea784ece2ae5f43d08aa1e75cc16637adc01af579c11b4b48596fbb3e5f.jpg","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546185,"pid":4040,"hostname":"92e2175cd459","reqId":"req-8","res":{"statusCode":200},"responseTime":3.078781999999933,"msg":"request completed"}
+{"level":30,"time":1793028546187,"pid":4040,"hostname":"92e2175cd459","reqId":"req-9","req":{"method":"POST","url":"/api/records","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546191,"pid":4040,"hostname":"92e2175cd459","reqId":"req-9","res":{"statusCode":200},"responseTime":3.816200999999978,"msg":"request completed"}
+{"level":30,"time":1793028546192,"pid":4040,"hostname":"92e2175cd459","reqId":"req-a","req":{"method":"POST","url":"/api/records/198db110-9d5c-4619-9437-bed9d7314391/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546193,"pid":4040,"hostname":"92e2175cd459","reqId":"req-a","res":{"statusCode":422},"responseTime":1.0026619999999866,"msg":"request completed"}
+{"level":30,"time":1793028546194,"pid":4040,"hostname":"92e2175cd459","reqId":"req-b","req":{"method":"POST","url":"/api/records/198db110-9d5c-4619-9437-bed9d7314391/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546195,"pid":4040,"hostname":"92e2175cd459","reqId":"req-b","res":{"statusCode":415},"responseTime":0.726835000000051,"msg":"request completed"}
+{"level":30,"time":1793028546195,"pid":4040,"hostname":"92e2175cd459","reqId":"req-c","req":{"method":"POST","url":"/api/records/198db110-9d5c-4619-9437-bed9d7314391/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546197,"pid":4040,"hostname":"92e2175cd459","reqId":"req-c","res":{"statusCode":422},"responseTime":1.3271730000000161,"msg":"request completed"}
+{"level":30,"time":1793028546198,"pid":4040,"hostname":"92e2175cd459","reqId":"req-d","req":{"method":"POST","url":"/api/records/198db110-9d5c-4619-9437-bed9d7314391/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546199,"pid":4040,"hostname":"92e2175cd459","reqId":"req-d","res":{"statusCode":413},"responseTime":1.42617000000007,"msg":"request completed"}
+{"level":30,"time":1793028546203,"pid":4040,"hostname":"92e2175cd459","reqId":"req-e","req":{"method":"POST","url":"/api/records","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546211,"pid":4040,"hostname":"92e2175cd459","reqId":"req-e","res":{"statusCode":200},"responseTime":8.473311999999964,"msg":"request completed"}
+{"level":30,"time":1793028546212,"pid":4040,"hostname":"92e2175cd459","reqId":"req-f","req":{"method":"POST","url":"/api/records/7fd085d0-190a-40d7-84aa-579bfbab100c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546217,"pid":4040,"hostname":"92e2175cd459","reqId":"req-f","res":{"statusCode":201},"responseTime":4.965065000000095,"msg":"request completed"}
+{"level":30,"time":1793028546218,"pid":4040,"hostname":"92e2175cd459","reqId":"req-g","req":{"method":"POST","url":"/api/records/7fd085d0-190a-40d7-84aa-579bfbab100c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546221,"pid":4040,"hostname":"92e2175cd459","reqId":"req-g","res":{"statusCode":200},"responseTime":3.404904999999985,"msg":"request completed"}
+{"level":30,"time":1793028546222,"pid":4040,"hostname":"92e2175cd459","reqId":"req-h","req":{"method":"POST","url":"/api/records/7fd085d0-190a-40d7-84aa-579bfbab100c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546225,"pid":4040,"hostname":"92e2175cd459","reqId":"req-h","res":{"statusCode":200},"responseTime":3.275164000000018,"msg":"request completed"}
+{"level":30,"time":1793028546226,"pid":4040,"hostname":"92e2175cd459","reqId":"req-i","req":{"method":"POST","url":"/api/records","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546232,"pid":4040,"hostname":"92e2175cd459","reqId":"req-i","res":{"statusCode":200},"responseTime":5.2641419999999925,"msg":"request completed"}
+{"level":30,"time":1793028546233,"pid":4040,"hostname":"92e2175cd459","reqId":"req-j","req":{"method":"POST","url":"/api/records/69c1fa3f-f594-4f7c-b88d-3b3034346d24/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546240,"pid":4040,"hostname":"92e2175cd459","reqId":"req-j","res":{"statusCode":201},"responseTime":6.315166999999974,"msg":"request completed"}
+{"level":30,"time":1793028546242,"pid":4040,"hostname":"92e2175cd459","reqId":"req-k","req":{"method":"POST","url":"/api/records/7fd085d0-190a-40d7-84aa-579bfbab100c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546245,"pid":4040,"hostname":"92e2175cd459","reqId":"req-k","res":{"statusCode":409},"responseTime":3.183403999999996,"msg":"request completed"}
+{"level":30,"time":1793028546246,"pid":4040,"hostname":"92e2175cd459","reqId":"req-l","req":{"method":"POST","url":"/api/records","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546248,"pid":4040,"hostname":"92e2175cd459","reqId":"req-l","res":{"statusCode":200},"responseTime":2.532511999999997,"msg":"request completed"}
+{"level":30,"time":1793028546249,"pid":4040,"hostname":"92e2175cd459","reqId":"req-m","req":{"method":"POST","url":"/api/records/a7f058f0-ee70-4d6c-ae79-d473f2d943e8/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546254,"pid":4040,"hostname":"92e2175cd459","reqId":"req-m","res":{"statusCode":201},"responseTime":5.040651000000025,"msg":"request completed"}
+{"level":30,"time":1793028546255,"pid":4040,"hostname":"92e2175cd459","reqId":"req-n","req":{"method":"POST","url":"/api/records/a7f058f0-ee70-4d6c-ae79-d473f2d943e8/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546260,"pid":4040,"hostname":"92e2175cd459","reqId":"req-n","res":{"statusCode":201},"responseTime":4.612092999999959,"msg":"request completed"}
+{"level":30,"time":1793028546260,"pid":4040,"hostname":"92e2175cd459","reqId":"req-o","req":{"method":"POST","url":"/api/records/a7f058f0-ee70-4d6c-ae79-d473f2d943e8/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546265,"pid":4040,"hostname":"92e2175cd459","reqId":"req-o","res":{"statusCode":201},"responseTime":4.307142999999996,"msg":"request completed"}
+{"level":30,"time":1793028546265,"pid":4040,"hostname":"92e2175cd459","reqId":"req-p","req":{"method":"POST","url":"/api/records","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546268,"pid":4040,"hostname":"92e2175cd459","reqId":"req-p","res":{"statusCode":200},"responseTime":3.0246680000000197,"msg":"request completed"}
+{"level":30,"time":1793028546269,"pid":4040,"hostname":"92e2175cd459","reqId":"req-q","req":{"method":"POST","url":"/api/records/03b92768-98da-4444-8de4-286df79bfbad/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546271,"pid":4040,"hostname":"92e2175cd459","reqId":"req-q","res":{"statusCode":404},"responseTime":2.5736610000000155,"msg":"request completed"}
+{"level":30,"time":1793028546272,"pid":4040,"hostname":"92e2175cd459","reqId":"req-r","req":{"method":"GET","url":"/api/records/03b92768-98da-4444-8de4-286df79bfbad/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546274,"pid":4040,"hostname":"92e2175cd459","reqId":"req-r","res":{"statusCode":404},"responseTime":1.8443659999999227,"msg":"request completed"}
+{"level":30,"time":1793028546275,"pid":4040,"hostname":"92e2175cd459","reqId":"req-s","req":{"method":"POST","url":"/api/records","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546279,"pid":4040,"hostname":"92e2175cd459","reqId":"req-s","res":{"statusCode":200},"responseTime":4.204368000000045,"msg":"request completed"}
+{"level":30,"time":1793028546279,"pid":4040,"hostname":"92e2175cd459","reqId":"req-t","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546287,"pid":4040,"hostname":"92e2175cd459","reqId":"req-t","res":{"statusCode":201},"responseTime":7.405934000000002,"msg":"request completed"}
+{"level":30,"time":1793028546287,"pid":4040,"hostname":"92e2175cd459","reqId":"req-u","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546299,"pid":4040,"hostname":"92e2175cd459","reqId":"req-u","res":{"statusCode":201},"responseTime":11.48695900000007,"msg":"request completed"}
+{"level":30,"time":1793028546300,"pid":4040,"hostname":"92e2175cd459","reqId":"req-v","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546313,"pid":4040,"hostname":"92e2175cd459","reqId":"req-v","res":{"statusCode":201},"responseTime":12.405536999999981,"msg":"request completed"}
+{"level":30,"time":1793028546313,"pid":4040,"hostname":"92e2175cd459","reqId":"req-w","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546319,"pid":4040,"hostname":"92e2175cd459","reqId":"req-w","res":{"statusCode":201},"responseTime":5.561784999999986,"msg":"request completed"}
+{"level":30,"time":1793028546319,"pid":4040,"hostname":"92e2175cd459","reqId":"req-x","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546328,"pid":4040,"hostname":"92e2175cd459","reqId":"req-x","res":{"statusCode":201},"responseTime":8.121832999999924,"msg":"request completed"}
+{"level":30,"time":1793028546328,"pid":4040,"hostname":"92e2175cd459","reqId":"req-y","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546339,"pid":4040,"hostname":"92e2175cd459","reqId":"req-y","res":{"statusCode":201},"responseTime":10.408453000000009,"msg":"request completed"}
+{"level":30,"time":1793028546339,"pid":4040,"hostname":"92e2175cd459","reqId":"req-z","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546344,"pid":4040,"hostname":"92e2175cd459","reqId":"req-z","res":{"statusCode":201},"responseTime":4.296295999999984,"msg":"request completed"}
+{"level":30,"time":1793028546344,"pid":4040,"hostname":"92e2175cd459","reqId":"req-10","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546351,"pid":4040,"hostname":"92e2175cd459","reqId":"req-10","res":{"statusCode":201},"responseTime":7.292872999999986,"msg":"request completed"}
+{"level":30,"time":1793028546352,"pid":4040,"hostname":"92e2175cd459","reqId":"req-11","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546362,"pid":4040,"hostname":"92e2175cd459","reqId":"req-11","res":{"statusCode":201},"responseTime":9.263833999999974,"msg":"request completed"}
+{"level":30,"time":1793028546362,"pid":4040,"hostname":"92e2175cd459","reqId":"req-12","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546367,"pid":4040,"hostname":"92e2175cd459","reqId":"req-12","res":{"statusCode":201},"responseTime":5.158555999999976,"msg":"request completed"}
+{"level":30,"time":1793028546368,"pid":4040,"hostname":"92e2175cd459","reqId":"req-13","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546372,"pid":4040,"hostname":"92e2175cd459","reqId":"req-13","res":{"statusCode":201},"responseTime":4.505007999999975,"msg":"request completed"}
+{"level":30,"time":1793028546373,"pid":4040,"hostname":"92e2175cd459","reqId":"req-14","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546378,"pid":4040,"hostname":"92e2175cd459","reqId":"req-14","res":{"statusCode":201},"responseTime":4.770790000000034,"msg":"request completed"}
+{"level":30,"time":1793028546378,"pid":4040,"hostname":"92e2175cd459","reqId":"req-15","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546383,"pid":4040,"hostname":"92e2175cd459","reqId":"req-15","res":{"statusCode":201},"responseTime":4.698161999999911,"msg":"request completed"}
+{"level":30,"time":1793028546383,"pid":4040,"hostname":"92e2175cd459","reqId":"req-16","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546388,"pid":4040,"hostname":"92e2175cd459","reqId":"req-16","res":{"statusCode":201},"responseTime":4.761961000000042,"msg":"request completed"}
+{"level":30,"time":1793028546388,"pid":4040,"hostname":"92e2175cd459","reqId":"req-17","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546393,"pid":4040,"hostname":"92e2175cd459","reqId":"req-17","res":{"statusCode":201},"responseTime":4.863128000000074,"msg":"request completed"}
+{"level":30,"time":1793028546394,"pid":4040,"hostname":"92e2175cd459","reqId":"req-18","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546399,"pid":4040,"hostname":"92e2175cd459","reqId":"req-18","res":{"statusCode":201},"responseTime":5.287612000000081,"msg":"request completed"}
+{"level":30,"time":1793028546400,"pid":4040,"hostname":"92e2175cd459","reqId":"req-19","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546405,"pid":4040,"hostname":"92e2175cd459","reqId":"req-19","res":{"statusCode":201},"responseTime":5.061050000000023,"msg":"request completed"}
+{"level":30,"time":1793028546405,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1a","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546411,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1a","res":{"statusCode":201},"responseTime":5.468318999999951,"msg":"request completed"}
+{"level":30,"time":1793028546411,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1b","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546417,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1b","res":{"statusCode":201},"responseTime":5.888024000000087,"msg":"request completed"}
+{"level":30,"time":1793028546418,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1c","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546422,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1c","res":{"statusCode":201},"responseTime":4.174546000000078,"msg":"request completed"}
+{"level":30,"time":1793028546422,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1d","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546427,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1d","res":{"statusCode":201},"responseTime":5.21396100000004,"msg":"request completed"}
+{"level":30,"time":1793028546428,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1e","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546434,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1e","res":{"statusCode":201},"responseTime":5.303358000000003,"msg":"request completed"}
+{"level":30,"time":1793028546434,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1f","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546438,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1f","res":{"statusCode":201},"responseTime":4.027556000000004,"msg":"request completed"}
+{"level":30,"time":1793028546438,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1g","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546442,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1g","res":{"statusCode":201},"responseTime":3.86089800000002,"msg":"request completed"}
+{"level":30,"time":1793028546442,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1h","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546447,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1h","res":{"statusCode":201},"responseTime":4.308267999999998,"msg":"request completed"}
+{"level":30,"time":1793028546447,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1i","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546451,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1i","res":{"statusCode":201},"responseTime":3.5483389999999417,"msg":"request completed"}
+{"level":30,"time":1793028546451,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1j","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546455,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1j","res":{"statusCode":201},"responseTime":3.7718059999999696,"msg":"request completed"}
+{"level":30,"time":1793028546455,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1k","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546459,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1k","res":{"statusCode":201},"responseTime":3.682275000000004,"msg":"request completed"}
+{"level":30,"time":1793028546459,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1l","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546463,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1l","res":{"statusCode":201},"responseTime":4.0329699999999775,"msg":"request completed"}
+{"level":30,"time":1793028546464,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1m","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546472,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1m","res":{"statusCode":201},"responseTime":8.193277999999964,"msg":"request completed"}
+{"level":30,"time":1793028546473,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1n","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546479,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1n","res":{"statusCode":409},"responseTime":5.901238000000035,"msg":"request completed"}
+{"level":30,"time":1793028546482,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1o","req":{"method":"POST","url":"/api/records/60bd0da7-e684-4c63-bb3b-ce17117a197c/attachments","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028546491,"pid":4040,"hostname":"92e2175cd459","reqId":"req-1o","res":{"statusCode":409},"responseTime":8.929304000000002,"msg":"request completed"}
+{"level":30,"time":1793028559872,"pid":4369,"hostname":"92e2175cd459","reqId":"req-1","req":{"method":"GET","url":"/healthz","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1793028559877,"pid":4369,"hostname":"92e2175cd459","reqId":"req-1","res":{"statusCode":200},"responseTime":3.815178000000003,"msg":"request completed"}
+
+ Test Files  29 passed (29)
+      Tests  411 passed (411)
+   Start at  15:24:56
+   Duration  263.08s (transform 1.05s, setup 0ms, import 3.89s, tests 255.13s, environment 4ms)
+
+
+> @daily-log/web@0.0.0 test
+> vitest run --passWithNoTests
+
+
+ RUN  v4.1.11 /workspace/apps/web
+
+
+ Test Files  5 passed (5)
+      Tests  29 passed (29)
+   Start at  15:29:20
+   Duration  1.35s (transform 204ms, setup 0ms, import 334ms, tests 157ms, environment 1ms)
+
+
+> daily-log@0.0.0 test:siwc
+> node --test scripts/siwc/*.test.mjs scripts/voice-measure.test.mjs
+
+TAP version 13
+# Subtest: PKCE sends fresh state/nonce and never tokens or hints in authorize URL
+ok 1 - PKCE sends fresh state/nonce and never tokens or hints in authorize URL
+  ---
+  duration_ms: 3.463147
+  type: 'test'
+  ...
+# Subtest: callback rejects state, expiry, duplicate keys, replay and changed returning client before exchange
+ok 2 - callback rejects state, expiry, duplicate keys, replay and changed returning client before exchange
+  ---
+  duration_ms: 1.131065
+  type: 'test'
+  ...
+# Subtest: signed identity rejects tampering, issuer, audience, nonce, expiry and account changes; missing grant cannot infer
+ok 3 - signed identity rejects tampering, issuer, audience, nonce, expiry and account changes; missing grant cannot infer
+  ---
+  duration_ms: 170.263247
+  type: 'test'
+  ...
+# Subtest: protected atomic storage preserves host across import, excludes mismatched registrations, rejects insecure modes and serializes writers
+ok 4 - protected atomic storage preserves host across import, excludes mismatched registrations, rejects insecure modes and serializes writers
+  ---
+  duration_ms: 48.123856
+  type: 'test'
+  ...
+# Subtest: exchange binds actual nonce, issued client and exact redirect; failed verification never produces credentials
+ok 5 - exchange binds actual nonce, issued client and exact redirect; failed verification never produces credentials
+  ---
+  duration_ms: 41.628294
+  type: 'test'
+  ...
+# Subtest: import rejects forged signature and mismatched account before overwriting saved registration
+ok 6 - import rejects forged signature and mismatched account before overwriting saved registration
+  ---
+  duration_ms: 28.473967
+  type: 'test'
+  ...
+# Subtest: permission recovery requests consent only for WAIT_PERMISSION and rechecks the returned grant
+ok 7 - permission recovery requests consent only for WAIT_PERMISSION and rechecks the returned grant
+  ---
+  duration_ms: 7.979478
+  type: 'test'
+  ...
+# Subtest: loopback demo cannot contact OpenAI; cross-origin start denied; cancel invalidates callback and secrets never render
+ok 8 - loopback demo cannot contact OpenAI; cross-origin start denied; cancel invalidates callback and secrets never render
+  ---
+  duration_ms: 74.240217
+  type: 'test'
+  ...
+# Subtest: explicit enabled button starts OAuth only after click, matching state denial makes zero token calls
+ok 9 - explicit enabled button starts OAuth only after click, matching state denial makes zero token calls
+  ---
+  duration_ms: 24.807642
+  type: 'test'
+  ...
+# Subtest: permission-enable button is explicit, click required, and cancellation preserves waiting credentials
+ok 10 - permission-enable button is explicit, click required, and cancellation preserves waiting credentials
+  ---
+  duration_ms: 53.504404
+  type: 'test'
+  ...
+# Subtest: target, host key and remote paths are validated before any credential read
+ok 11 - target, host key and remote paths are validated before any credential read
+  ---
+  duration_ms: 4.683224
+  type: 'test'
+  ...
+# Subtest: no explicit consent means no read, no ssh and local session kept
+ok 12 - no explicit consent means no read, no ssh and local session kept
+  ---
+  duration_ms: 1.817738
+  type: 'test'
+  ...
+# Subtest: missing, permission-less or refresh-less credentials never leave the PC
+ok 13 - missing, permission-less or refresh-less credentials never leave the PC
+  ---
+  duration_ms: 11.684075
+  type: 'test'
+  ...
+# Subtest: expired or expiring access token is renewed with the stored refresh token, then handed off
+ok 14 - expired or expiring access token is renewed with the stored refresh token, then handed off
+  ---
+  duration_ms: 8.278943
+  type: 'test'
+  ...
+# Subtest: fresh token is not refreshed
+ok 15 - fresh token is not refreshed
+  ---
+  duration_ms: 3.255229
+  type: 'test'
+  ...
+# Subtest: permanent refresh failure stops at WAIT_AUTH without sending; the local record is not deleted
+ok 16 - permanent refresh failure stops at WAIT_AUTH without sending; the local record is not deleted
+  ---
+  duration_ms: 3.046221
+  type: 'test'
+  ...
+# Subtest: transient refresh failure keeps tokens and a later hand-off can retry
+ok 17 - transient refresh failure keeps tokens and a later hand-off can retry
+  ---
+  duration_ms: 7.355678
+  type: 'test'
+  ...
+# Subtest: concurrent hand-offs on a real store rotate the refresh token exactly once and leave no token in args or output
+ok 18 - concurrent hand-offs on a real store rotate the refresh token exactly once and leave no token in args or output
+  ---
+  duration_ms: 89.447446
+  type: 'test'
+  ...
+# Subtest: ssh args are strict, token stays in stdin only; failure and unconfirmed exit keep local session
+ok 19 - ssh args are strict, token stays in stdin only; failure and unconfirmed exit keep local session
+  ---
+  duration_ms: 12.744142
+  type: 'test'
+  ...
+# Subtest: success retires the local copy only after server confirmation; retry after lost reply is idempotent
+ok 20 - success retires the local copy only after server confirmation; retry after lost reply is idempotent
+  ---
+  duration_ms: 6.467275
+  type: 'test'
+  ...
+# Subtest: Windows save -> Linux import over simulated pipe: wrong account rejected, duplicate import keeps server session, expired token rejected
+ok 21 - Windows save -> Linux import over simulated pipe: wrong account rejected, duplicate import keeps server session, expired token rejected
+  ---
+  duration_ms: 43.257885
+  type: 'test'
+  ...
+# Subtest: completion guidance depends on platform and readiness
+ok 22 - completion guidance depends on platform and readiness
+  ---
+  duration_ms: 0.324647
+  type: 'test'
+  ...
+# Subtest: launcher preflight gives a clear native OS result and never starts login
+ok 23 - launcher preflight gives a clear native OS result and never starts login
+  ---
+  duration_ms: 32.486159
+  type: 'test'
+  ...
+# Subtest: Windows cmd launcher handles missing Node without policy changes or login
+ok 24 - Windows cmd launcher handles missing Node without policy changes or login # SKIP
+  ---
+  duration_ms: 0.153868
+  type: 'test'
+  ...
+# Subtest: native CLI paths accept drive paths but reject UNC, device, ADS and traversal aliases
+ok 25 - native CLI paths accept drive paths but reject UNC, device, ADS and traversal aliases
+  ---
+  duration_ms: 1.419353
+  type: 'test'
+  ...
+# Subtest: unverified support and permission stop before any external call
+ok 26 - unverified support and permission stop before any external call
+  ---
+  duration_ms: 24.702966
+  type: 'test'
+  ...
+# Subtest: HTTP and streaming errors latch wait across restart with no paid fallback or retry
+ok 27 - HTTP and streaming errors latch wait across restart with no paid fallback or retry
+  ---
+  duration_ms: 122.762932
+  type: 'test'
+  ...
+# Subtest: completion requires terminal event, exact public endpoint/body; lost stream waits for reconciliation
+ok 28 - completion requires terminal event, exact public endpoint/body; lost stream waits for reconciliation
+  ---
+  duration_ms: 39.625148
+  type: 'test'
+  ...
+# Subtest: refresh rotates once under the cross-process store lock and keeps scopes on omitted scope
+ok 29 - refresh rotates once under the cross-process store lock and keeps scopes on omitted scope
+  ---
+  duration_ms: 14.570503
+  type: 'test'
+  ...
+# Subtest: terminal refresh clears unusable tokens; ambiguous rotation waits without replay; explicit reconnect recovers
+ok 30 - terminal refresh clears unusable tokens; ambiguous rotation waits without replay; explicit reconnect recovers
+  ---
+  duration_ms: 69.673896
+  type: 'test'
+  ...
+# Subtest: signout attempts official discovered revocation, clears secrets even if remote revocation is unconfirmed
+ok 31 - signout attempts official discovered revocation, clears secrets even if remote revocation is unconfirmed
+  ---
+  duration_ms: 31.056838
+  type: 'test'
+  ...
+# Subtest: SSE frame delimiters split across network chunks still reach completed event
+ok 32 - SSE frame delimiters split across network chunks still reach completed event
+  ---
+  duration_ms: 12.195415
+  type: 'test'
+  ...
+# Subtest: missing Content-Type is accepted as SSE only with response.completed; explicit other types never succeed
+ok 33 - missing Content-Type is accepted as SSE only with response.completed; explicit other types never succeed
+  ---
+  duration_ms: 52.200905
+  type: 'test'
+  ...
+# Subtest: 4MB cap still applies without Content-Type
+ok 34 - 4MB cap still applies without Content-Type
+  ---
+  duration_ms: 19.834543
+  type: 'test'
+  ...
+# Subtest: reconcile needs explicit confirm, only leaves WAIT_RECONCILIATION, and never calls the network
+ok 35 - reconcile needs explicit confirm, only leaves WAIT_RECONCILIATION, and never calls the network
+  ---
+  duration_ms: 69.613864
+  type: 'test'
+  ...
+# Subtest: CLI reconcile changes state only with --confirm
+ok 36 - CLI reconcile changes state only with --confirm
+  ---
+  duration_ms: 162.464957
+  type: 'test'
+  ...
+# Subtest: Windows CurrentUser storage encrypts, persists, locks, rejects links and corruption, and deletes
+ok 37 - Windows CurrentUser storage encrypts, persists, locks, rejects links and corruption, and deletes # SKIP
+  ---
+  duration_ms: 0.995414
+  type: 'test'
+  ...
+# Subtest: Windows transaction survives rejected oversize write without truncating the prior session
+ok 38 - Windows transaction survives rejected oversize write without truncating the prior session # SKIP
+  ---
+  duration_ms: 0.158244
+  type: 'test'
+  ...
+# Subtest: Windows lock is released after the Node owner exits inside a transaction
+ok 39 - Windows lock is released after the Node owner exits inside a transaction # SKIP
+  ---
+  duration_ms: 0.116356
+  type: 'test'
+  ...
+# Subtest: summarize: 평균·백분위·비용을 값으로만 요약한다
+ok 40 - summarize: 평균·백분위·비용을 값으로만 요약한다
+  ---
+  duration_ms: 1.66001
+  type: 'test'
+  ...
+# Subtest: summarize: 턴이 없어도 깨지지 않는다
+ok 41 - summarize: 턴이 없어도 깨지지 않는다
+  ---
+  duration_ms: 0.191794
+  type: 'test'
+  ...
+1..41
+# tests 41
+# suites 0
+# pass 37
+# fail 0
+# cancelled 0
+# skipped 4
+# todo 0
+# duration_ms 2053.163427
+
+> daily-log@0.0.0 build
+> npm run build -ws
+
+
+> @daily-log/server@0.0.0 build
+> tsc -p tsconfig.build.json && node ../../scripts/copy-migrations.mjs
+
+
+> @daily-log/web@0.0.0 build
+> tsc --noEmit && vite build
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 39 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                  3.52 kB │ gzip:  1.37 kB
+dist/assets/index-DufU1Yq4.js  272.83 kB │ gzip: 85.90 kB
+✓ built in 1.61s
+
+> daily-log@0.0.0 test:spike
+> node --test scripts/pro-spike.test.mjs
+
+TAP version 13
+# Subtest: CLI probe accepts an executable and literal prefix arguments without PATH lookup
+ok 1 - CLI probe accepts an executable and literal prefix arguments without PATH lookup
+  ---
+  duration_ms: 59.228869
+  type: 'test'
+  ...
+# Subtest: an explicitly missing executable remains unavailable without fallback
+ok 2 - an explicitly missing executable remains unavailable without fallback
+  ---
+  duration_ms: 34.850213
+  type: 'test'
+  ...
+# Subtest: live experiment boundary: success
+ok 3 - live experiment boundary: success
+  ---
+  duration_ms: 146.615641
+  type: 'test'
+  ...
+# Subtest: live experiment boundary: api-auth
+ok 4 - live experiment boundary: api-auth
+  ---
+  duration_ms: 60.974169
+  type: 'test'
+  ...
+# Subtest: live experiment boundary: limit
+ok 5 - live experiment boundary: limit
+  ---
+  duration_ms: 88.054232
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 456.274779
+
+> daily-log@0.0.0 test:records-crash
+> node scripts/records-crash-e2e.mjs
+
+1) SIGKILL 시점 마지막 확인된 저장: 5
+   복구: 항목 5건·첨부 5건·seq 연속·버전 revision=1·상태 IN_PROGRESS/NONE
+2) 트랜잭션 중간 SIGKILL: 부분 항목·첨부 0건, 이전 저장분 그대로
+PASS
+
+> daily-log@0.0.0 test:queue-restart
+> node scripts/queue-restart-e2e.mjs
+
+[plain] SIGKILL 시점: auto_retries_used=0 단계=a:DONE,b:RUNNING 실행=EXEC a 1|EXEC b 1
+[plain] 재시작 후: RECOVERED 1 | EXEC b 2 | HANG b | EXEC c 1 | FINAL SUCCEEDED retries=1
+1) PASS 완료 단계 a 미재실행, 재시도 횟수 DB 유지(0→복구 시 1), b·c 완료
+[paid] SIGKILL 시점: auto_retries_used=1 단계=a:DONE,b:SENT 실행=EXEC a 1|EXEC a 2|EXEC b 1
+[paid] 재시작 후: RECOVERED 1 | LOOKUP b | EXEC c 1 | FINAL SUCCEEDED retries=1
+2) PASS 사용한 재시도 1 유지, 유료 b 재전송 없음(LOOKUP 확정), 원장 1건 CONFIRMED/RETRY
+queue-restart-e2e PASS
+
+> daily-log@0.0.0 test:notify-e2e
+> node scripts/notify-e2e.mjs
+
+{"e2e":[{"profile":"pc","result":"PASS"},{"profile":"android-emulated","result":"PASS"}]}
+exit_code=0
