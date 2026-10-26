@@ -1,0 +1,244 @@
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+browserType.launch: Target page, context or browser has been closed
+Browser logs:
+
+<launching> /usr/bin/chromium --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,AvoidCorsURLLoaderRestartOnRedirect,Translate,AutoDeElevate,OptimizationHints,NetworkTimeServiceQuerying,AimEnabled,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --no-sandbox --user-data-dir=/scratch/tmp/playwright_chromiumdev_profile-YeSIFY --remote-debugging-pipe --no-startup-window
+<launched> pid=3098
+[pid=3098][err] [3098:3126:1026/142455.630074:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[pid=3098][err] [3098:3126:1026/142455.630866:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[pid=3098][err] [3098:3126:1026/142455.630920:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[pid=3098][err] [3098:3126:1026/142455.633243:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[pid=3098][err] [3098:3126:1026/142455.636550:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[pid=3098][err] libc++abi: terminating due to uncaught exception of type std::__1::system_error: thread constructor failed: Resource temporarily unavailable
+[pid=3098][err] [3098:3126:1026/142455.701357:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[pid=3098][err] [3098:3098:1026/142455.711460:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3135:1026/142455.711634:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3098:1026/142455.711759:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3135:1026/142455.711881:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3098:1026/142455.711931:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3135:1026/142455.711947:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3098:1026/142455.711985:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3098:1026/142455.712004:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3135:1026/142455.712020:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3098:1026/142455.712068:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3098:1026/142455.712084:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3135:1026/142455.712127:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3135:1026/142455.712145:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3135:1026/142455.712161:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3098:1026/142455.712191:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3098:1026/142455.712213:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3136:1026/142455.713448:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3136:1026/142455.713497:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3136:1026/142455.713614:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3136:1026/142455.713640:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3136:1026/142455.713655:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3136:1026/142455.713767:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3136:1026/142455.713792:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3136:1026/142455.713807:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3136:1026/142455.713866:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3136:1026/142455.713889:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3124:1026/142455.715596:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3124:1026/142455.715630:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3124:1026/142455.715666:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3125:1026/142455.720912:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3127:1026/142455.722751:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3127:1026/142455.722811:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3127:1026/142455.722831:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3135:1026/142455.723401:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3135:1026/142455.723424:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3135:1026/142455.723457:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3135:1026/142455.723472:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3135:1026/142455.723492:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3135:1026/142455.723512:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3120:3120:1026/142455.712305:ERROR:content/zygote/zygote_linux.cc:623] Zygote could not fork: process_type utility numfds 6 child_pid -1
+[pid=3098][err] [3143:3143:1026/142455.728714:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3133:1026/142455.729548:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3098:1026/142455.768178:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3133:1026/142455.769363:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3137:1026/142455.712258:ERROR:content/common/zygote/zygote_communication_linux.cc:159] NOTREACHED hit. Did not receive ping from zygote child
+[pid=3098][err] [3098:3135:1026/142455.770759:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3135:1026/142455.770815:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3137:1026/142455.776130:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3134:1026/142455.776598:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3134:1026/142455.776649:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3135:1026/142455.780472:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3135:1026/142455.780534:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3134:1026/142455.781476:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3134:1026/142455.781545:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3135:1026/142455.785533:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3127:1026/142455.787629:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3127:1026/142455.787679:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3098:1026/142455.798732:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=3098][err] [3098:3098:1026/142455.803730:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[pid=3098][err] [3098:3126:1026/142455.804627:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[pid=3098][err] [3098:3098:1026/142455.804695:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[pid=3098][err] [3098:3126:1026/142455.805385:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+Call log:
+[2m  - <launching> /usr/bin/chromium --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,AvoidCorsURLLoaderRestartOnRedirect,Translate,AutoDeElevate,OptimizationHints,NetworkTimeServiceQuerying,AimEnabled,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --no-sandbox --user-data-dir=/scratch/tmp/playwright_chromiumdev_profile-YeSIFY --remote-debugging-pipe --no-startup-window[22m
+[2m  - <launched> pid=3098[22m
+[2m  - [pid=3098][err] [3098:3126:1026/142455.630074:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory[22m
+[2m  - [pid=3098][err] [3098:3126:1026/142455.630866:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")[22m
+[2m  - [pid=3098][err] [3098:3126:1026/142455.630920:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory[22m
+[2m  - [pid=3098][err] [3098:3126:1026/142455.633243:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory[22m
+[2m  - [pid=3098][err] [3098:3126:1026/142455.636550:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")[22m
+[2m  - [pid=3098][err] libc++abi: terminating due to uncaught exception of type std::__1::system_error: thread constructor failed: Resource temporarily unavailable[22m
+[2m  - [pid=3098][err] [3098:3126:1026/142455.701357:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")[22m
+[2m  - [pid=3098][err] [3098:3098:1026/142455.711460:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3135:1026/142455.711634:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3098:1026/142455.711759:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3135:1026/142455.711881:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3098:1026/142455.711931:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3135:1026/142455.711947:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3098:1026/142455.711985:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3098:1026/142455.712004:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3135:1026/142455.712020:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3098:1026/142455.712068:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3098:1026/142455.712084:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3135:1026/142455.712127:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3135:1026/142455.712145:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3135:1026/142455.712161:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3098:1026/142455.712191:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3098:1026/142455.712213:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3136:1026/142455.713448:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3136:1026/142455.713497:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3136:1026/142455.713614:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3136:1026/142455.713640:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3136:1026/142455.713655:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3136:1026/142455.713767:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3136:1026/142455.713792:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3136:1026/142455.713807:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3136:1026/142455.713866:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3136:1026/142455.713889:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3124:1026/142455.715596:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3124:1026/142455.715630:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3124:1026/142455.715666:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3125:1026/142455.720912:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3127:1026/142455.722751:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3127:1026/142455.722811:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3127:1026/142455.722831:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3135:1026/142455.723401:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3135:1026/142455.723424:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3135:1026/142455.723457:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3135:1026/142455.723472:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3135:1026/142455.723492:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3135:1026/142455.723512:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3120:3120:1026/142455.712305:ERROR:content/zygote/zygote_linux.cc:623] Zygote could not fork: process_type utility numfds 6 child_pid -1[22m
+[2m  - [pid=3098][err] [3143:3143:1026/142455.728714:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3133:1026/142455.729548:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3098:1026/142455.768178:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3133:1026/142455.769363:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3137:1026/142455.712258:ERROR:content/common/zygote/zygote_communication_linux.cc:159] NOTREACHED hit. Did not receive ping from zygote child[22m
+[2m  - [pid=3098][err] [3098:3135:1026/142455.770759:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3135:1026/142455.770815:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3137:1026/142455.776130:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3134:1026/142455.776598:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3134:1026/142455.776649:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3135:1026/142455.780472:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3135:1026/142455.780534:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3134:1026/142455.781476:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3134:1026/142455.781545:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3135:1026/142455.785533:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3127:1026/142455.787629:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3127:1026/142455.787679:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3098:1026/142455.798732:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=3098][err] [3098:3098:1026/142455.803730:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type:[22m
+[2m  - [pid=3098][err] [3098:3126:1026/142455.804627:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")[22m
+[2m  - [pid=3098][err] [3098:3098:1026/142455.804695:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type:[22m
+[2m  - [pid=3098][err] [3098:3126:1026/142455.805385:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")[22m
+[2m  - [pid=3098] <gracefully close start>[22m
+[2m  - [pid=3098] <kill>[22m
+[2m  - [pid=3098] <will force kill>[22m
+[2m  - [pid=3098][err] [3098:3098:1026/142455.818220:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type:[22m
+[2m  - [pid=3098] <process did exit: exitCode=null, signal=SIGKILL>[22m
+[2m  - [pid=3098] starting temporary directories cleanup[22m
+[2m  - [pid=3098] finished temporary directories cleanup[22m
+[2m  - [pid=3098] <gracefully close end>[22m
+
+    at /workspace/docs/video/task-26-rework-evidence/ui.mjs:7:32 {
+  log: [
+    '  - <launching> /usr/bin/chromium --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,AvoidCorsURLLoaderRestartOnRedirect,Translate,AutoDeElevate,OptimizationHints,NetworkTimeServiceQuerying,AimEnabled,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --no-sandbox --user-data-dir=/scratch/tmp/playwright_chromiumdev_profile-YeSIFY --remote-debugging-pipe --no-startup-window',
+    '  - <launched> pid=3098',
+    '  - [pid=3098][err] [3098:3126:1026/142455.630074:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory',
+    '  - [pid=3098][err] [3098:3126:1026/142455.630866:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")',
+    '  - [pid=3098][err] [3098:3126:1026/142455.630920:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory',
+    '  - [pid=3098][err] [3098:3126:1026/142455.633243:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory',
+    '  - [pid=3098][err] [3098:3126:1026/142455.636550:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")',
+    '  - [pid=3098][err] libc++abi: terminating due to uncaught exception of type std::__1::system_error: thread constructor failed: Resource temporarily unavailable',
+    '  - [pid=3098][err] [3098:3126:1026/142455.701357:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")',
+    '  - [pid=3098][err] [3098:3098:1026/142455.711460:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3135:1026/142455.711634:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3098:1026/142455.711759:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3135:1026/142455.711881:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3098:1026/142455.711931:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3135:1026/142455.711947:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3098:1026/142455.711985:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3098:1026/142455.712004:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3135:1026/142455.712020:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3098:1026/142455.712068:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3098:1026/142455.712084:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3135:1026/142455.712127:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3135:1026/142455.712145:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3135:1026/142455.712161:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3098:1026/142455.712191:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3098:1026/142455.712213:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3136:1026/142455.713448:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3136:1026/142455.713497:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3136:1026/142455.713614:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3136:1026/142455.713640:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3136:1026/142455.713655:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3136:1026/142455.713767:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3136:1026/142455.713792:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3136:1026/142455.713807:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3136:1026/142455.713866:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3136:1026/142455.713889:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3124:1026/142455.715596:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3124:1026/142455.715630:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3124:1026/142455.715666:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3125:1026/142455.720912:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3127:1026/142455.722751:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3127:1026/142455.722811:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3127:1026/142455.722831:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3135:1026/142455.723401:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3135:1026/142455.723424:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3135:1026/142455.723457:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3135:1026/142455.723472:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3135:1026/142455.723492:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3135:1026/142455.723512:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3120:3120:1026/142455.712305:ERROR:content/zygote/zygote_linux.cc:623] Zygote could not fork: process_type utility numfds 6 child_pid -1',
+    '  - [pid=3098][err] [3143:3143:1026/142455.728714:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3133:1026/142455.729548:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3098:1026/142455.768178:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3133:1026/142455.769363:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3137:1026/142455.712258:ERROR:content/common/zygote/zygote_communication_linux.cc:159] NOTREACHED hit. Did not receive ping from zygote child',
+    '  - [pid=3098][err] [3098:3135:1026/142455.770759:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3135:1026/142455.770815:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3137:1026/142455.776130:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3134:1026/142455.776598:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3134:1026/142455.776649:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3135:1026/142455.780472:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3135:1026/142455.780534:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3134:1026/142455.781476:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3134:1026/142455.781545:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3135:1026/142455.785533:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3127:1026/142455.787629:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3127:1026/142455.787679:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3098:1026/142455.798732:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=3098][err] [3098:3098:1026/142455.803730:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type:',
+    '  - [pid=3098][err] [3098:3126:1026/142455.804627:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")',
+    '  - [pid=3098][err] [3098:3098:1026/142455.804695:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type:',
+    '  - [pid=3098][err] [3098:3126:1026/142455.805385:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")',
+    '  - [pid=3098] <gracefully close start>',
+    '  - [pid=3098] <kill>',
+    '  - [pid=3098] <will force kill>',
+    '  - [pid=3098][err] [3098:3098:1026/142455.818220:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type:',
+    '  - [pid=3098] <process did exit: exitCode=null, signal=SIGKILL>',
+    '  - [pid=3098] starting temporary directories cleanup',
+    '  - [pid=3098] finished temporary directories cleanup',
+    '  - [pid=3098] <gracefully close end>'
+  ]
+}
+
+Node.js v22.23.3

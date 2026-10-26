@@ -18,7 +18,7 @@ describe.skipIf(!url)('렌더 → 검수 → 부분 재제작 통합', () => {
   let t: Awaited<ReturnType<typeof createTempSchema>>, pool: pg.Pool, dir: string;
   beforeAll(async () => { t = await createTempSchema(url!); pool = t.pool(); dir = tmpDir('quality-stage-'); });
   afterAll(async () => { await pool.end(); await t.drop(); rm(dir); });
-  it('실제 MP4를 검수하고 실패 파일·근거를 보존한 채 자막만 재제작, 재검수 통과 후에만 완료한다', async () => {
+  it.each(['single-scene', 'cross-scene'])('%s: 실제 MP4 실패 파일·근거 보존, 자막만 재제작, 재검수 통과 후 완료', async mode => {
     const id = randomUUID();
     await pool.query("INSERT INTO interviews(id,owner_id,life_date,started_at,status) VALUES($1,'fixture','2030-01-01',now(),'CONFIRMED')", [id]);
     await pool.query("INSERT INTO pipeline_states(interview_id,updated_at) VALUES($1,now())", [id]);
@@ -30,7 +30,16 @@ describe.skipIf(!url)('렌더 → 검수 → 부분 재제작 통합', () => {
       render: createRenderHandler({ gate: new RenderGate(pool), render: { overlay: mockOverlay(), minFreeBytes: 0 }, loadInput: async () => renderInput, outFile: () => path.join(dir, 'video.mp4'), heartbeatMs: 100 }),
       quality: createQualityHandler({ pool, resolveFile: f => path.join(dir, f), heartbeatMs: 100, permissionGranted: async () => true,
         repairStages: { script: ['captions'], visual: ['image'], transcript: [], subtitles: ['captions'], zooms: [], render: [] },
-        loadInput: async ctx => { const i = input(); Object.assign(i, ctx.results.render); i.expectedSec = 1; if (captions === 1) i.scenes[0]!.subtitles = ['대통령 선거']; return i; },
+        loadInput: async ctx => {
+          const i = input(); Object.assign(i, ctx.results.render); i.expectedSec = 1;
+          if (captions === 1) {
+            if (mode === 'cross-scene') {
+              i.excludedTexts = ['비공개 프로젝트'];
+              i.scenes = ['비공개', '프로젝트'].map((text, n) => ({ ...structuredClone(i.scenes[0]!), key: `s${n}`, subtitles: [text] }));
+            } else i.scenes[0]!.subtitles = ['대통령 선거'];
+          }
+          return i;
+        },
       }),
     };
     const q = new JobQueue({ pool, ledger: new MonthlyLedger(pool), handlers: { video: handlers } });
@@ -39,15 +48,18 @@ describe.skipIf(!url)('렌더 → 검수 → 부분 재제작 통합', () => {
     const pipeline = (await pool.query('SELECT * FROM pipeline_states WHERE interview_id=$1', [id])).rows[0];
     expect(displayStatus('CONFIRMED', pipeline)).toBe('REVIEW_REJECTED');
     expect(await q.get(j.id)).toMatchObject({ state: 'QUEUED', qualityRegenerationsUsed: 1, autoRetriesUsed: 0 });
-    const first = readdirSync(dir).find(f => f.endsWith('q0.mp4'))!;
+    const first = readdirSync(dir).find(f => f.endsWith(`${j.id}.q0.mp4`))!;
     const hash = createHash('sha256').update(readFileSync(path.join(dir, first))).digest('hex');
     await q.tick();
     expect(await q.get(j.id)).toMatchObject({ state: 'SUCCEEDED', qualityRegenerationsUsed: 1, autoRetriesUsed: 0 });
     expect(images).toBe(1); expect(captions).toBe(2);
     expect(createHash('sha256').update(readFileSync(path.join(dir, first))).digest('hex')).toBe(hash);
-    expect(readdirSync(dir).filter(f => f.endsWith('.mp4'))).toHaveLength(2);
+    expect(readdirSync(dir).filter(f => f.includes(j.id) && f.endsWith('.mp4'))).toHaveLength(2);
     const reports = (await pool.query('SELECT report FROM job_quality_reviews WHERE job_id=$1 ORDER BY id', [j.id])).rows;
     expect(reports.map(r => r.report.passed)).toEqual([false, true]);
+    if (mode === 'cross-scene') expect(reports[0]!.report.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ scene: null, component: 'subtitles', code: 'THIS_VIDEO_EXCLUDED', passed: false }),
+    ]));
     expect((await q.stages(j.id)).find(s => s.stage === 'render')!.result.scriptVersion).toBe(2);
     expect(displayStatus('CONFIRMED', (await pool.query('SELECT * FROM pipeline_states WHERE interview_id=$1', [id])).rows[0])).toBe('COMPLETED');
   }, 60_000);

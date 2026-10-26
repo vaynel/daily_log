@@ -1,0 +1,92 @@
+
+> @daily-log/server@0.0.0 test
+> vitest run src/video/quality.test.ts
+
+
+ RUN  v4.1.11 /workspace/apps/server
+
+ ❯ src/video/quality.test.ts (25 tests | 16 failed) 34ms
+     × script 장면 경계의 exact 제외 문구를 차단한다 10ms
+     × script 장면 경계의 rule 제외 문구를 차단한다 2ms
+     × script 장면 경계의 policy 제외 문구를 차단한다 1ms
+     × visual 장면 경계의 exact 제외 문구를 차단한다 1ms
+     × visual 장면 경계의 rule 제외 문구를 차단한다 1ms
+     × visual 장면 경계의 policy 제외 문구를 차단한다 1ms
+     × transcript 장면 경계의 exact 제외 문구를 차단한다 1ms
+     × transcript 장면 경계의 rule 제외 문구를 차단한다 1ms
+     × transcript 장면 경계의 policy 제외 문구를 차단한다 1ms
+     × subtitles 장면 경계의 exact 제외 문구를 차단한다 1ms
+     × subtitles 장면 경계의 rule 제외 문구를 차단한다 1ms
+     × subtitles 장면 경계의 policy 제외 문구를 차단한다 1ms
+     × zooms 장면 경계의 exact 제외 문구를 차단한다 1ms
+     × zooms 장면 경계의 rule 제외 문구를 차단한다 2ms
+     × zooms 장면 경계의 policy 제외 문구를 차단한다 1ms
+     × 세 장면에 걸친 제외 문구도 차단하고 안전한 여러 장면은 통과한다 1ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 16 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/video/quality.test.ts > 품질 검수 > script 장면 경계의 exact 제외 문구를 차단한다
+ FAIL  src/video/quality.test.ts > 품질 검수 > script 장면 경계의 rule 제외 문구를 차단한다
+ FAIL  src/video/quality.test.ts > 품질 검수 > script 장면 경계의 policy 제외 문구를 차단한다
+ FAIL  src/video/quality.test.ts > 품질 검수 > visual 장면 경계의 exact 제외 문구를 차단한다
+ FAIL  src/video/quality.test.ts > 품질 검수 > visual 장면 경계의 rule 제외 문구를 차단한다
+ FAIL  src/video/quality.test.ts > 품질 검수 > visual 장면 경계의 policy 제외 문구를 차단한다
+ FAIL  src/video/quality.test.ts > 품질 검수 > transcript 장면 경계의 exact 제외 문구를 차단한다
+ FAIL  src/video/quality.test.ts > 품질 검수 > transcript 장면 경계의 rule 제외 문구를 차단한다
+ FAIL  src/video/quality.test.ts > 품질 검수 > transcript 장면 경계의 policy 제외 문구를 차단한다
+ FAIL  src/video/quality.test.ts > 품질 검수 > subtitles 장면 경계의 exact 제외 문구를 차단한다
+ FAIL  src/video/quality.test.ts > 품질 검수 > subtitles 장면 경계의 rule 제외 문구를 차단한다
+ FAIL  src/video/quality.test.ts > 품질 검수 > subtitles 장면 경계의 policy 제외 문구를 차단한다
+ FAIL  src/video/quality.test.ts > 품질 검수 > zooms 장면 경계의 exact 제외 문구를 차단한다
+ FAIL  src/video/quality.test.ts > 품질 검수 > zooms 장면 경계의 rule 제외 문구를 차단한다
+ FAIL  src/video/quality.test.ts > 품질 검수 > zooms 장면 경계의 policy 제외 문구를 차단한다
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ src/video/quality.test.ts:22:29
+     20|       if (policy === 'rule') i.rules = [createRule([], { category: 'WO…
+     21|       const report = inspectQuality(i);
+     22|       expect(report.passed).toBe(false);
+       |                             ^
+     23|       expect(report.checks).toEqual(expect.arrayContaining([expect.obj…
+     24|         scene: null, component: part, passed: false,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/16]⎯
+
+ FAIL  src/video/quality.test.ts > 품질 검수 > 세 장면에 걸친 제외 문구도 차단하고 안전한 여러 장면은 통과한다
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ src/video/quality.test.ts:35:38
+     33|     expect(inspectQuality(i).passed).toBe(true);
+     34|     i.excludedTexts = ['비공개 프로젝트'];
+     35|     expect(inspectQuality(i).passed).toBe(false);
+       |                                      ^
+     36|   });
+     37|   it('완전한 안전 입력만 통과하며 원문 대신 구성 요소 해시와 근거를 남긴다', () => {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/16]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  16 failed | 9 passed (25)
+   Start at  14:22:15
+   Duration  437ms (transform 169ms, setup 0ms, import 229ms, tests 34ms, environment 0ms)
+
+npm error Lifecycle script `test` failed with error:
+npm error code 1
+npm error path /workspace/apps/server
+npm error workspace @daily-log/server@0.0.0
+npm error location /workspace/apps/server
+npm error command failed
+npm error command sh -c vitest run src/video/quality.test.ts

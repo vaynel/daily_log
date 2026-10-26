@@ -1,0 +1,13 @@
+
+> @daily-log/server@0.0.0 test
+> vitest run src/video/quality.test.ts src/video/qualityStage.test.ts src/video/qualityQueue.test.ts src/jobs/queue.test.ts
+
+
+ RUN  v4.1.11 /workspace/apps/server
+
+
+ Test Files  1 passed | 3 skipped (4)
+      Tests  25 passed | 20 skipped (45)
+   Start at  14:22:32
+   Duration  1.37s (transform 367ms, setup 0ms, import 654ms, tests 40ms, environment 1ms)
+

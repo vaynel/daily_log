@@ -1,0 +1,380 @@
+Raw synthetic HTTP request JSON lines omitted (raw local data/rework-check-raw.txt). Test summaries and errors retained.
+
+> daily-log@0.0.0 check
+> npm run lint && npm run typecheck && npm test && npm run build && npm run test:spike && npm run test:records-crash && npm run test:queue-restart && npm run test:notify-e2e
+
+
+> daily-log@0.0.0 lint
+> eslint .
+
+
+> daily-log@0.0.0 typecheck
+> npm run typecheck -ws
+
+
+> @daily-log/server@0.0.0 typecheck
+> tsc --noEmit
+
+
+> @daily-log/web@0.0.0 typecheck
+> tsc --noEmit
+
+
+> daily-log@0.0.0 test
+> npm run test -ws --if-present && npm run test:siwc
+
+
+> @daily-log/server@0.0.0 test
+> vitest run
+
+
+ RUN  v4.1.11 /workspace/apps/server
+
+
+ Test Files  24 passed | 5 skipped (29)
+      Tests  308 passed | 103 skipped (411)
+   Start at  14:23:06
+   Duration  260.24s (transform 1.01s, setup 0ms, import 4.18s, tests 251.99s, environment 4ms)
+
+
+> @daily-log/web@0.0.0 test
+> vitest run --passWithNoTests
+
+
+ RUN  v4.1.11 /workspace/apps/web
+
+
+ Test Files  5 passed (5)
+      Tests  29 passed (29)
+   Start at  14:27:27
+   Duration  931ms (transform 121ms, setup 0ms, import 208ms, tests 87ms, environment 1ms)
+
+
+> daily-log@0.0.0 test:siwc
+> node --test scripts/siwc/*.test.mjs scripts/voice-measure.test.mjs
+
+TAP version 13
+# Subtest: PKCE sends fresh state/nonce and never tokens or hints in authorize URL
+ok 1 - PKCE sends fresh state/nonce and never tokens or hints in authorize URL
+  ---
+  duration_ms: 2.9363
+  type: 'test'
+  ...
+# Subtest: callback rejects state, expiry, duplicate keys, replay and changed returning client before exchange
+ok 2 - callback rejects state, expiry, duplicate keys, replay and changed returning client before exchange
+  ---
+  duration_ms: 1.002979
+  type: 'test'
+  ...
+# Subtest: signed identity rejects tampering, issuer, audience, nonce, expiry and account changes; missing grant cannot infer
+ok 3 - signed identity rejects tampering, issuer, audience, nonce, expiry and account changes; missing grant cannot infer
+  ---
+  duration_ms: 145.014308
+  type: 'test'
+  ...
+# Subtest: protected atomic storage preserves host across import, excludes mismatched registrations, rejects insecure modes and serializes writers
+ok 4 - protected atomic storage preserves host across import, excludes mismatched registrations, rejects insecure modes and serializes writers
+  ---
+  duration_ms: 38.993483
+  type: 'test'
+  ...
+# Subtest: exchange binds actual nonce, issued client and exact redirect; failed verification never produces credentials
+ok 5 - exchange binds actual nonce, issued client and exact redirect; failed verification never produces credentials
+  ---
+  duration_ms: 29.736919
+  type: 'test'
+  ...
+# Subtest: import rejects forged signature and mismatched account before overwriting saved registration
+ok 6 - import rejects forged signature and mismatched account before overwriting saved registration
+  ---
+  duration_ms: 31.814755
+  type: 'test'
+  ...
+# Subtest: permission recovery requests consent only for WAIT_PERMISSION and rechecks the returned grant
+ok 7 - permission recovery requests consent only for WAIT_PERMISSION and rechecks the returned grant
+  ---
+  duration_ms: 8.969093
+  type: 'test'
+  ...
+# Subtest: loopback demo cannot contact OpenAI; cross-origin start denied; cancel invalidates callback and secrets never render
+ok 8 - loopback demo cannot contact OpenAI; cross-origin start denied; cancel invalidates callback and secrets never render
+  ---
+  duration_ms: 86.396207
+  type: 'test'
+  ...
+# Subtest: explicit enabled button starts OAuth only after click, matching state denial makes zero token calls
+ok 9 - explicit enabled button starts OAuth only after click, matching state denial makes zero token calls
+  ---
+  duration_ms: 34.043708
+  type: 'test'
+  ...
+# Subtest: permission-enable button is explicit, click required, and cancellation preserves waiting credentials
+ok 10 - permission-enable button is explicit, click required, and cancellation preserves waiting credentials
+  ---
+  duration_ms: 42.415317
+  type: 'test'
+  ...
+# Subtest: target, host key and remote paths are validated before any credential read
+ok 11 - target, host key and remote paths are validated before any credential read
+  ---
+  duration_ms: 5.858689
+  type: 'test'
+  ...
+# Subtest: no explicit consent means no read, no ssh and local session kept
+ok 12 - no explicit consent means no read, no ssh and local session kept
+  ---
+  duration_ms: 2.388352
+  type: 'test'
+  ...
+# Subtest: missing, permission-less or refresh-less credentials never leave the PC
+ok 13 - missing, permission-less or refresh-less credentials never leave the PC
+  ---
+  duration_ms: 16.726579
+  type: 'test'
+  ...
+# Subtest: expired or expiring access token is renewed with the stored refresh token, then handed off
+ok 14 - expired or expiring access token is renewed with the stored refresh token, then handed off
+  ---
+  duration_ms: 9.136783
+  type: 'test'
+  ...
+# Subtest: fresh token is not refreshed
+ok 15 - fresh token is not refreshed
+  ---
+  duration_ms: 3.706585
+  type: 'test'
+  ...
+# Subtest: permanent refresh failure stops at WAIT_AUTH without sending; the local record is not deleted
+ok 16 - permanent refresh failure stops at WAIT_AUTH without sending; the local record is not deleted
+  ---
+  duration_ms: 3.543634
+  type: 'test'
+  ...
+# Subtest: transient refresh failure keeps tokens and a later hand-off can retry
+ok 17 - transient refresh failure keeps tokens and a later hand-off can retry
+  ---
+  duration_ms: 7.537535
+  type: 'test'
+  ...
+# Subtest: concurrent hand-offs on a real store rotate the refresh token exactly once and leave no token in args or output
+ok 18 - concurrent hand-offs on a real store rotate the refresh token exactly once and leave no token in args or output
+  ---
+  duration_ms: 81.897836
+  type: 'test'
+  ...
+# Subtest: ssh args are strict, token stays in stdin only; failure and unconfirmed exit keep local session
+ok 19 - ssh args are strict, token stays in stdin only; failure and unconfirmed exit keep local session
+  ---
+  duration_ms: 8.311589
+  type: 'test'
+  ...
+# Subtest: success retires the local copy only after server confirmation; retry after lost reply is idempotent
+ok 20 - success retires the local copy only after server confirmation; retry after lost reply is idempotent
+  ---
+  duration_ms: 10.709409
+  type: 'test'
+  ...
+# Subtest: Windows save -> Linux import over simulated pipe: wrong account rejected, duplicate import keeps server session, expired token rejected
+ok 21 - Windows save -> Linux import over simulated pipe: wrong account rejected, duplicate import keeps server session, expired token rejected
+  ---
+  duration_ms: 46.774571
+  type: 'test'
+  ...
+# Subtest: completion guidance depends on platform and readiness
+ok 22 - completion guidance depends on platform and readiness
+  ---
+  duration_ms: 0.298985
+  type: 'test'
+  ...
+# Subtest: launcher preflight gives a clear native OS result and never starts login
+ok 23 - launcher preflight gives a clear native OS result and never starts login
+  ---
+  duration_ms: 43.981869
+  type: 'test'
+  ...
+# Subtest: Windows cmd launcher handles missing Node without policy changes or login
+ok 24 - Windows cmd launcher handles missing Node without policy changes or login # SKIP
+  ---
+  duration_ms: 0.213949
+  type: 'test'
+  ...
+# Subtest: native CLI paths accept drive paths but reject UNC, device, ADS and traversal aliases
+ok 25 - native CLI paths accept drive paths but reject UNC, device, ADS and traversal aliases
+  ---
+  duration_ms: 2.105213
+  type: 'test'
+  ...
+# Subtest: unverified support and permission stop before any external call
+ok 26 - unverified support and permission stop before any external call
+  ---
+  duration_ms: 34.691212
+  type: 'test'
+  ...
+# Subtest: HTTP and streaming errors latch wait across restart with no paid fallback or retry
+ok 27 - HTTP and streaming errors latch wait across restart with no paid fallback or retry
+  ---
+  duration_ms: 165.626078
+  type: 'test'
+  ...
+# Subtest: completion requires terminal event, exact public endpoint/body; lost stream waits for reconciliation
+ok 28 - completion requires terminal event, exact public endpoint/body; lost stream waits for reconciliation
+  ---
+  duration_ms: 54.208596
+  type: 'test'
+  ...
+# Subtest: refresh rotates once under the cross-process store lock and keeps scopes on omitted scope
+ok 29 - refresh rotates once under the cross-process store lock and keeps scopes on omitted scope
+  ---
+  duration_ms: 75.920835
+  type: 'test'
+  ...
+# Subtest: terminal refresh clears unusable tokens; ambiguous rotation waits without replay; explicit reconnect recovers
+ok 30 - terminal refresh clears unusable tokens; ambiguous rotation waits without replay; explicit reconnect recovers
+  ---
+  duration_ms: 68.969406
+  type: 'test'
+  ...
+# Subtest: signout attempts official discovered revocation, clears secrets even if remote revocation is unconfirmed
+ok 31 - signout attempts official discovered revocation, clears secrets even if remote revocation is unconfirmed
+  ---
+  duration_ms: 32.952396
+  type: 'test'
+  ...
+# Subtest: SSE frame delimiters split across network chunks still reach completed event
+ok 32 - SSE frame delimiters split across network chunks still reach completed event
+  ---
+  duration_ms: 12.936158
+  type: 'test'
+  ...
+# Subtest: missing Content-Type is accepted as SSE only with response.completed; explicit other types never succeed
+ok 33 - missing Content-Type is accepted as SSE only with response.completed; explicit other types never succeed
+  ---
+  duration_ms: 95.609105
+  type: 'test'
+  ...
+# Subtest: 4MB cap still applies without Content-Type
+ok 34 - 4MB cap still applies without Content-Type
+  ---
+  duration_ms: 23.357735
+  type: 'test'
+  ...
+# Subtest: reconcile needs explicit confirm, only leaves WAIT_RECONCILIATION, and never calls the network
+ok 35 - reconcile needs explicit confirm, only leaves WAIT_RECONCILIATION, and never calls the network
+  ---
+  duration_ms: 44.104187
+  type: 'test'
+  ...
+# Subtest: CLI reconcile changes state only with --confirm
+ok 36 - CLI reconcile changes state only with --confirm
+  ---
+  duration_ms: 153.176248
+  type: 'test'
+  ...
+# Subtest: Windows CurrentUser storage encrypts, persists, locks, rejects links and corruption, and deletes
+ok 37 - Windows CurrentUser storage encrypts, persists, locks, rejects links and corruption, and deletes # SKIP
+  ---
+  duration_ms: 0.838513
+  type: 'test'
+  ...
+# Subtest: Windows transaction survives rejected oversize write without truncating the prior session
+ok 38 - Windows transaction survives rejected oversize write without truncating the prior session # SKIP
+  ---
+  duration_ms: 0.134482
+  type: 'test'
+  ...
+# Subtest: Windows lock is released after the Node owner exits inside a transaction
+ok 39 - Windows lock is released after the Node owner exits inside a transaction # SKIP
+  ---
+  duration_ms: 0.118328
+  type: 'test'
+  ...
+# Subtest: summarize: 평균·백분위·비용을 값으로만 요약한다
+ok 40 - summarize: 평균·백분위·비용을 값으로만 요약한다
+  ---
+  duration_ms: 1.621066
+  type: 'test'
+  ...
+# Subtest: summarize: 턴이 없어도 깨지지 않는다
+ok 41 - summarize: 턴이 없어도 깨지지 않는다
+  ---
+  duration_ms: 0.187199
+  type: 'test'
+  ...
+1..41
+# tests 41
+# suites 0
+# pass 37
+# fail 0
+# cancelled 0
+# skipped 4
+# todo 0
+# duration_ms 2195.52624
+
+> daily-log@0.0.0 build
+> npm run build -ws
+
+
+> @daily-log/server@0.0.0 build
+> tsc -p tsconfig.build.json && node ../../scripts/copy-migrations.mjs
+
+
+> @daily-log/web@0.0.0 build
+> tsc --noEmit && vite build
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 39 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                  3.52 kB │ gzip:  1.37 kB
+dist/assets/index-DufU1Yq4.js  272.83 kB │ gzip: 85.90 kB
+✓ built in 1.29s
+
+> daily-log@0.0.0 test:spike
+> node --test scripts/pro-spike.test.mjs
+
+TAP version 13
+# Subtest: CLI probe accepts an executable and literal prefix arguments without PATH lookup
+ok 1 - CLI probe accepts an executable and literal prefix arguments without PATH lookup
+  ---
+  duration_ms: 60.046015
+  type: 'test'
+  ...
+# Subtest: an explicitly missing executable remains unavailable without fallback
+ok 2 - an explicitly missing executable remains unavailable without fallback
+  ---
+  duration_ms: 34.947936
+  type: 'test'
+  ...
+# Subtest: live experiment boundary: success
+ok 3 - live experiment boundary: success
+  ---
+  duration_ms: 150.655318
+  type: 'test'
+  ...
+# Subtest: live experiment boundary: api-auth
+ok 4 - live experiment boundary: api-auth
+  ---
+  duration_ms: 61.864697
+  type: 'test'
+  ...
+# Subtest: live experiment boundary: limit
+ok 5 - live experiment boundary: limit
+  ---
+  duration_ms: 88.582296
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 456.302427
+
+> daily-log@0.0.0 test:records-crash
+> node scripts/records-crash-e2e.mjs
+
+DATABASE_URL 필요

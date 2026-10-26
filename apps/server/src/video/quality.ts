@@ -24,6 +24,8 @@ const normalized = (s: string) => s.normalize('NFKC').replace(/\s+/g, '').toLowe
 export function inspectQuality(i: QualityInput): QualityReport {
   const checks: QualityCheck[] = [];
   const add = (scene: string | null, component: QualityComponent, passed: boolean, code: string, evidence: string) => checks.push({ scene, component, passed, code, evidence });
+  const exclusionOf = (text: string) => classifyExclusion(text) ?? (matchRule(text, i.rules) ? 'USER_RULE' : null)
+    ?? (i.excludedTexts.some(x => normalized(x) && normalized(text).includes(normalized(x))) ? 'THIS_VIDEO_EXCLUDED' : null);
   add(null, 'render', i.scenes.length > 0 && Number.isInteger(i.scriptVersion) && i.scriptVersion > 0 && /^[a-f0-9]{64}$/.test(i.sha256), 'INPUT_IDENTITY', `sha256:${i.sha256}`);
   const issues = checkOutput(i.probe, i.expectedSec);
   if (!Number.isFinite(i.expectedSec) || i.expectedSec <= 0) issues.push('DURATION_MISMATCH');
@@ -35,8 +37,7 @@ export function inspectQuality(i: QualityInput): QualityReport {
       const texts = typeof value === 'string' ? [value] : value.length > 1 ? [...value, value.join('')] : value;
       if (!texts.length && component !== 'zooms') add(s.key, component, false, 'MISSING_CONTENT', 'missing');
       for (const text of texts) {
-        const exclusion = classifyExclusion(text) ?? (matchRule(text, i.rules) ? 'USER_RULE' : null)
-          ?? (i.excludedTexts.some(x => normalized(x) && normalized(text).includes(normalized(x))) ? 'THIS_VIDEO_EXCLUDED' : null);
+        const exclusion = exclusionOf(text);
         const code = !text.trim() ? 'MISSING_CONTENT' : exclusion ?? 'PUBLIC_SCOPE';
         add(s.key, component, !!text.trim() && !exclusion, code, `sha256:${hash(text)}`);
       }
@@ -47,6 +48,19 @@ export function inspectQuality(i: QualityInput): QualityReport {
     for (const [part, component, code] of [['facts', 'script', 'FACTS'], ['image', 'visual', 'IMAGE'], ['learning', 'zooms', 'LEARNING'], ['readability', 'subtitles', 'READABILITY']] as const) {
       const a = s[part];
       add(s.key, component, a.passed === true && !!a.evidence.trim(), a.evidence.trim() ? code : 'NO_EVIDENCE', a.evidence.trim() ? `evidence-sha256:${hash(a.evidence)}` : 'missing');
+    }
+  }
+  // Scene boundaries are not privacy boundaries. Inspect each component in playback
+  // order, both for split words and for phrases separated by caption/scene breaks.
+  // A global failure conservatively repairs the component across all scenes.
+  if (i.scenes.length > 1) {
+    for (const component of ['script', 'visual', 'transcript', 'subtitles', 'zooms'] as const) {
+      const fragments = i.scenes.flatMap(s => s[component]);
+      for (const separator of ['', ' ']) {
+        const text = fragments.join(separator);
+        const exclusion = exclusionOf(text);
+        if (exclusion) add(null, component, false, exclusion, `scope:all-scenes;sha256:${hash(text)}`);
+      }
     }
   }
   return { passed: checks.every(c => c.passed), file: i.file, sha256: i.sha256, scriptVersion: i.scriptVersion, checks };
