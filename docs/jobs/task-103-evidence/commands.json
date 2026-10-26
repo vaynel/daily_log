@@ -1,0 +1,61 @@
+{
+  "baseCommit": "749464fc13d8b0e64adbd86e24b21aab743edbb9",
+  "commands": [
+    {
+      "command": "timeout 40s node --import tsx --test scripts/drive-validation-app/config.test.ts",
+      "exitCode": 0,
+      "output": "config.txt"
+    },
+    {
+      "command": "timeout 90s node --import tsx scripts/drive-validation-app/verify.ts --fake",
+      "exitCode": 0,
+      "output": "http.txt"
+    },
+    {
+      "command": "timeout 90s env TASK101_TEST_DB=1 node --import tsx scripts/drive-validation/verify.ts --fake",
+      "exitCode": 0,
+      "output": "legacy.txt"
+    },
+    {
+      "command": "timeout 30s node --test scripts/drive-validation/preflight.test.mjs",
+      "exitCode": 0,
+      "output": "preflight.txt"
+    },
+    {
+      "command": "timeout 60s npm run typecheck",
+      "exitCode": 0,
+      "output": "workspace-types.txt"
+    },
+    {
+      "command": "timeout 30s npx --no-install tsc -p scripts/drive-validation-app/tsconfig.json",
+      "exitCode": 0,
+      "output": "types.txt"
+    },
+    {
+      "command": "timeout 60s npm run lint",
+      "exitCode": 0,
+      "output": "lint.txt"
+    },
+    {
+      "command": "timeout 90s npm run build",
+      "exitCode": 0,
+      "output": "build.txt"
+    },
+    {
+      "command": "timeout 30s npm run scan:secrets",
+      "exitCode": 0,
+      "output": "secrets.txt"
+    },
+    {
+      "command": "timeout 20s node --import tsx --test scripts/drive-validation-app/config.test.ts (before entrypoint existed)",
+      "exitCode": 1,
+      "output": "red.txt"
+    }
+  ],
+  "notRun": {
+    "actualGoogleDrive": "No real OAuth or network invocation; dedicated settings/access NOT_READY",
+    "actualAndroid": "Out of scope",
+    "deployment": "Forbidden",
+    "npm test": "Existing teardown deletes schemas/files; user forbids deletion"
+  }
+}

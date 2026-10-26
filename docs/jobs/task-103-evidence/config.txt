@@ -1,0 +1,40 @@
+TAP version 13
+# Subtest: default and incomplete real entrypoint fail closed without values or network
+ok 1 - default and incomplete real entrypoint fail closed without values or network
+  ---
+  duration_ms: 9202.530642
+  type: 'test'
+  ...
+# Subtest: test DB identity and clean URL are mandatory; flags cannot bless production
+ok 2 - test DB identity and clean URL are mandatory; flags cannot bless production
+  ---
+  duration_ms: 8.909512
+  type: 'test'
+  ...
+# Subtest: real configuration validates single owner, keys, loopback and access without contacting Google
+ok 3 - real configuration validates single owner, keys, loopback and access without contacting Google
+  ---
+  duration_ms: 5.10406
+  type: 'test'
+  ...
+# Subtest: network gate denies Google in fake mode, destructive methods and redirect escape
+ok 4 - network gate denies Google in fake mode, destructive methods and redirect escape
+  ---
+  duration_ms: 408.296276
+  type: 'test'
+  ...
+# Subtest: foreground CLI logs no callback query/cookie, refuses delete and stops cleanly
+ok 5 - foreground CLI logs no callback query/cookie, refuses delete and stops cleanly
+  ---
+  duration_ms: 6884.08202
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 17145.92667
