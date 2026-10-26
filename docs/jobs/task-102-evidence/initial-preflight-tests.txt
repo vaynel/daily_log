@@ -1,0 +1,54 @@
+TAP version 13
+# Subtest: missing DB/source/OAuth stay NOT_RUN and real upload is disabled
+ok 1 - missing DB/source/OAuth stay NOT_RUN and real upload is disabled
+  ---
+  duration_ms: 6.609689
+  type: 'test'
+  ...
+# Subtest: presence of credentials cannot claim OAuth consent or DB health; values never emitted
+ok 2 - presence of credentials cannot claim OAuth consent or DB health; values never emitted
+  ---
+  duration_ms: 1.874926
+  type: 'test'
+  ...
+# Subtest: upload flag is rejected
+ok 3 - upload flag is rejected
+  ---
+  duration_ms: 39.024058
+  type: 'test'
+  ...
+# Subtest: verification refuses absent DB and refuses default/real modes before connecting
+not ok 4 - verification refuses absent DB and refuses default/real modes before connecting
+  ---
+  duration_ms: 39.459287
+  type: 'test'
+  location: '/workspace/scripts/drive-validation/preflight.test.mjs:25:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    1 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/scripts/drive-validation/preflight.test.mjs:30:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 3
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 166.502909

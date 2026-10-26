@@ -1,0 +1,2 @@
+npm error npx canceled due to missing packages and no YES option: ["tsc@2.0.4"]
+npm error A complete log of this run can be found in: /npm-cache/_logs/2026-10-26T15_53_04_287Z-debug-0.log

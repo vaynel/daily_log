@@ -1,0 +1,32 @@
+[
+  {
+    "name": "preflight",
+    "command": "timeout 10s node scripts/drive-validation/preflight.mjs",
+    "exitCode": 0
+  },
+  {
+    "name": "preflight-tests",
+    "command": "timeout 30s node --test scripts/drive-validation/preflight.test.mjs",
+    "exitCode": 0
+  },
+  {
+    "name": "fake-pg-drive",
+    "command": "timeout 90s env TASK101_TEST_DB=1 node --import tsx scripts/drive-validation/verify.ts --fake",
+    "exitCode": 0
+  },
+  {
+    "name": "typecheck",
+    "command": "timeout 30s npx --no-install tsc -p scripts/drive-validation/tsconfig.json",
+    "exitCode": 0
+  },
+  {
+    "name": "lint",
+    "command": "timeout 30s npx --no-install eslint scripts/drive-validation",
+    "exitCode": 0
+  },
+  {
+    "name": "secret-scan",
+    "command": "timeout 30s npm run scan:secrets",
+    "exitCode": 0
+  }
+]
