@@ -1,0 +1,9 @@
+{
+  "version": "voice-v1",
+  "decidedAt": "2026-10-25",
+  "provider": "gemini-3.8-flash-tts",
+  "primary": {"voiceName": "Achird", "sample": "calmboy-Achird.mp3"},
+  "backup": {"voiceName": "Zubenelgenubi", "sample": "calmboy-Zubenelgenubi.mp3"},
+  "styleInstruction": "20대 초반 소년 같은 맑은 남자 목소리지만, 들뜨지 않고 담담하고 차분하게, 하루를 조용히 돌아보는 혼잣말처럼 살짝 미소만 띠고, 보통 속도로 읽어 주세요",
+  "notes": "관리자 선택: 처음에는 Achird 사용, Zubenelgenubi는 예비 보관. Charon(너무 성숙), 밝은 소년 버전(너무 밝음)은 미선정."
+}
