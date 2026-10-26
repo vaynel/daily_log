@@ -1,0 +1,6 @@
+
+> daily-log@0.0.0 lint
+> eslint .
+
+
+exit_code=0

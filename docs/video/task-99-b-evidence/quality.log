@@ -1,0 +1,13 @@
+
+> @daily-log/server@0.0.0 test
+> vitest run src/video/quality.test.ts src/video/qualityQueue.test.ts src/video/qualityStage.test.ts
+
+sh: 1: vitest: not found
+npm error Lifecycle script `test` failed with error:
+npm error code 127
+npm error path /workspace/apps/server
+npm error workspace @daily-log/server@0.0.0
+npm error location /workspace/apps/server
+npm error command failed
+npm error command sh -c vitest run src/video/quality.test.ts src/video/qualityQueue.test.ts src/video/qualityStage.test.ts
+exit_code=127

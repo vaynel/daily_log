@@ -1,0 +1,18 @@
+START lint
+END lint exit_code=0
+START typecheck
+END typecheck exit_code=0
+START test
+END test exit_code=124
+START build
+END build exit_code=0
+START test:spike
+END test:spike exit_code=0
+START test:records-crash
+END test:records-crash exit_code=0
+START test:queue-restart
+END test:queue-restart exit_code=0
+START test:notify-e2e
+END test:notify-e2e exit_code=1
+scripts/task-99-check.sh: line 19: unexpected EOF while looking for matching `''
+exit_code=2

@@ -1,0 +1,6 @@
+
+> daily-log@0.0.0 test:notify-e2e
+> node scripts/notify-e2e.mjs
+
+{"e2e":[{"profile":"pc","result":"PASS"},{"profile":"android-emulated","result":"PASS"}]}
+exit_code=0

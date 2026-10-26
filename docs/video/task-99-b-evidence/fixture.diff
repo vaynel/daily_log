@@ -1,0 +1,14 @@
+diff --git a/apps/server/src/video/qualityStage.test.ts b/apps/server/src/video/qualityStage.test.ts
+index 0954a9e..be143d5 100644
+--- a/apps/server/src/video/qualityStage.test.ts
++++ b/apps/server/src/video/qualityStage.test.ts
+@@ -20,7 +20,8 @@ describe.skipIf(!url)('렌더 → 검수 → 부분 재제작 통합', () => {
+   afterAll(async () => { await pool.end(); await t.drop(); rm(dir); });
+   it.each(['single-scene', 'cross-scene'])('%s: 실제 MP4 실패 파일·근거 보존, 자막만 재제작, 재검수 통과 후 완료', async mode => {
+     const id = randomUUID();
+-    await pool.query("INSERT INTO interviews(id,owner_id,life_date,started_at,status) VALUES($1,'fixture','2030-01-01',now(),'CONFIRMED')", [id]);
++    // Each case owns its interview date; keep the owner/date uniqueness constraint intact.
++    await pool.query("INSERT INTO interviews(id,owner_id,life_date,started_at,status) VALUES($1,$2,'2030-01-01',now(),'CONFIRMED')", [id, `quality-stage-${id}`]);
+     await pool.query("INSERT INTO pipeline_states(interview_id,updated_at) VALUES($1,now())", [id]);
+     let captions = 0, images = 0;
+     const renderInput = { ...mockInput([1]), scriptVersion: 2 };

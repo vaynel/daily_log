@@ -1,0 +1,5 @@
+
+> @daily-log/server@0.0.0 build
+> tsc -p tsconfig.build.json && node ../../scripts/copy-migrations.mjs
+
+exit_code=0

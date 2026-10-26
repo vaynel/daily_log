@@ -1,0 +1,22 @@
+
+> daily-log@0.0.0 build
+> npm run build -ws
+
+
+> @daily-log/server@0.0.0 build
+> tsc -p tsconfig.build.json && node ../../scripts/copy-migrations.mjs
+
+
+> @daily-log/web@0.0.0 build
+> tsc --noEmit && vite build
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 39 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                  3.52 kB │ gzip:  1.37 kB
+dist/assets/index-DufU1Yq4.js  272.83 kB │ gzip: 85.90 kB
+✓ built in 1.30s
+
+exit_code=0

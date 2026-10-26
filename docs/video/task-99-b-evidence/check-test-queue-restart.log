@@ -1,0 +1,13 @@
+
+> daily-log@0.0.0 test:queue-restart
+> node scripts/queue-restart-e2e.mjs
+
+[plain] SIGKILL 시점: auto_retries_used=0 단계=a:DONE,b:RUNNING 실행=EXEC a 1|EXEC b 1
+[plain] 재시작 후: RECOVERED 1 | EXEC b 2 | HANG b | EXEC c 1 | FINAL SUCCEEDED retries=1
+1) PASS 완료 단계 a 미재실행, 재시도 횟수 DB 유지(0→복구 시 1), b·c 완료
+[paid] SIGKILL 시점: auto_retries_used=1 단계=a:DONE,b:SENT 실행=EXEC a 1|EXEC a 2|EXEC b 1
+[paid] 재시작 후: RECOVERED 1 | LOOKUP b | EXEC c 1 | FINAL SUCCEEDED retries=1
+2) PASS 사용한 재시도 1 유지, 유료 b 재전송 없음(LOOKUP 확정), 원장 1건 CONFIRMED/RETRY
+queue-restart-e2e PASS
+
+exit_code=0

@@ -1,0 +1,175 @@
+
+> daily-log@0.0.0 test:notify-e2e
+> node scripts/notify-e2e.mjs
+
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+browserType.launch: Target page, context or browser has been closed
+Browser logs:
+
+<launching> /usr/bin/chromium --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,AvoidCorsURLLoaderRestartOnRedirect,Translate,AutoDeElevate,OptimizationHints,NetworkTimeServiceQuerying,AimEnabled,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --no-sandbox --user-data-dir=/scratch/tmp/playwright_chromiumdev_profile-0hZTbX --remote-debugging-pipe --no-startup-window
+<launched> pid=4301
+[pid=4301][err] [4301:4329:1026/155053.579867:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[pid=4301][err] [4301:4329:1026/155053.579975:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[pid=4301][err] [4301:4329:1026/155053.622193:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[pid=4301][err] [4301:4329:1026/155053.622402:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[pid=4301][err] [4301:4329:1026/155053.622460:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[pid=4301][err] [4301:4329:1026/155053.911612:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[pid=4301][err] [4301:4362:1026/155053.927619:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4328:1026/155053.927715:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4328:1026/155053.927754:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4362:1026/155053.927789:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4362:1026/155053.927816:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4301:1026/155053.928232:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4362:1026/155053.928513:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4361:1026/155053.928679:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4361:1026/155053.928726:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4361:1026/155053.928757:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4357:4374:1026/155053.927724:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4361:1026/155053.928991:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4361:1026/155053.929206:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4362:1026/155053.928549:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4357:4374:1026/155053.928978:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4301:1026/155053.930029:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4301:1026/155053.930236:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4301:1026/155053.930295:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4301:1026/155053.930424:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4301:1026/155053.930483:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4301:1026/155053.930501:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4328:1026/155053.930556:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4328:1026/155053.930600:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4327:1026/155053.930643:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4328:1026/155053.930689:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4328:1026/155053.930712:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4328:1026/155053.930736:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4328:1026/155053.930758:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4357:4374:1026/155053.931502:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4357:4374:1026/155053.932527:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4357:4374:1026/155053.933001:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4357:4374:1026/155053.933581:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4357:4374:1026/155053.934648:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4357:4374:1026/155053.937816:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4357:4374:1026/155053.938509:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+[pid=4301][err] [4301:4301:1026/155053.939191:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)
+Call log:
+[2m  - <launching> /usr/bin/chromium --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,AvoidCorsURLLoaderRestartOnRedirect,Translate,AutoDeElevate,OptimizationHints,NetworkTimeServiceQuerying,AimEnabled,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --no-sandbox --user-data-dir=/scratch/tmp/playwright_chromiumdev_profile-0hZTbX --remote-debugging-pipe --no-startup-window[22m
+[2m  - <launched> pid=4301[22m
+[2m  - [pid=4301][err] [4301:4329:1026/155053.579867:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory[22m
+[2m  - [pid=4301][err] [4301:4329:1026/155053.579975:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")[22m
+[2m  - [pid=4301][err] [4301:4329:1026/155053.622193:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory[22m
+[2m  - [pid=4301][err] [4301:4329:1026/155053.622402:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory[22m
+[2m  - [pid=4301][err] [4301:4329:1026/155053.622460:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")[22m
+[2m  - [pid=4301][err] [4301:4329:1026/155053.911612:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")[22m
+[2m  - [pid=4301][err] [4301:4362:1026/155053.927619:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4328:1026/155053.927715:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4328:1026/155053.927754:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4362:1026/155053.927789:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4362:1026/155053.927816:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4301:1026/155053.928232:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4362:1026/155053.928513:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4361:1026/155053.928679:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4361:1026/155053.928726:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4361:1026/155053.928757:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4357:4374:1026/155053.927724:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4361:1026/155053.928991:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4361:1026/155053.929206:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4362:1026/155053.928549:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4357:4374:1026/155053.928978:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4301:1026/155053.930029:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4301:1026/155053.930236:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4301:1026/155053.930295:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4301:1026/155053.930424:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4301:1026/155053.930483:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4301:1026/155053.930501:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4328:1026/155053.930556:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4328:1026/155053.930600:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4327:1026/155053.930643:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4328:1026/155053.930689:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4328:1026/155053.930712:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4328:1026/155053.930736:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4328:1026/155053.930758:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4357:4374:1026/155053.931502:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4357:4374:1026/155053.932527:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4357:4374:1026/155053.933001:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4357:4374:1026/155053.933581:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4357:4374:1026/155053.934648:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4357:4374:1026/155053.937816:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4357:4374:1026/155053.938509:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301][err] [4301:4301:1026/155053.939191:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)[22m
+[2m  - [pid=4301] <gracefully close start>[22m
+[2m  - [pid=4301] <kill>[22m
+[2m  - [pid=4301] <will force kill>[22m
+[2m  - [pid=4301][err] [4301:4301:1026/155053.940340:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type:[22m
+[2m  - [pid=4301][err] [4301:4329:1026/155053.940420:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")[22m
+[2m  - [pid=4301][err] [4301:4301:1026/155053.940511:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type:[22m
+[2m  - [pid=4301][err] [4301:4329:1026/155053.941137:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")[22m
+[2m  - [pid=4301] <process did exit: exitCode=null, signal=SIGKILL>[22m
+[2m  - [pid=4301] starting temporary directories cleanup[22m
+[2m  - [pid=4301] finished temporary directories cleanup[22m
+[2m  - [pid=4301] <gracefully close end>[22m
+
+    at /workspace/scripts/notify-e2e.mjs:57:28 {
+  log: [
+    '  - <launching> /usr/bin/chromium --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,AvoidCorsURLLoaderRestartOnRedirect,Translate,AutoDeElevate,OptimizationHints,NetworkTimeServiceQuerying,AimEnabled,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --no-sandbox --user-data-dir=/scratch/tmp/playwright_chromiumdev_profile-0hZTbX --remote-debugging-pipe --no-startup-window',
+    '  - <launched> pid=4301',
+    '  - [pid=4301][err] [4301:4329:1026/155053.579867:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory',
+    '  - [pid=4301][err] [4301:4329:1026/155053.579975:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")',
+    '  - [pid=4301][err] [4301:4329:1026/155053.622193:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory',
+    '  - [pid=4301][err] [4301:4329:1026/155053.622402:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory',
+    '  - [pid=4301][err] [4301:4329:1026/155053.622460:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")',
+    '  - [pid=4301][err] [4301:4329:1026/155053.911612:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")',
+    '  - [pid=4301][err] [4301:4362:1026/155053.927619:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4328:1026/155053.927715:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4328:1026/155053.927754:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4362:1026/155053.927789:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4362:1026/155053.927816:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4301:1026/155053.928232:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4362:1026/155053.928513:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4361:1026/155053.928679:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4361:1026/155053.928726:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4361:1026/155053.928757:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4357:4374:1026/155053.927724:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4361:1026/155053.928991:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4361:1026/155053.929206:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4362:1026/155053.928549:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4357:4374:1026/155053.928978:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4301:1026/155053.930029:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4301:1026/155053.930236:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4301:1026/155053.930295:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4301:1026/155053.930424:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4301:1026/155053.930483:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4301:1026/155053.930501:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4328:1026/155053.930556:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4328:1026/155053.930600:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4327:1026/155053.930643:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4328:1026/155053.930689:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4328:1026/155053.930712:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4328:1026/155053.930736:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4328:1026/155053.930758:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4357:4374:1026/155053.931502:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4357:4374:1026/155053.932527:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4357:4374:1026/155053.933001:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4357:4374:1026/155053.933581:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4357:4374:1026/155053.934648:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4357:4374:1026/155053.937816:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4357:4374:1026/155053.938509:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301][err] [4301:4301:1026/155053.939191:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)',
+    '  - [pid=4301] <gracefully close start>',
+    '  - [pid=4301] <kill>',
+    '  - [pid=4301] <will force kill>',
+    '  - [pid=4301][err] [4301:4301:1026/155053.940340:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type:',
+    '  - [pid=4301][err] [4301:4329:1026/155053.940420:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")',
+    '  - [pid=4301][err] [4301:4301:1026/155053.940511:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type:',
+    '  - [pid=4301][err] [4301:4329:1026/155053.941137:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")',
+    '  - [pid=4301] <process did exit: exitCode=null, signal=SIGKILL>',
+    '  - [pid=4301] starting temporary directories cleanup',
+    '  - [pid=4301] finished temporary directories cleanup',
+    '  - [pid=4301] <gracefully close end>'
+  ]
+}
+
+Node.js v22.23.3
+
+exit_code=1

@@ -1,0 +1,10 @@
+
+> daily-log@0.0.0 test:records-crash
+> node scripts/records-crash-e2e.mjs
+
+1) SIGKILL 시점 마지막 확인된 저장: 5
+   복구: 항목 5건·첨부 5건·seq 연속·버전 revision=1·상태 IN_PROGRESS/NONE
+2) 트랜잭션 중간 SIGKILL: 부분 항목·첨부 0건, 이전 저장분 그대로
+PASS
+
+exit_code=0
