@@ -1,0 +1,4 @@
+PASS old shared owner/date: expected 23505 interviews_owner_id_life_date_key
+PASS isolated owner UUID: both cases insert; original unique constraint retained
+
+exit_code=0

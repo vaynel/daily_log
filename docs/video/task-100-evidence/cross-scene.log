@@ -1,0 +1,22 @@
+{
+  "sameScenePassed": false,
+  "crossScenePassed": false,
+  "failedChecks": [
+    {
+      "scene": null,
+      "component": "subtitles",
+      "passed": false,
+      "code": "THIS_VIDEO_EXCLUDED",
+      "evidence": "scope:all-scenes;sha256:4245054d0b9628f1ee53d6fa33120e34d183516181d40f706f83b6b1e898e22b"
+    },
+    {
+      "scene": null,
+      "component": "subtitles",
+      "passed": false,
+      "code": "THIS_VIDEO_EXCLUDED",
+      "evidence": "scope:all-scenes;sha256:f79ac8ec7bac9461a4f85b8c96d9182dcde6e445c90a10434ecc5b70f6bf8ff8"
+    }
+  ]
+}
+
+exit_code=0

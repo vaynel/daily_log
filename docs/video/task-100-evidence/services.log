@@ -1,0 +1,4 @@
+PostgreSQL SELECT 1: PASS
+Redis PING: PONG
+
+exit_code=0

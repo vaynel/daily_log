@@ -1,0 +1,8 @@
+START quality
+END quality exit_code=0
+START build
+END build exit_code=0
+START quality-restart
+END quality-restart exit_code=0
+START check
+END check exit_code=0
