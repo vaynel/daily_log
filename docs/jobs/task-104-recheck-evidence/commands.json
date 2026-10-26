@@ -1,0 +1,47 @@
+[
+  {
+    "name": "config",
+    "command": "timeout 40s node --import tsx --test scripts/drive-validation-app/config.test.ts",
+    "exit": 0
+  },
+  {
+    "name": "http",
+    "command": "timeout 90s node --import tsx scripts/drive-validation-app/verify.ts --fake",
+    "exit": 0
+  },
+  {
+    "name": "legacy",
+    "command": "TASK101_TEST_DB=1 timeout 90s node --import tsx scripts/drive-validation/verify.ts --fake",
+    "exit": 0
+  },
+  {
+    "name": "preflight",
+    "command": "node --test scripts/drive-validation/preflight.test.mjs",
+    "exit": 0
+  },
+  {
+    "name": "lint",
+    "command": "npm run lint",
+    "exit": 0
+  },
+  {
+    "name": "types",
+    "command": "npx tsc -p scripts/drive-validation-app/tsconfig.json",
+    "exit": 0
+  },
+  {
+    "name": "workspace-types",
+    "command": "npm run typecheck",
+    "exit": 0
+  },
+  {
+    "name": "build",
+    "command": "npm run build",
+    "exit": 0
+  },
+  {
+    "name": "default-off",
+    "command": "timeout 10s node --import tsx scripts/drive-validation-app/main.ts",
+    "exit": 2
+  }
+]
