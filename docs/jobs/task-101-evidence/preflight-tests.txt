@@ -1,0 +1,37 @@
+$ timeout 20s node --test scripts/drive-validation/preflight.test.mjs
+TAP version 13
+# Subtest: missing DB/source/OAuth stay NOT_RUN and real upload is disabled
+ok 1 - missing DB/source/OAuth stay NOT_RUN and real upload is disabled
+  ---
+  duration_ms: 6.877362
+  type: 'test'
+  ...
+# Subtest: presence of credentials cannot claim OAuth consent or DB health; values never emitted
+ok 2 - presence of credentials cannot claim OAuth consent or DB health; values never emitted
+  ---
+  duration_ms: 1.789453
+  type: 'test'
+  ...
+# Subtest: upload flag is rejected
+ok 3 - upload flag is rejected
+  ---
+  duration_ms: 43.490843
+  type: 'test'
+  ...
+# Subtest: verification refuses absent DB and refuses default/real modes before connecting
+ok 4 - verification refuses absent DB and refuses default/real modes before connecting
+  ---
+  duration_ms: 1724.479657
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1854.629157
+
+exit_code=0

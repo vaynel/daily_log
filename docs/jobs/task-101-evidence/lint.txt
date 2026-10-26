@@ -1,0 +1,3 @@
+$ timeout 30s npx --no-install eslint scripts/drive-validation
+
+exit_code=0

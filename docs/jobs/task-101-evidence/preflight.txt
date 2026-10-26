@@ -1,0 +1,27 @@
+$ timeout 10s node scripts/drive-validation/preflight.mjs
+{
+  "mode": "PREFLIGHT_ONLY",
+  "realUploadEnabled": false,
+  "database": {
+    "result": "NOT_RUN",
+    "reason": "INJECTED_DATABASE_NOT_PROBED"
+  },
+  "source": {
+    "result": "PASS",
+    "reason": "SIZE_CHECK_ONLY"
+  },
+  "oauth": {
+    "result": "NOT_RUN",
+    "reason": "PERSONAL_LOGIN_AND_DRIVE_FILE_CONSENT_NOT_VERIFIED"
+  },
+  "actualGoogleDrive": {
+    "result": "NOT_RUN",
+    "reason": "DISABLED_IN_TASK_101"
+  },
+  "actualAndroid": {
+    "result": "NOT_RUN",
+    "reason": "NO_DEVICE_TEST"
+  }
+}
+
+exit_code=0

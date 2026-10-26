@@ -1,0 +1,22 @@
+$ timeout 10s ffprobe -v error -show_entries format=duration,size -show_entries stream=codec_name,width,height -of json scripts/video-spike/out/sample.mp4
+{
+    "programs": [
+
+    ],
+    "streams": [
+        {
+            "codec_name": "h264",
+            "width": 720,
+            "height": 1280
+        },
+        {
+            "codec_name": "aac"
+        }
+    ],
+    "format": {
+        "duration": "180.000000",
+        "size": "2138651"
+    }
+}
+
+exit_code=0

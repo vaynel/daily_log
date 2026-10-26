@@ -1,0 +1,37 @@
+[
+  {
+    "check": "preflight",
+    "exit_code": 0,
+    "expected": 0
+  },
+  {
+    "check": "preflight-tests",
+    "exit_code": 0,
+    "expected": 0
+  },
+  {
+    "check": "fake-pg-drive",
+    "exit_code": 0,
+    "expected": 0
+  },
+  {
+    "check": "typecheck",
+    "exit_code": 0,
+    "expected": 0
+  },
+  {
+    "check": "lint",
+    "exit_code": 0,
+    "expected": 0
+  },
+  {
+    "check": "video-probe",
+    "exit_code": 0,
+    "expected": 0
+  },
+  {
+    "check": "secret-scan",
+    "exit_code": 0,
+    "expected": 0
+  }
+]
