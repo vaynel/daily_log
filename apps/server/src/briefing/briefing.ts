@@ -1,5 +1,6 @@
 import { ORGANIZE_INSTRUCTION, attachmentBlock, parseStatements, type AttachmentNote, type Statement, type StatementKind, type StatementSource } from '../interview/policy.js';
 import type { InterviewLimits } from '../interview/limits.js';
+import { matchRule, type ExclusionRule } from './rules.js';
 import { classifyExclusion, EXCLUSION_LABEL, isSecurityLearning, type ExclusionReason } from './exclusion.js';
 
 /**
@@ -7,7 +8,7 @@ import { classifyExclusion, EXCLUSION_LABEL, isSecurityLearning, type ExclusionR
  * 하루 요약과 영상 핵심을 한 화면·한 음성 안내에 함께 보여 준다. 사용자가 확인하기 전에는 제작 작업이 만들어지지 않는다.
  */
 
-export type ExcludedReason = ExclusionReason | 'UNCERTAIN' | 'MATERIAL' | 'USER';
+export type ExcludedReason = ExclusionReason | 'UNCERTAIN' | 'MATERIAL' | 'USER' | 'RULE';
 
 export interface BriefingItem {
   id: string;
@@ -27,17 +28,18 @@ export const MAX_VIDEO_ITEMS = 6;
 const EMPHASIS = /제일|가장|특히|무엇보다|핵심|꼭|중요/;
 
 export const EXCLUDED_LABEL: Record<ExcludedReason, string> = {
-  ...EXCLUSION_LABEL, UNCERTAIN: '확실하지 않은 내용', MATERIAL: '첨부 자료 내용(내가 한 일이 아님)', USER: '내가 뺀 내용',
+  ...EXCLUSION_LABEL, UNCERTAIN: '확실하지 않은 내용', MATERIAL: '첨부 자료 내용(내가 한 일이 아님)', USER: '내가 뺀 내용', RULE: '내가 정한 제외 기준',
 };
 
 /** 정리 결과 → 브리핑 항목. 영상 선정: 사실·의견 중 제외 대상이 아닌 것, 강조 우선, 최대 MAX_VIDEO_ITEMS. */
-export function buildItems(statements: Statement[]): BriefingItem[] {
+/** 상시 기준(exclusion.ts)에 더해 사용자가 확인해 저장한 반복 제외 기준(rules)을 제작 입력 선정에 적용한다. */
+export function buildItems(statements: Statement[], rules: ExclusionRule[] = []): BriefingItem[] {
   const base: BriefingItem[] = statements.map((s, i) => {
     const emphasis = s.emphasis === true || (s.source === 'USER' && EMPHASIS.test(s.text));
     let excludedReason: ExcludedReason | null = null;
     if (s.kind === 'UNCERTAIN') excludedReason = 'UNCERTAIN';
     else if (s.kind === 'MATERIAL') excludedReason = 'MATERIAL';
-    else excludedReason = classifyExclusion(s.text);
+    else excludedReason = classifyExclusion(s.text) ?? (matchRule(s.text, rules) ? 'RULE' : null);
     return { id: `s${i + 1}`, kind: s.kind, source: s.source, text: s.text, emphasis, inVideo: false, excludedReason, ...(isSecurityLearning(s.text) ? { topic: 'SECURITY' as const } : {}) };
   });
   return selectVideo(base);
@@ -111,7 +113,7 @@ export function organizePrompt(conversation: { role: 'user' | 'model'; text: str
 }
 
 /** 같은 입력으로 형식 오류에 한해 한 번만 다시 호출한다(처리 오류 자동 재시도 1회 원칙). */
-export async function generateBriefing(i: { conversation: { role: 'user' | 'model'; text: string }[]; attachments: AttachmentNote[]; infer: ProInfer }): Promise<GenerateResult> {
+export async function generateBriefing(i: { conversation: { role: 'user' | 'model'; text: string }[]; attachments: AttachmentNote[]; infer: ProInfer; rules?: ExclusionRule[] }): Promise<GenerateResult> {
   const text = organizePrompt(i.conversation, i.attachments);
   let calls = 0;
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -119,7 +121,7 @@ export async function generateBriefing(i: { conversation: { role: 'user' | 'mode
     const out = await i.infer({ text }).catch(() => ({ state: 'WAIT_RECONCILIATION' }) as ProOutcome);
     if (out.state !== 'SUCCEEDED' || typeof (out as { text?: unknown }).text !== 'string') return { ok: false, code: 'PRO_WAITING', state: out.state, proCalls: calls };
     const parsed = parseStatements((out as { text: string }).text);
-    if (parsed.ok) return { ok: true, items: buildItems(parsed.statements), proCalls: calls };
+    if (parsed.ok) return { ok: true, items: buildItems(parsed.statements, i.rules), proCalls: calls };
   }
   return { ok: false, code: 'BAD_OUTPUT', proCalls: calls };
 }
@@ -132,7 +134,7 @@ export type CorrectionResult = { ok: true; items: BriefingItem[]; changed: Brief
 
 const MAX_TEXT = 300;
 
-export function applyCorrection(items: BriefingItem[], c: Correction): CorrectionResult {
+export function applyCorrection(items: BriefingItem[], c: Correction, rules: ExclusionRule[] = []): CorrectionResult {
   const target = items.find((i) => i.id === c.itemId);
   if (!target) return { ok: false, code: 'NOT_FOUND' };
   let next: BriefingItem;
@@ -141,11 +143,11 @@ export function applyCorrection(items: BriefingItem[], c: Correction): Correctio
     const text = (c.text ?? '').replace(/\s+/g, ' ').trim();
     if (!text || text.length > MAX_TEXT) return { ok: false, code: 'BAD_TEXT' };
     // 사용자가 직접 고친 문장은 사용자의 사실이다. 단 정책 제외·불확실 표시는 문장이 바뀌어도 다시 판정한다.
-    const reason = classifyExclusion(text);
+    const reason = classifyExclusion(text) ?? (matchRule(text, rules) ? 'RULE' : null);
     next = { ...target, kind: target.kind === 'MATERIAL' || target.kind === 'UNCERTAIN' ? 'FACT' : target.kind, source: 'USER', text, excludedReason: reason, ...(isSecurityLearning(text) ? { topic: 'SECURITY' as const } : { topic: undefined }) };
   } else {
     // 되돌리기: 정책 제외·첨부 자료·불확실 항목은 사용자가 되살려도 공개 입력에 넣지 않는다.
-    if (target.kind === 'UNCERTAIN' || target.kind === 'MATERIAL' || classifyExclusion(target.text)) return { ok: false, code: 'NOT_ALLOWED' };
+    if (target.kind === 'UNCERTAIN' || target.kind === 'MATERIAL' || classifyExclusion(target.text) || matchRule(target.text, rules)) return { ok: false, code: 'NOT_ALLOWED' };
     next = { ...target, excludedReason: null };
   }
   const items2 = selectVideo(items.map((i) => (i.id === next.id ? next : i)));

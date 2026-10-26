@@ -4,6 +4,7 @@ import { loadAuthConfig } from './auth/config.js';
 import { MonthlyLedger } from './budget/ledger.js';
 import { loadConfigOrExit } from './config.js';
 import { createPool } from './db/pool.js';
+import { PgRuleStore } from './briefing/rules.js';
 import { PgLiveUsageStore } from './interview/usage.js';
 import { createProInfer, loadSiwcRuntime } from './briefing/pro.js';
 import { RecordStore } from './records/store.js';
@@ -34,7 +35,7 @@ const app = buildApp({
   sessionSecret: config.sessionSecret,
   fileStorageDir: config.fileStorageDir,
   records: new RecordStore(pool),
-  briefing: { infer: briefingInfer },
+  briefing: { infer: briefingInfer, rules: new PgRuleStore(pool) },
   entries: { list: async () => (await pool.query('SELECT id, entry_date, body FROM sample_entries ORDER BY entry_date DESC')).rows },
   interview: {
     usage: new PgLiveUsageStore(pool),
