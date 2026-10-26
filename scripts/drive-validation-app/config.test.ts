@@ -23,6 +23,13 @@ import { guardedFetch, readiness, testDatabaseAllowed } from './config.js';
 test('test DB identity and clean URL are mandatory; flags cannot bless production', () => {
   const base = 'postgresql://synthetic:ci-only@daily-log-test-postgres17:5432/daily_log_backend_test';
   assert.equal(testDatabaseAllowed(base), true);
+  const qa = base.replace('daily_log_backend_test', 'daily_log_qa_test');
+  assert.equal(readiness('--fake', qa).result, 'CONFIG_READY');
+  for (const bad of [qa.replace('daily-log-test-postgres17', 'prod'),
+    qa.replace('daily_log_qa_test', 'daily_log_prod_test'), qa + '?options=-csearch_path=public',
+    qa + '?host=prod', qa + '#public', qa.replace(':5432', ':5433')]) {
+    assert.equal(testDatabaseAllowed(bad), false);
+  }
   for (const bad of [undefined, 'invalid', base.replace('daily-log-test-postgres17', 'prod'),
     base.replace('daily_log_backend_test', 'daily_log'), base + '?options=-csearch_path=public',
     base + '?host=prod', base + '#public', base.replace(':5432', ':5433')]) {

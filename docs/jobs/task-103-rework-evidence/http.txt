@@ -1,0 +1,5 @@
+{"check":"httpOAuth","result":"PASS","separateConsent":true,"deniedConsentStaysDisconnected":true,"unauthenticated":401,"loopback":true}
+{"check":"restrictedSurface","result":"PASS","csrfAndHostRejected":true,"differentSubjectRejected":true,"arbitraryRecordRejected":true,"disconnectAndDeleteUnavailable":true}
+{"check":"httpBackupAndLive","result":"PASS","kinds":["RECORD","ATTACHMENT","VIDEO"],"hashesAndVersionsMatch":true,"audioExcluded":true,"liveReady":true,"cachedReady":null,"duplicateSkipped":true,"finiteTickLimit":20}
+{"check":"negativeAndPreservation","result":"PASS","corruptRemoteRejected":true,"revokedRemoteRejected":true,"originalHashesUnchanged":true,"destructiveRequests":0,"externalGoogleRequests":0,"allowedBackendRequests":33}
+{"check":"result","result":"PASS","schema":"task103_19dafd38dab9ce75111263e8","directory":"data/task103/run-TtEcSJ","actualGoogleDrive":"NOT_RUN","actualAndroid":"NOT_RUN","deployment":"NOT_RUN"}

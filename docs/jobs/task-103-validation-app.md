@@ -106,7 +106,9 @@ Google Console에 등록할 정확한 redirect URI:
 ## 안전 경계
 
 - DB URL은 정확히 주입된 테스트 서비스 `daily-log-test-postgres17:5432`의
-  `daily_log_backend_test`만 허용한다. 다른 host/database/port, query options/schema,
+  `daily_log_backend_test`(개발)와 `daily_log_qa_test`(독립 QA)만 명시적으로 허용한다.
+  각 실행은 해당 환경에 주입된 `DATABASE_URL`을 그대로 사용한다. DB 이름을 임의로
+  바꾸거나 DB/권한을 생성하지 않는다. 다른 host/database/port, query options/schema,
   fragment를 시작 전에 거부한다. 확인 플래그로 운영 DB를 허용할 수 없다.
 - 매번 난수 `task103_<96bit>` 스키마를 **새로** 만들고 search_path를 그 스키마로 고정한다.
   기존 migration의 제약 변경은 새 스키마에만 적용된다. public/기존 스키마를 쓰지 않는다.
@@ -134,3 +136,17 @@ fetch가 수동 Host 헤더를 전송하지 않아 Host 거부 검사가 실패�
 있어 이번 작업의 파일/DB 삭제 금지와 충돌한다. 대신 기존 보존형 TASK101 통합 검증,
 preflight 4건, 새 설정/CLI 5건, 새 HTTP/PG 통합 검사, 전체 lint/typecheck/build를 수행한다.
 테스트를 통과시키기 위해 공유 테스트나 운영 코드를 수정하지 않았다.
+
+## TASK-104 피드백 반영
+
+독립 QA가 사용하는 `daily_log_qa_test`를 거부하던 단일 DB 이름 비교를 두 승인된
+테스트 DB의 명시적 허용 목록으로 수정했다. `*_test` 패턴이나 임의 환경 플래그로
+허용 범위를 확장하지 않는다. QA URL의 CONFIG_READY 회귀 검사는 수정 전 실패,
+수정 후 통과했다. 동일 QA URL에서 운영 호스트·미승인 DB·포트·query·fragment를
+거부하는 검사도 추가했다.
+
+새 실행 증거는 [task-103-rework-evidence](task-103-rework-evidence/)에 보존한다.
+이번 개발 컨테이너에는 backend 테스트 DB가 주입되었으므로 실제 HTTP/PG 재검증은
+그 DB에서 수행했다. QA DB 연결을 같은 테스트 서비스에서 확인했으나 사용할 수
+없었다. QA DB 생성·권한 변경은 하지 않았다. QA 환경 자체의 HTTP 재실행은 독립
+검수에서 주입된 QA URL로 위 명령을 실행해야 하며, 개발의 PASS로 대체하지 않는다.

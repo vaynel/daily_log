@@ -15,7 +15,9 @@ export function testDatabaseAllowed(value: string | undefined): boolean {
     const u = new URL(value!);
     return ['postgres:', 'postgresql:'].includes(u.protocol)
       && u.hostname === 'daily-log-test-postgres17' && u.port === '5432'
-      && u.pathname === '/daily_log_backend_test' && !u.search && !u.hash
+      // Development and independent QA use separate, explicitly assigned test DBs.
+      && ['/daily_log_backend_test', '/daily_log_qa_test'].includes(u.pathname)
+      && !u.search && !u.hash
       && !!u.username && !!u.password;
   } catch { return false; }
 }
