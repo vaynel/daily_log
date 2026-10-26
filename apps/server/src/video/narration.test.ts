@@ -5,7 +5,7 @@ import { createTempSchema } from '../records/db.testutil.js';
 import { MonthlyLedger } from '../budget/ledger.js';
 import { DEFAULT_PRICING } from '../voice/pricing.js';
 import { pcmToWav, TransportError, type TtsResult } from '../voice/transports.js';
-import { loadVoiceConfig, synthesizeNarration, type NarrationTts } from './narration.js';
+import { loadVoiceConfig, synthesizeNarration, ttsPrompt, type NarrationTts } from './narration.js';
 import { runNarrationStage } from './narrationStage.js';
 import { DEFAULT_NARRATION, type Scene, type ScenePlan } from './scenePlan.js';
 import { buildSubtitles, checkSubtitles, maxUnitsPerLine, textUnits, wrapLines, TEXT_WIDTH_PX, type SubtitleCue } from './subtitles.js';
@@ -272,5 +272,15 @@ describe('학습 확대 화면 (AC-3)', () => {
   });
   it('빈 자료는 거절한다', () => {
     expect(planZoom({ sceneKey: 'sc2', kind: 'NOTE', original: '  \n' }, { startSec: 0, endSec: 9 })).toMatchObject({ ok: false, code: 'EMPTY_MATERIAL' });
+  });
+});
+
+
+describe('TTS 프롬프트 형식', () => {
+  it('지시문과 본문을 감독 노트/대본 구획으로 나눠 지시문이 낭독되지 않게 한다', () => {
+    const p = ttsPrompt('담담하게 읽어 주세요', '오늘은 산책을 했다.');
+    expect(p).toBe("### DIRECTOR'S NOTES\n담담하게 읽어 주세요\n\n### TRANSCRIPT\n오늘은 산책을 했다.");
+    expect(p.endsWith('오늘은 산책을 했다.')).toBe(true);
+    expect(p).not.toContain('담담하게 읽어 주세요:');
   });
 });

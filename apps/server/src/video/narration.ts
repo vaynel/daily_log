@@ -29,11 +29,17 @@ export function parseVoiceConfig(raw: string): VoiceConfig {
 export const loadVoiceConfig = (file: string): VoiceConfig => parseVoiceConfig(readFileSync(file, 'utf8'));
 
 /** 장면 하나를 읽는 합성 함수. 목소리·읽기 지시는 호출자가 고르지 못하고 VoiceConfig 로만 전달된다. */
+/**
+ * Gemini TTS 프롬프트. '지시문: 본문' 형식은 지시문까지 소리 내어 읽는다(2026-10-26 PM 실측: 전사에 지시문 전체가 나옴).
+ * 감독 노트/대본 구획으로 나누면 본문만 읽는다(실측: 전사=본문, 길이 19.2초→5.3초).
+ */
+export const ttsPrompt = (styleInstruction: string, text: string) => `### DIRECTOR'S NOTES\n${styleInstruction}\n\n### TRANSCRIPT\n${text}`;
+
 export type NarrationTts = (text: string, voice: Pick<VoiceConfig, 'voiceName' | 'styleInstruction'>) => Promise<TtsResult>;
 
 /** Gemini TTS 연결. 읽기 지시는 같은 요청의 앞 문장으로 붙인다(실제 호출은 PM 실측 때만, 러너 시험은 모의). */
 export function geminiNarrationTts(key: string, fetchImpl: typeof fetch = fetch, model = 'gemini-3.8-flash-tts'): NarrationTts {
-  return (text, voice) => geminiTts(key, fetchImpl, model, voice.voiceName)(`${voice.styleInstruction}:\n${text}`);
+  return (text, voice) => geminiTts(key, fetchImpl, model, voice.voiceName)(ttsPrompt(voice.styleInstruction, text));
 }
 
 export interface NarrationSegment {
