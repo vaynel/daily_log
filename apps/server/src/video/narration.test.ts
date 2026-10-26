@@ -5,7 +5,7 @@ import { createTempSchema } from '../records/db.testutil.js';
 import { MonthlyLedger } from '../budget/ledger.js';
 import { DEFAULT_PRICING } from '../voice/pricing.js';
 import { pcmToWav, TransportError, type TtsResult } from '../voice/transports.js';
-import { loadVoiceConfig, synthesizeNarration, type NarrationTts } from './narration.js';
+import { geminiNarrationTts, loadVoiceConfig, synthesizeNarration, ttsPrompt, type NarrationTts } from './narration.js';
 import { runNarrationStage } from './narrationStage.js';
 import { DEFAULT_NARRATION, type Scene, type ScenePlan } from './scenePlan.js';
 import { buildSubtitles, checkSubtitles, maxUnitsPerLine, textUnits, wrapLines, TEXT_WIDTH_PX, type SubtitleCue } from './subtitles.js';
@@ -46,6 +46,20 @@ const scenes = () => [
   mk(1, 'DAILY', '아침에 에코 버그를 고쳤다. 생각보다 오래 걸렸지만 마음은 가벼웠다.'),
   mk(2, 'LEARNING', '오늘은 SQL 인젝션 예방을 공부했다. 질문 자리에 값을 따로 넘기면 입력이 쿼리가 되지 않는다. 그래서 db.query 의 두 번째 인자를 쓴다.'),
 ];
+
+describe('TTS 요청 형식', () => {
+  it('지시문과 본문을 DIRECTOR\'S NOTES / TRANSCRIPT 로 나눠 보낸다', async () => {
+    expect(ttsPrompt('담담하게', '안녕')).toBe("### DIRECTOR'S NOTES\n담담하게\n\n### TRANSCRIPT\n안녕");
+    let sent = '';
+    const f = (async (_u: unknown, init: { body: string }) => {
+      sent = JSON.parse(init.body).contents[0].parts[0].text;
+      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ inlineData: { mimeType: 'audio/L16', data: Buffer.alloc(480).toString('base64') } }] } }] }));
+    }) as unknown as typeof fetch;
+    await geminiNarrationTts('k', f)('본문', { voiceName: 'Achird', styleInstruction: '담담하게' });
+    expect(sent).toBe(ttsPrompt('담담하게', '본문'));
+    expect(sent).not.toContain('담담하게:\n');
+  });
+});
 
 describe('목소리 설정 (AC-1)', () => {
   it('저장소 voice.json 의 기본 목소리와 읽기 지시를 읽는다', () => {

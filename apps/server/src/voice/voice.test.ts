@@ -238,6 +238,32 @@ describe('transport·단가 보조', () => {
     expect(r.outputSeconds).toBe(1);
     expect(r.audio.length).toBe(pcmToWav(pcm).length);
   });
+  it('audio/wav(RIFF+C2PA) 응답은 data 청크만 쓰고 길이를 data 로 계산한다', async () => {
+    const pcm = Buffer.alloc(48000 * 2, 7); // 48kHz 모노 1초
+    const fmt = Buffer.alloc(24); fmt.write('fmt ', 0); fmt.writeUInt32LE(16, 4); fmt.writeUInt16LE(1, 8); fmt.writeUInt16LE(1, 10);
+    fmt.writeUInt32LE(48000, 12); fmt.writeUInt32LE(96000, 16); fmt.writeUInt16LE(2, 20); fmt.writeUInt16LE(16, 22);
+    const c2pa = Buffer.concat([Buffer.from('c2pa'), Buffer.from([0x00, 0x18, 0, 0]), Buffer.alloc(6144, 0xff)]);
+    const dh = Buffer.alloc(8); dh.write('data', 0); dh.writeUInt32LE(pcm.length, 4);
+    const body = Buffer.concat([Buffer.from('WAVE'), fmt, c2pa, dh, pcm]);
+    const hdr = Buffer.alloc(8); hdr.write('RIFF', 0); hdr.writeUInt32LE(body.length, 4);
+    const wav = Buffer.concat([hdr, body]);
+    const f = (async () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ inlineData: { mimeType: 'audio/wav', data: wav.toString('base64') } }] } }] }))) as unknown as typeof fetch;
+    const r = await geminiTts('k', f)('안녕하세요');
+    expect(r.outputSeconds).toBe(1);
+    expect(r.audio.equals(pcmToWav(pcm, 48000))).toBe(true);
+    expect(r.audio.includes(Buffer.from('c2pa'))).toBe(false);
+    expect(r.audio.toString('latin1').split('RIFF').length).toBe(2);
+  });
+  it('audio/L16 PCM 응답은 기존처럼 감싼다', async () => {
+    const pcm = Buffer.alloc(24000 * 2);
+    const f = (async () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ inlineData: { mimeType: 'audio/L16;rate=24000', data: pcm.toString('base64') } }] } }] }))) as unknown as typeof fetch;
+    const r = await geminiTts('k', f)('x');
+    expect(r.audio.equals(pcmToWav(pcm))).toBe(true);
+  });
+  it('깨진 WAV 는 TTS_BAD_WAV 로 실패한다', async () => {
+    const f = (async () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ inlineData: { mimeType: 'audio/wav', data: Buffer.from('RIFFxxxxWAVE').toString('base64') } }] } }] }))) as unknown as typeof fetch;
+    await expect(geminiTts('k', f)('x')).rejects.toThrow('TTS_BAD_WAV');
+  });
   it('단가 덮어쓰기는 검증한다', () => {
     expect(loadPricing({ DAILY_LOG_VOICE_PRICING_JSON: '{"usdKrw":1400}' }).usdKrw).toBe(1400);
     expect(() => loadPricing({ DAILY_LOG_VOICE_PRICING_JSON: '{"usdKrw":-1}' })).toThrow();

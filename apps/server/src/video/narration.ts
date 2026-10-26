@@ -31,9 +31,12 @@ export const loadVoiceConfig = (file: string): VoiceConfig => parseVoiceConfig(r
 /** 장면 하나를 읽는 합성 함수. 목소리·읽기 지시는 호출자가 고르지 못하고 VoiceConfig 로만 전달된다. */
 export type NarrationTts = (text: string, voice: Pick<VoiceConfig, 'voiceName' | 'styleInstruction'>) => Promise<TtsResult>;
 
+/** 지시문과 본문을 구분해 보낸다. "지시문:\n본문" 형식이면 모델이 지시문까지 읽는다. */
+export const ttsPrompt = (style: string, text: string): string => `### DIRECTOR'S NOTES\n${style}\n\n### TRANSCRIPT\n${text}`;
+
 /** Gemini TTS 연결. 읽기 지시는 같은 요청의 앞 문장으로 붙인다(실제 호출은 PM 실측 때만, 러너 시험은 모의). */
 export function geminiNarrationTts(key: string, fetchImpl: typeof fetch = fetch, model = 'gemini-3.8-flash-tts'): NarrationTts {
-  return (text, voice) => geminiTts(key, fetchImpl, model, voice.voiceName)(`${voice.styleInstruction}:\n${text}`);
+  return (text, voice) => geminiTts(key, fetchImpl, model, voice.voiceName)(ttsPrompt(voice.styleInstruction, text));
 }
 
 export interface NarrationSegment {
