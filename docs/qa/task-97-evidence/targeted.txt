@@ -1,0 +1,41 @@
+
+> @daily-log/server@0.0.0 test
+> vitest run src/video/quality.test.ts src/video/qualityQueue.test.ts src/video/qualityStage.test.ts src/jobs/queue.test.ts
+
+
+ RUN  v4.1.11 /workspace/apps/server
+
+ ❯ src/video/qualityStage.test.ts (2 tests | 1 failed) 128ms
+     × 실제 MP4를 검수하고 실패 파일·근거를 보존한 채 자막만 재제작, 재검수 통과 후에만 완료한다 26ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/video/qualityStage.test.ts > 렌더 → 검수 → 부분 재제작 통합 > 실제 MP4를 검수하고 실패 파일·근거를 보존한 채 자막만 재제작, 재검수 통과 후에만 완료한다
+Error: spawnSync ffmpeg ENOENT
+ ❯ ff src/video/render.testutil.ts:13:32
+     11|
+     12| /** 시험용 모의 자산(실제 이미지·음성 생성 없음): lavfi 로 만든 단색 JPEG 프레임, 사인파 WAV, 반투명 P…
+     13| const ff = (args: string[]) => execFileSync('ffmpeg', ['-v', 'error', …
+       |                                ^
+     14|
+     15| export function tmpDir(prefix = 'render-test-') { return mkdtempSync(p…
+ ❯ mockWav src/video/render.testutil.ts:24:9
+ ❯ src/video/render.testutil.ts:53:101
+ ❯ mockInput src/video/render.testutil.ts:52:48
+ ❯ src/video/qualityStage.test.ts:26:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 3 passed (4)
+      Tests  1 failed | 28 passed (29)
+   Start at  14:16:52
+   Duration  3.59s (transform 349ms, setup 0ms, import 566ms, tests 2.49s, environment 0ms)
+
+npm error Lifecycle script `test` failed with error:
+npm error code 1
+npm error path /workspace/apps/server
+npm error workspace @daily-log/server@0.0.0
+npm error location /workspace/apps/server
+npm error command failed
+npm error command sh -c vitest run src/video/quality.test.ts src/video/qualityQueue.test.ts src/video/qualityStage.test.ts src/jobs/queue.test.ts

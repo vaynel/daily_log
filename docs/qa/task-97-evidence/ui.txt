@@ -1,0 +1,1 @@
+PASS AFTER: actual React detail, synthetic rejected + exhausted + budget fixture, 900x1100
