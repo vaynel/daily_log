@@ -1,0 +1,1 @@
+{"host":"daily-log-test-postgres17","port":"5432","injectedDatabase":"/daily_log_qa_test","actual":{"database":"daily_log_qa_test","reachable":1},"allowed":false,"readiness":{"result":"NOT_READY","missing":["TEST_DATABASE_URL"],"actualGoogleDrive":"NOT_RUN","actualAndroid":"NOT_RUN","deployment":"NOT_RUN"}}
