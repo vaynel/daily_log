@@ -11,6 +11,11 @@ export class NonRetryableError extends Error {
   constructor(readonly code: string) { super(code); }
 }
 
+/** Quality failure is a decision, not a processing exception. Only named stages are invalidated. */
+export class QualityRejectedError extends Error {
+  constructor(readonly report: unknown, readonly repairStages: string[], readonly permissionGranted: boolean) { super('QUALITY_REJECTED'); }
+}
+
 export type WaitReason = 'BUDGET' | 'PERMISSION' | 'EXTERNAL_RESULT_UNKNOWN';
 export type JobState = 'QUEUED' | 'RUNNING' | 'WAITING' | 'SUCCEEDED' | 'FAILED';
 
@@ -20,6 +25,7 @@ export interface StageContext {
   stage: string;
   /** 이 단계의 몇 번째 실행인지(1부터). */
   attempt: number;
+  qualityGeneration?: number;
   /** 유료 단계의 외부 요청 식별자. 제공자 멱등키·조회 키로 쓴다. */
   externalRequestId: string;
   /** 긴 단계가 처리 중 임대를 연장한다. 임대가 끝난 작업은 recover 가 다시 시작하므로 오래 걸리는 단계는 주기적으로 호출해야 한다. */
@@ -44,6 +50,7 @@ export interface StageHandler {
 
 export interface JobRow {
   id: string; kind: string; subjectId: string; stages: string[]; state: JobState; waitReason: WaitReason | null;
+  qualityRegenerationsUsed: number; qualityReasons: string[];
   autoRetriesUsed: number; manualRequests: number; errorCode: string | null;
 }
 export interface QueueDeps {
@@ -60,6 +67,7 @@ type Row = Record<string, any>; // eslint-disable-line @typescript-eslint/no-exp
 
 const toJob = (r: Row): JobRow => ({
   id: r.id, kind: r.kind, subjectId: r.subject_id, stages: r.stages, state: r.state, waitReason: r.wait_reason,
+  qualityRegenerationsUsed: Number(r.quality_regenerations_used), qualityReasons: r.quality_reasons,
   autoRetriesUsed: Number(r.auto_retries_used), manualRequests: Number(r.manual_requests), errorCode: r.error_code,
 });
 
@@ -130,6 +138,10 @@ export class JobQueue {
   }
 
   private async nextPaidEstimate(job: JobRow): Promise<number> {
+    if (job.qualityReasons.includes('BUDGET')) {
+      const r = await this.pool.query('SELECT quality_repair_stages FROM jobs WHERE id=$1', [job.id]);
+      return (r.rows[0].quality_repair_stages as string[]).reduce((n, s) => n + (this.d.handlers[job.kind]?.[s]?.paid?.estimateKrw ?? 0), 0);
+    }
     const done = new Set((await this.stages(job.id)).filter((s) => s.state === 'DONE').map((s) => s.stage));
     const next = job.stages.find((s) => !done.has(s));
     return (next && this.d.handlers[job.kind]?.[next]?.paid?.estimateKrw) || 0;
@@ -181,7 +193,7 @@ export class JobQueue {
   }
 
   private async runStage(job: JobRow, stage: string, h: StageHandler, row: Row | undefined): Promise<Step> {
-    const ctxBase = { jobId: job.id, subjectId: job.subjectId, stage, results: await this.results(job.id), heartbeat: () => this.renewLease(job.id) };
+    const ctxBase = { jobId: job.id, subjectId: job.subjectId, stage, qualityGeneration: job.qualityRegenerationsUsed, results: await this.results(job.id), heartbeat: () => this.renewLease(job.id) };
     // 외부 요청이 나갔고 결과가 확정되지 않은 단계는 다시 보내지 않고 조회로 넘긴다.
     if (row && (row.state === 'SENT' || row.state === 'UNKNOWN')) {
       return this.resolveUnsettled(job, stage, h, row, { ...ctxBase, attempt: Number(row.attempts), externalRequestId: row.external_request_id });
@@ -192,7 +204,7 @@ export class JobQueue {
       return this.transient(job, stage, 'INTERRUPTED');
     }
     const attempt = Number(row?.attempts ?? 0) + 1;
-    const externalRequestId = `${job.id}:${stage}:${attempt}`;
+    const externalRequestId = `${job.id}:${stage}:${attempt}${job.qualityRegenerationsUsed ? `:q${job.qualityRegenerationsUsed}` : ''}`;
     const ctx: StageContext = { ...ctxBase, attempt, externalRequestId };
 
     if (!h.paid) {
@@ -267,6 +279,7 @@ export class JobQueue {
   }
 
   private async onError(job: JobRow, stage: string, e: unknown): Promise<Step> {
+    if (e instanceof QualityRejectedError) return this.qualityRejected(job, stage, e);
     if (e instanceof PermissionDeniedError) {
       await this.upsertStage(job.id, stage, 'FAILED', 0, null, null, e.code);
       return this.wait(job, 'PERMISSION', stage, e.code);
@@ -277,6 +290,42 @@ export class JobQueue {
     }
     await this.upsertStage(job.id, stage, 'FAILED', 0, null, null, 'TRANSIENT_ERROR');
     return this.transient(job, stage, 'TRANSIENT_ERROR');
+  }
+
+  private async qualityRejected(job: JobRow, stage: string, e: QualityRejectedError): Promise<Step> {
+    const repair = [...new Set([...e.repairStages, stage])];
+    if (!repair.length || repair.some(s => !job.stages.includes(s))) return this.fail(job, 'QUALITY_REPAIR_INVALID', stage);
+    const estimate = repair.reduce((n, s) => n + (this.d.handlers[job.kind]?.[s]?.paid?.estimateKrw ?? 0), 0);
+    const budgetOk = (await this.d.ledger.snapshot()).remainingKrw >= estimate;
+    const c = await this.pool.connect();
+    try {
+      await c.query('BEGIN');
+      const row = (await c.query('SELECT * FROM jobs WHERE id=$1 FOR UPDATE', [job.id])).rows[0];
+      if (row.state !== 'RUNNING' || Number(row.quality_regenerations_used) !== job.qualityRegenerationsUsed) { await c.query('ROLLBACK'); return 'STOP'; }
+      const reasons: string[] = [];
+      if (Number(row.quality_regenerations_used) >= 1) reasons.push('QUALITY_EXHAUSTED');
+      if (!e.permissionGranted) reasons.push('PERMISSION');
+      if (!budgetOk) reasons.push('BUDGET');
+      const prior = await c.query("SELECT stage, result FROM job_stages WHERE job_id=$1 AND state='DONE'", [job.id]);
+      await c.query('INSERT INTO job_quality_reviews (job_id,generation,report,prior_results) VALUES ($1,$2,$3::jsonb,$4::jsonb)',
+        [job.id, row.quality_regenerations_used, JSON.stringify(e.report), JSON.stringify(Object.fromEntries(prior.rows.map(x => [x.stage, x.result])))]);
+      // Existing media files are immutable per generation. Keep their references in the review history.
+      await c.query("UPDATE pipeline_states SET production='DONE', review='REJECTED', quality_reasons=$2, updated_at=now() WHERE interview_id::text=$1", [job.subjectId, reasons]);
+      if (reasons.length) {
+        const exhausted = reasons.includes('QUALITY_EXHAUSTED');
+        const wait = exhausted ? null : !e.permissionGranted ? 'PERMISSION' : 'BUDGET';
+        await c.query("UPDATE jobs SET state=$2, wait_reason=$3, error_code='QUALITY_REJECTED', quality_reasons=$4, quality_repair_stages=$5, lease_until=NULL, updated_at=now() WHERE id=$1",
+          [job.id, exhausted ? 'FAILED' : 'WAITING', wait, reasons, repair]);
+        await c.query("UPDATE job_stages SET state='FAILED', error_code='QUALITY_REJECTED' WHERE job_id=$1 AND stage=$2", [job.id, stage]);
+      } else {
+        await c.query("UPDATE jobs SET state='QUEUED', wait_reason=NULL, error_code=NULL, quality_regenerations_used=quality_regenerations_used+1, quality_reasons='{}', lease_until=NULL, updated_at=now() WHERE id=$1", [job.id]);
+        // Preserve attempts so paid idempotency keys cannot collide with earlier calls.
+        await c.query("UPDATE job_stages SET state='FAILED', result=NULL, external_request_id=NULL, budget_entry_id=NULL, error_code=NULL WHERE job_id=$1 AND stage=ANY($2::text[])", [job.id, repair]);
+      }
+      await c.query("INSERT INTO job_events (job_id,event,stage,code) VALUES ($1,$2,$3,$4)", [job.id, reasons.length ? 'QUALITY_BLOCKED' : 'QUALITY_REGENERATE', stage, reasons.join(',') || 'QUALITY_REJECTED']);
+      await c.query('COMMIT');
+      return 'STOP';
+    } catch (err) { await c.query('ROLLBACK').catch(() => {}); throw err; } finally { c.release(); }
   }
 
   /** 일시 오류: 작업 전체에서 한 번만 자동 재시도. 이미 썼으면 실패로 남겨 수동 요청을 기다린다. */

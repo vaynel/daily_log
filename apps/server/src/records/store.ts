@@ -25,6 +25,7 @@ export type ItemKind = 'QUESTION' | 'ANSWER';
 export type VersionKind = 'SUMMARY' | 'PRODUCTION_PLAN' | 'RESULT';
 export type AudioStatus = 'UNPROCESSED' | 'INTERRUPTED' | 'PROCESSED' | 'EXPIRED';
 export interface PipelineState {
+  qualityReasons?: string[];
   production: 'NONE' | 'QUEUED' | 'RUNNING' | 'DONE' | 'FAILED' | 'WAITING_BUDGET';
   review: 'NONE' | 'PENDING' | 'PASSED' | 'REJECTED';
   backup: 'NONE' | 'PENDING' | 'VERIFIED' | 'FAILED';
@@ -178,7 +179,7 @@ export class RecordStore {
    */
   async listRecords(ownerId: string, page: { limit: number; before?: string | null }): Promise<{ rows: RecordListRow[]; nextCursor: string | null }> {
     const r = await this.pool.query(
-      `SELECT i.id, to_char(i.life_date, 'YYYY-MM-DD') AS life_date, i.status, p.production, p.review, p.backup,
+      `SELECT i.id, to_char(i.life_date, 'YYYY-MM-DD') AS life_date, i.status, p.production, p.review, p.backup, p.quality_reasons,
               (SELECT v.content FROM record_versions v WHERE v.interview_id = i.id AND v.kind = 'RESULT' ORDER BY v.version DESC LIMIT 1) AS result_content,
               EXISTS (SELECT 1 FROM record_versions v WHERE v.interview_id = i.id AND v.kind = 'RESULT') AS has_result,
               (SELECT count(*) FROM attachment_refs a WHERE a.interview_id = i.id)::int AS att
@@ -190,7 +191,7 @@ export class RecordStore {
     const more = r.rows.length > page.limit;
     const rows = r.rows.slice(0, page.limit).map((x): RecordListRow => ({
       id: x.id, lifeDate: x.life_date, status: x.status,
-      pipeline: { production: x.production ?? 'NONE', review: x.review ?? 'NONE', backup: x.backup ?? 'NONE' },
+      pipeline: { production: x.production ?? 'NONE', review: x.review ?? 'NONE', backup: x.backup ?? 'NONE', ...(x.quality_reasons?.length ? { qualityReasons: x.quality_reasons } : {}) },
       hasResult: x.has_result, resultContent: x.result_content ?? null, attachmentCount: x.att,
     }));
     return { rows, nextCursor: more ? rows[rows.length - 1]!.lifeDate : null };
@@ -213,7 +214,7 @@ export class RecordStore {
       this.pool.query('SELECT id, seq, kind, body FROM conversation_items WHERE interview_id = $1 ORDER BY seq', [id]),
       this.pool.query('SELECT id, item_id, storage_key, checksum, kind, original_name FROM attachment_refs WHERE interview_id = $1 ORDER BY saved_at, id', [id]),
       this.pool.query('SELECT kind, version, content FROM record_versions WHERE interview_id = $1 ORDER BY kind, version', [id]),
-      this.pool.query('SELECT production, review, backup FROM pipeline_states WHERE interview_id = $1', [id]),
+      this.pool.query('SELECT production, review, backup, quality_reasons FROM pipeline_states WHERE interview_id = $1', [id]),
       this.pool.query('SELECT id, first_saved_at, expires_at, status FROM audio_segments WHERE interview_id = $1 ORDER BY first_saved_at, id', [id]),
     ]);
     return {
@@ -222,7 +223,7 @@ export class RecordStore {
       items: items.rows.map((x) => ({ id: x.id, seq: x.seq, kind: x.kind, body: x.body })),
       attachments: atts.rows.map((x) => ({ id: x.id, itemId: x.item_id, storageKey: x.storage_key, checksum: x.checksum, kind: x.kind, name: x.original_name })),
       versions: vers.rows.map((x) => ({ kind: x.kind, version: x.version, content: x.content })),
-      pipeline: pipe.rows[0] as PipelineState,
+      pipeline: { production: pipe.rows[0].production, review: pipe.rows[0].review, backup: pipe.rows[0].backup, ...(pipe.rows[0].quality_reasons?.length ? { qualityReasons: pipe.rows[0].quality_reasons } : {}) } as PipelineState,
       audio: audio.rows.map((x) => viewAudio(x, now)),
     };
   }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ACTION_LABEL, byLifeDate, coversMonth, fetchJson, initialMonth, recordsUrl, monthGrid, shiftMonth, PIPELINE_LABEL, STATUS_INFO, type DisplayStatus, type Loaded, type RecordDetail, type RecordRow, type RecordsPage } from './records';
+import { QUALITY_REASON_LABEL, ACTION_LABEL, byLifeDate, coversMonth, fetchJson, initialMonth, recordsUrl, monthGrid, shiftMonth, PIPELINE_LABEL, STATUS_INFO, type DisplayStatus, type Loaded, type RecordDetail, type RecordRow, type RecordsPage } from './records';
 
 function Badge({ status }: { status: DisplayStatus }) {
   const s = STATUS_INFO[status];
@@ -147,6 +147,9 @@ function Detail({ d }: { d: RecordDetail }) {
     <>
       <h3>{d.lifeDate} <Badge status={d.status} /></h3>
       <p data-testid="status-hint">{info.hint}</p>
+      {!!d.pipeline.qualityReasons?.length && <ul data-testid="quality-reasons" role="status">
+        {d.pipeline.qualityReasons.map(reason => <li key={reason}>{QUALITY_REASON_LABEL[reason] ?? '제작 조건을 확인해 주세요.'}</li>)}
+      </ul>}
       <dl data-testid="pipeline">
         <dt>제작</dt><dd>{PIPELINE_LABEL.production[d.pipeline.production]}</dd>
         <dt>검수</dt><dd>{PIPELINE_LABEL.review[d.pipeline.review]}</dd>

@@ -1,6 +1,6 @@
 export type DisplayStatus = 'WRITING' | 'AWAITING_PRODUCTION' | 'PRODUCING' | 'BUDGET_WAIT' | 'FAILED' | 'REVIEW_REJECTED' | 'REVIEW_PENDING' | 'COMPLETED' | 'RESULT_FILE_MISSING';
 export type NextAction = 'CONTINUE_RECORDING' | 'REQUEST_PRODUCTION' | 'WAIT' | 'RETRY' | 'EDIT_AND_REMAKE' | 'DOWNLOAD' | 'RETRY_BACKUP';
-export interface Pipeline { production: string; review: string; backup: string }
+export interface Pipeline { qualityReasons?: string[]; production: string; review: string; backup: string }
 export const PAGE_SIZE = 50;
 export interface RecordsPage { records: RecordRow[]; nextCursor: string | null }
 export interface RecordRow { id: string; lifeDate: string; status: DisplayStatus; pipeline: Pipeline; hasResult: boolean; attachmentCount: number }
@@ -101,3 +101,5 @@ export function initialMonth(rows: RecordRow[], today: Date = new Date()): strin
   const latest = rows.map((r) => r.lifeDate).sort().at(-1);
   return latest ? latest.slice(0, 7) : `${today.getFullYear()}-${pad(today.getMonth() + 1)}`;
 }
+
+export const QUALITY_REASON_LABEL: Record<string, string> = { QUALITY_EXHAUSTED: '품질 자동 재제작 1회를 모두 사용했습니다.', BUDGET: '예산 확보를 기다립니다.', PERMISSION: '제작 권한 확인을 기다립니다.' };

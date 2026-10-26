@@ -22,7 +22,9 @@ export function createRenderHandler(d: RenderStageDeps): StageHandler {
     async execute(ctx: StageContext) {
       const input = await d.loadInput(ctx.subjectId, ctx.results);
       if (!input) throw new NonRetryableError('RENDER_INPUT_MISSING');
-      const out = d.outFile(ctx.subjectId);
+      const target = path.parse(d.outFile(ctx.subjectId));
+      // Keep rejected media physically intact; every job/generation gets a distinct artifact.
+      const out = path.join(target.dir, `${target.name}.${ctx.jobId}.q${ctx.qualityGeneration ?? 0}${target.ext}`);
       // 차례를 기다리는 동안에도 작업이 RUNNING 이므로 대기 중에도 임대를 연장한다.
       const timer = setInterval(() => { void ctx.heartbeat().catch(() => {}); }, d.heartbeatMs);
       try {
