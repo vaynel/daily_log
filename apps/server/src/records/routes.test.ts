@@ -163,6 +163,37 @@ describe.skipIf(!url)('기록 목록·상세 API (실제 PostgreSQL)', () => {
     expect((await get(`/api/records/${id}/result/file`)).statusCode).toBe(200);
   });
 
+  it('TASK-111 검수 미통과·진행 중 상태는 RESULT 와 파일이 있어도 영상 바이트 없이 409', async () => {
+    const cases: [string, Partial<PipelineState>][] = [
+      ['2026-08-01', { production: 'FAILED' }], ['2026-08-02', { production: 'DONE', review: 'REJECTED' }],
+      ['2026-08-03', { production: 'DONE', review: 'PENDING' }], ['2026-08-04', { production: 'RUNNING' }],
+    ];
+    await mkdir(path.join(dir, 'videos'), { recursive: true });
+    await writeFile(path.join(dir, 'videos', 'blocked111.mp4'), 'secret-video-bytes');
+    for (const [date, patch] of cases) {
+      const id = await mk('owner-a', date);
+      await store.confirm('owner-a', id, new Date());
+      await store.setPipeline('owner-a', id, patch, new Date());
+      await store.appendVersion('owner-a', id, 'RESULT', { file: 'blocked111.mp4' }, new Date());
+      const res = await get(`/api/records/${id}/result/file`);
+      expect(res.statusCode, date).toBe(409);
+      expect(res.json()).toMatchObject({ error: 'NOT_DOWNLOADABLE' });
+      expect(res.rawPayload.toString()).not.toContain('secret-video-bytes');
+    }
+  });
+
+  it('TASK-111 COMPLETED 이고 파일이 있으면 200 으로 영상 바이트를 내려준다', async () => {
+    const id = await mk('owner-a', '2026-08-05');
+    await store.confirm('owner-a', id, new Date());
+    await store.setPipeline('owner-a', id, { production: 'DONE', review: 'PASSED' }, new Date());
+    await store.appendVersion('owner-a', id, 'RESULT', { file: 'ok111.mp4' }, new Date());
+    await mkdir(path.join(dir, 'videos'), { recursive: true });
+    await writeFile(path.join(dir, 'videos', 'ok111.mp4'), 'ok-video-bytes');
+    const res = await get(`/api/records/${id}/result/file`);
+    expect(res.statusCode).toBe(200);
+    expect(res.rawPayload.toString()).toBe('ok-video-bytes');
+  });
+
   it('결과 파일 이름에 경로 문자가 있으면 파일 없음으로 처리', async () => {
     const id = await mk('owner-a', '2026-10-15');
     await store.appendVersion('owner-a', id, 'RESULT', { file: '../attachments/x' }, new Date());

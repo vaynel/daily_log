@@ -86,6 +86,9 @@ export function registerRecordViewRoutes(app: FastifyInstance, opts: { store: Re
     const result = latest(snap, 'RESULT');
     const name = result ? resultFileName(result.content) : null;
     if (!name || !(await exists(videoPath(name)))) return reply.code(404).send({ error: 'FILE_MISSING', message: '결과 파일이 없어 내려받을 수 없습니다' });
+    // 화면의 DOWNLOAD 규칙과 같은 판단: 제작 완료 + 검수 통과일 때만 내려준다.
+    const status = displayStatus(snap.interview.status, snap.pipeline, true);
+    if (status !== 'COMPLETED') return reply.code(409).send({ error: 'NOT_DOWNLOADABLE', status, message: '완료되어 검수를 통과한 결과만 내려받을 수 있습니다' });
     return reply.header('cache-control', 'private, no-store').header('x-content-type-options', 'nosniff')
       .header('content-disposition', `attachment; filename*=UTF-8''${encodeURIComponent(name)}`)
       .type('video/mp4').send(createReadStream(videoPath(name)));
