@@ -28,6 +28,7 @@
     "test:briefing-e2e": "node scripts/briefing-e2e.mjs",
     "test:voice-live-e2e": "node scripts/voice-live-e2e.mjs",
     "test:paging-e2e": "node scripts/paging-e2e.mjs",
+    "test:result-e2e": "node scripts/result-e2e.mjs",
     "scan:secrets": "node scripts/scan-secrets.mjs"
   },
   "devDependencies": {

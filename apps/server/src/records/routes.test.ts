@@ -35,10 +35,10 @@ describe('displayStatus / nextActions', () => {
     expect(displayStatus('CONFIRMED', p('DONE', 'PASSED'), true)).toBe('COMPLETED');
   });
   it('다운로드는 검수 통과 + 파일 있음일 때만, 백업 실패는 별도 행동', () => {
-    expect(nextActions('CONFIRMED', p('DONE', 'PASSED'), true)).toEqual(['DOWNLOAD']);
-    expect(nextActions('CONFIRMED', p('DONE', 'PASSED'), false)).toEqual([]);
+    expect(nextActions('CONFIRMED', p('DONE', 'PASSED'), true)).toEqual(['DOWNLOAD', 'EDIT_AND_REMAKE']);
+    expect(nextActions('CONFIRMED', p('DONE', 'PASSED'), false)).toEqual(['EDIT_AND_REMAKE']);
     expect(nextActions('CONFIRMED', p('DONE', 'REJECTED'), true)).toEqual(['EDIT_AND_REMAKE']);
-    expect(nextActions('CONFIRMED', p('DONE', 'PASSED', 'FAILED'), true)).toEqual(['DOWNLOAD', 'RETRY_BACKUP']);
+    expect(nextActions('CONFIRMED', p('DONE', 'PASSED', 'FAILED'), true)).toEqual(['DOWNLOAD', 'EDIT_AND_REMAKE', 'RETRY_BACKUP']);
   });
 });
 
@@ -136,7 +136,7 @@ describe.skipIf(!url)('기록 목록·상세 API (실제 PostgreSQL)', () => {
       '2026-10-10': 'FAILED|RETRY|NONE',
       '2026-10-11': 'BUDGET_WAIT|WAIT|NONE',
       '2026-10-12': 'REVIEW_REJECTED|EDIT_AND_REMAKE|NONE',
-      '2026-10-13': 'COMPLETED|DOWNLOAD,RETRY_BACKUP|FAILED',
+      '2026-10-13': 'COMPLETED|DOWNLOAD,EDIT_AND_REMAKE,RETRY_BACKUP|FAILED',
     });
   });
 

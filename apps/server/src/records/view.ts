@@ -41,8 +41,8 @@ export function nextActions(status: 'IN_PROGRESS' | 'CONFIRMED', p: PipelineStat
   else if (d === 'AWAITING_PRODUCTION') out.push('REQUEST_PRODUCTION');
   else if (d === 'PRODUCING' || d === 'BUDGET_WAIT' || d === 'REVIEW_PENDING') out.push('WAIT');
   else if (d === 'FAILED') out.push('RETRY');
-  else if (d === 'REVIEW_REJECTED') out.push('EDIT_AND_REMAKE');
-  else if (d === 'COMPLETED' && fileAvailable) out.push('DOWNLOAD');
+  else if (d === 'REVIEW_REJECTED' || d === 'RESULT_FILE_MISSING') out.push('EDIT_AND_REMAKE');
+  else if (d === 'COMPLETED' && fileAvailable) out.push('DOWNLOAD', 'EDIT_AND_REMAKE');
   if (p.backup === 'FAILED') out.push('RETRY_BACKUP');
   return out;
 }

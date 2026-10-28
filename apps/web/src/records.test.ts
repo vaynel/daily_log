@@ -69,3 +69,32 @@ describe('목록 페이지 나누기 보조', () => {
     expect(STATUS_INFO.RESULT_FILE_MISSING.hint).not.toContain('제작과 검수가 끝났습니다');
   });
 });
+
+import { resultProblem, sendRevision, versionLabel } from './records.js';
+
+describe('결과 확인 화면 규칙 (TASK-28)', () => {
+  it('이전 버전은 수정 전 상태와 관계없이 "완료"로 표시하지 않는다', () => {
+    const base = { role: 'PREVIOUS' as const, status: 'SUPERSEDED' as const, fileAvailable: true, downloadable: true };
+    expect(versionLabel({ version: 1, ...base, priorStatus: 'COMPLETED' })).toContain('이전 버전');
+    expect(versionLabel({ version: 1, ...base, priorStatus: 'COMPLETED' })).not.toBe(STATUS_INFO.COMPLETED.label);
+    expect(versionLabel({ version: 1, ...base, priorStatus: 'REVIEW_REJECTED' })).toContain('통과 못 함');
+    expect(versionLabel({ version: 2, role: 'CURRENT', status: 'REVIEW_REJECTED', fileAvailable: true, downloadable: false })).toBe('검수 미통과');
+  });
+  it('파일 없음·미통과·실패는 각각 이유와 조치를 주고, 정상 완료는 문제 없음', () => {
+    expect(resultProblem('RESULT_FILE_MISSING', false)?.reason).toContain('찾을 수 없어');
+    expect(resultProblem('RESULT_FILE_MISSING', false)?.action).toContain('다시 만들');
+    expect(resultProblem('REVIEW_REJECTED', true)?.reason).toContain('막았습니다');
+    expect(resultProblem('FAILED', false)?.action).toContain('다시 시도');
+    expect(resultProblem('COMPLETED', true)).toBeNull();
+    const reasons = ['RESULT_FILE_MISSING', 'REVIEW_REJECTED', 'FAILED', 'REVIEW_PENDING'].map((s) => resultProblem(s as never, false)!.reason);
+    expect(new Set(reasons).size).toBe(4);
+  });
+  it('수정 명령: 서버 거절·실행 안 함·연결 오류를 구분해 알려 준다', async () => {
+    const body = { commandId: 'c1', kind: 'EXCLUDE' as const, itemId: 's1' };
+    expect(await sendRevision('i', body, res(200, { executed: true, duplicate: false }))).toEqual({ state: 'done', duplicate: false });
+    expect(await sendRevision('i', body, res(200, { executed: false, message: '지우지 않았습니다' }))).toEqual({ state: 'not-executed', message: '지우지 않았습니다' });
+    expect(await sendRevision('i', body, res(409, { error: 'INVALID_STATE' }))).toMatchObject({ state: 'error', message: expect.stringContaining('진행 중') });
+    expect(await sendRevision('i', body, res(401))).toMatchObject({ state: 'error', message: expect.stringContaining('다시 로그인') });
+    expect(await sendRevision('i', body, (async () => { throw new TypeError('x'); }) as never)).toMatchObject({ state: 'error', message: expect.stringContaining('두 번 처리되지') });
+  });
+});

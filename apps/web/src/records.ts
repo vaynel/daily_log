@@ -9,7 +9,14 @@ export interface RecordDetail {
   conversation: { id: string; seq: number; kind: 'QUESTION' | 'ANSWER'; body: string; attachmentIds: string[] }[];
   summary: { version: number; diary: string | null; learning: string[] } | null;
   attachments: { id: string; itemId: string | null; kind: string; name: string | null; size: number | null; capturedAt: string | null }[];
-  result: { version: number; fileAvailable: boolean } | null;
+  result: { version: number; fileAvailable: boolean; playable: boolean; confirmedAt: string | null; published: boolean } | null;
+  previousResultCount: number;
+  editableItems: EditableItem[];
+}
+export interface EditableItem { id: string; text: string; inVideo: boolean; excludedReason: string | null }
+export interface ResultVersion {
+  version: number; role: 'CURRENT' | 'PREVIOUS'; status: DisplayStatus | 'SUPERSEDED'; priorStatus?: string;
+  fileAvailable: boolean; downloadable: boolean; confirmedAt?: string | null;
 }
 
 /** tone 은 색에만 의존하지 않도록 항상 문구와 함께 쓴다. ok 는 정상 완료만. */
@@ -103,3 +110,52 @@ export function initialMonth(rows: RecordRow[], today: Date = new Date()): strin
 }
 
 export const QUALITY_REASON_LABEL: Record<string, string> = { QUALITY_EXHAUSTED: '품질 자동 재제작 1회를 모두 사용했습니다.', BUDGET: '예산 확보를 기다립니다.', PERMISSION: '제작 권한 확인을 기다립니다.' };
+
+export const resultFileUrl = (id: string, version: number, inline: boolean) => `/api/records/${id}/results/${version}/file${inline ? '?inline=1' : ''}`;
+
+/** 이전 버전은 어떤 경우에도 "완료"로 표시하지 않는다. 수정 전 상태를 함께 알려 준다. */
+export function versionLabel(v: ResultVersion): string {
+  if (v.role === 'CURRENT') return STATUS_INFO[v.status as DisplayStatus]?.label ?? '알 수 없음';
+  return v.priorStatus === 'COMPLETED' ? '이전 버전 (수정 전 검수 통과)' : '이전 버전 (수정 전 검수 통과 못 함)';
+}
+
+/** 파일이 없거나 막힌 이유와 할 수 있는 조치. 상태별로 서로 다른 문구를 쓴다. */
+export function resultProblem(status: DisplayStatus, fileAvailable: boolean): { reason: string; action: string } | null {
+  if (status === 'RESULT_FILE_MISSING' || (status === 'COMPLETED' && !fileAvailable)) {
+    return { reason: '검수는 끝났지만 영상 파일을 찾을 수 없어 재생하거나 내려받을 수 없습니다.', action: '아래 "수정해서 다시 만들기"로 영상을 새로 만들 수 있습니다. 기록 원본은 그대로입니다.' };
+  }
+  if (status === 'REVIEW_REJECTED') return { reason: '영상이 검수를 통과하지 못해 재생과 내려받기를 막았습니다.', action: '내용을 수정해 다시 만들 수 있습니다. 이전에 통과한 버전은 완성본으로 바뀌지 않습니다.' };
+  if (status === 'FAILED') return { reason: '제작 처리 중 오류가 나서 영상이 만들어지지 않았습니다.', action: '"다시 시도"를 누르거나 내용을 수정해 다시 만들 수 있습니다.' };
+  if (status === 'REVIEW_PENDING') return { reason: '영상이 만들어졌고 검수를 기다립니다. 통과 전에는 재생하지 않습니다.', action: '검수가 끝날 때까지 기다려 주세요.' };
+  return null;
+}
+
+export const REVISE_ERROR: Record<string, string> = {
+  INVALID_STATE: '지금은 제작 또는 검수가 진행 중이라 수정할 수 없습니다. 끝난 뒤에 다시 시도해 주세요.',
+  STALE_BRIEFING: '화면의 내용이 최신이 아닙니다. 새로 불러온 뒤 다시 시도해 주세요.',
+  NOTHING_TO_PRODUCE: '영상에 담을 내용이 모두 없어져 다시 만들 수 없습니다. 일부만 빼 주세요.',
+  NO_BRIEFING: '이 기록은 화면에서 수정할 수 없습니다.',
+  NOT_RETRYABLE: '처리 실패한 제작만 다시 시도할 수 있습니다.',
+  UNRESOLVED_EXTERNAL: '외부 처리 결과를 먼저 확인해야 해서 지금은 다시 시도할 수 없습니다.',
+  BAD_TEXT: '고칠 문장을 1~300자로 입력해 주세요.',
+  NOT_FOUND: '수정할 항목을 찾을 수 없습니다.',
+};
+
+export type ReviseBody = { commandId: string; kind: 'EXCLUDE' | 'EDIT_TEXT' | 'VOICE' | 'RETRY'; itemId?: string; text?: string; command?: string };
+export type ReviseOutcome = { state: 'done'; duplicate: boolean } | { state: 'not-executed'; message: string } | { state: 'error'; message: string };
+
+/** 수정·재시도 명령 전송. 서버가 거부한 사유는 사람이 읽는 문구로 바꾼다. */
+export async function sendRevision(id: string, body: ReviseBody, f: typeof fetch = fetch): Promise<ReviseOutcome> {
+  try {
+    const r = await f(`/api/records/${id}/revisions`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    const j = (await r.json().catch(() => ({}))) as { executed?: boolean; duplicate?: boolean; error?: string; message?: string };
+    if (r.status === 401 || r.status === 403) return { state: 'error', message: '접근이 만료되었습니다. 다시 로그인해 주세요.' };
+    if (r.ok && j.executed === false) return { state: 'not-executed', message: j.message ?? '아무것도 바꾸지 않았습니다.' };
+    if (r.ok) return { state: 'done', duplicate: j.duplicate === true };
+    return { state: 'error', message: (j.error && REVISE_ERROR[j.error]) || '요청을 처리하지 못했습니다. 잠시 뒤 다시 시도해 주세요.' };
+  } catch {
+    return { state: 'error', message: '연결을 확인하고 다시 시도해 주세요. 같은 요청이 두 번 처리되지는 않습니다.' };
+  }
+}
+
+export const newCommandId = () => (globalThis.crypto?.randomUUID?.() ?? `cmd-${Date.now()}-${Math.random().toString(36).slice(2)}`);

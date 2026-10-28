@@ -7,6 +7,7 @@ import { createPool } from './db/pool.js';
 import { PgRuleStore } from './briefing/rules.js';
 import { PgLiveUsageStore } from './interview/usage.js';
 import { createProInfer, loadSiwcRuntime } from './briefing/pro.js';
+import { JobQueue } from './jobs/queue.js';
 import { RecordStore } from './records/store.js';
 import { readKeyFile } from './voice/keys.js';
 import { loadLiveConfig, type LiveConfig } from './voice/live.js';
@@ -27,6 +28,9 @@ else live = loadLiveConfig(key.key, process.env);
 // 브리핑 Pro 정리(구독 경로). 설정이 없거나 잘못되면 null → 브리핑 생성은 PRO_UNAVAILABLE 로 막히고 제작 작업은 만들어지지 않는다.
 const briefingInfer = await createProInfer(process.env, loadSiwcRuntime);
 
+// 수동 재시도 요청만 기록한다. 제작 단계 실행은 worker 프로세스가 맡는다.
+const retryQueue = new JobQueue({ pool, ledger: new MonthlyLedger(pool), handlers: {} });
+
 const vapid = config.vapidKeysFile ? loadVapidKeys(config.vapidKeysFile) : null;
 const app = buildApp({
   notifications: new NotificationService({ pool, sender: new UnconfiguredSender() }),
@@ -35,6 +39,7 @@ const app = buildApp({
   sessionSecret: config.sessionSecret,
   fileStorageDir: config.fileStorageDir,
   records: new RecordStore(pool),
+  retry: (jobId, req) => retryQueue.requestManualRetry(jobId, req),
   briefing: { infer: briefingInfer, rules: new PgRuleStore(pool) },
   entries: { list: async () => (await pool.query('SELECT id, entry_date, body FROM sample_entries ORDER BY entry_date DESC')).rows },
   interview: {
