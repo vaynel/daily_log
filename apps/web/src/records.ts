@@ -103,3 +103,51 @@ export function initialMonth(rows: RecordRow[], today: Date = new Date()): strin
 }
 
 export const QUALITY_REASON_LABEL: Record<string, string> = { QUALITY_EXHAUSTED: '품질 자동 재제작 1회를 모두 사용했습니다.', BUDGET: '예산 확보를 기다립니다.', PERMISSION: '제작 권한 확인을 기다립니다.' };
+
+// ---- 결과 확인·수정(TASK-28) ----
+
+export type ResultRole = 'CURRENT' | 'PREVIOUS';
+export interface ResultVersion {
+  version: number; role: ResultRole; status: DisplayStatus | 'SUPERSEDED'; fileAvailable: boolean; playable: boolean; downloadable: boolean;
+  confirmedAt: string | null; createdAt: string; supersededAt: string | null;
+}
+export interface ResultsInfo { id: string; current: number | null; versions: ResultVersion[]; items: { id: string; text: string }[] }
+export type RevisionBody = { kind: 'EXCLUDE'; itemId?: string; keyword?: string } | { kind: 'EDIT_TEXT'; itemId: string; text: string } | { kind: 'VOICE'; text: string } | { kind: 'RETRY' };
+
+export const resultFileUrl = (id: string, version: number, download = false) => `/api/records/${id}/results/${version}/file${download ? '?download=1' : ''}`;
+
+/** 같은 버튼을 두 번 눌러도 한 번만 처리되도록 서버가 보는 명령 식별자. */
+export const newCommandId = () => `web-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+
+/** 서버 오류 코드 → 사용자에게 보일 문구. 코드가 낯설면 아무것도 바뀌지 않았다고만 알린다. */
+export const REVISION_ERROR: Record<string, string> = {
+  NO_MATCH: '해당 내용을 영상에서 찾지 못했습니다. 아무것도 바뀌지 않았습니다.',
+  NO_CONTENT: '남는 내용이 없어 다시 만들 수 없습니다. 일부만 빼 주세요.',
+  EXCLUDED_CONTENT: '영상에 넣을 수 없는 내용이 들어 있어 반영하지 않았습니다.',
+  NOT_EXECUTED: '명령을 실행하지 않았습니다. 원본 삭제나 알아듣지 못한 명령은 영상에 반영되지 않습니다.',
+  REMAKE_IN_PROGRESS: '이미 다시 만드는 중입니다. 끝난 뒤에 수정해 주세요.',
+  NOT_RETRYABLE: '다시 시도할 수 있는 실패·대기 작업이 없습니다.',
+  NOT_REVISABLE: '지금은 수정할 수 없는 기록입니다.',
+  IDEMPOTENCY_CONFLICT: '같은 요청이 다른 내용으로 다시 들어왔습니다. 화면을 새로 불러와 주세요.',
+};
+
+/** 수정 가능한 상태. 제작 중이거나 아직 제작 전이면 수정 대신 기다림 안내를 보인다. */
+export const canRevise = (s: DisplayStatus) => s === 'COMPLETED' || s === 'REVIEW_REJECTED' || s === 'REVIEW_PENDING' || s === 'RESULT_FILE_MISSING' || s === 'FAILED';
+
+export const FILE_MISSING_ACTIONS = ['화면을 새로 불러와 다시 확인하기', '내용을 수정해 영상을 다시 만들기', '계속 없으면 관리자에게 문의하기(검수는 끝났지만 파일 저장에 문제가 있을 수 있습니다)'];
+
+export async function postJson(url: string, body: unknown, f: typeof fetch = fetch): Promise<{ ok: boolean; status: number; data: Record<string, unknown> }> {
+  try {
+    const r = await f(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    return { ok: r.ok, status: r.status, data: (await r.json().catch(() => ({}))) as Record<string, unknown> };
+  } catch {
+    return { ok: false, status: 0, data: {} };
+  }
+}
+
+export function revisionMessage(r: { ok: boolean; status: number; data: Record<string, unknown> }): string {
+  if (r.ok) return r.status === 200 ? '이미 접수된 요청입니다.' : '수정을 접수했습니다. 장면·내레이션·자막을 함께 다시 만듭니다.';
+  if (r.status === 0) return '연결하지 못했습니다. 아무것도 바뀌지 않았습니다. 다시 시도해 주세요.';
+  if (r.status === 401 || r.status === 403) return '접근이 만료되었습니다. 다시 로그인해 주세요.';
+  return REVISION_ERROR[String(r.data.error)] ?? '반영하지 못했습니다. 아무것도 바뀌지 않았습니다.';
+}

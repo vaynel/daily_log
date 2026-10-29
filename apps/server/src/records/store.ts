@@ -1,6 +1,9 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import type pg from 'pg';
 import { LIMITS } from '../attachments/policy.js';
+import type { ProductionPlan } from '../briefing/briefing.js';
+import { applyRevision, type RevisedPlan, type RevisionKind, type RevisionRejection, type RevisionRequest } from './revision.js';
+import { displayStatus } from './view.js';
 import { addCalendarMonthSeoul, isValidDate, seoulDate, suggestLifeDate } from './time.js';
 
 export type RecordErrorCode =
@@ -12,7 +15,11 @@ export type RecordErrorCode =
   | 'CONFIRMED_LOCKED'
   | 'STALE_BRIEFING'
   | 'AUDIO_EXPIRED'
-  | 'TOO_MANY_ATTACHMENTS';
+  | 'TOO_MANY_ATTACHMENTS'
+  | 'NOT_REVISABLE'
+  | 'REMAKE_IN_PROGRESS'
+  | 'NOT_RETRYABLE'
+  | 'NOT_CONFIRMABLE';
 
 export class RecordError extends Error {
   constructor(public readonly code: RecordErrorCode, message: string) {
@@ -40,6 +47,24 @@ export interface Interview {
   revision: number;
 }
 
+/** 수정 요청이 반영되지 않았다는 뜻. 트랜잭션은 되돌려지고 아무것도 바뀌지 않는다. */
+export class RevisionRejected extends Error {
+  constructor(public readonly rejection: RevisionRejection) {
+    super(rejection.message);
+    this.name = 'RevisionRejected';
+  }
+}
+
+export interface ResultVersionRow {
+  version: number;
+  content: unknown;
+  createdAt: Date;
+  /** 수정으로 대체된 시각. 대체되지 않았으면 null. */
+  supersededAt: Date | null;
+  reviewAtSupersede: PipelineState['review'] | null;
+  confirmedAt: Date | null;
+}
+
 export interface Snapshot {
   interview: Interview;
   resumes: Date[];
@@ -48,6 +73,8 @@ export interface Snapshot {
   versions: { kind: VersionKind; version: number; content: unknown }[];
   pipeline: PipelineState;
   audio: AudioView[];
+  /** 수정으로 대체되어 더는 현재 결과가 아닌 RESULT 버전. */
+  supersededResults?: number[];
 }
 
 export interface AudioView {
@@ -180,8 +207,8 @@ export class RecordStore {
   async listRecords(ownerId: string, page: { limit: number; before?: string | null }): Promise<{ rows: RecordListRow[]; nextCursor: string | null }> {
     const r = await this.pool.query(
       `SELECT i.id, to_char(i.life_date, 'YYYY-MM-DD') AS life_date, i.status, p.production, p.review, p.backup, p.quality_reasons,
-              (SELECT v.content FROM record_versions v WHERE v.interview_id = i.id AND v.kind = 'RESULT' ORDER BY v.version DESC LIMIT 1) AS result_content,
-              EXISTS (SELECT 1 FROM record_versions v WHERE v.interview_id = i.id AND v.kind = 'RESULT') AS has_result,
+              (SELECT v.content FROM record_versions v WHERE v.interview_id = i.id AND v.kind = 'RESULT' AND NOT EXISTS (SELECT 1 FROM result_version_marks m WHERE m.interview_id = i.id AND m.result_version = v.version) ORDER BY v.version DESC LIMIT 1) AS result_content,
+              EXISTS (SELECT 1 FROM record_versions v WHERE v.interview_id = i.id AND v.kind = 'RESULT' AND NOT EXISTS (SELECT 1 FROM result_version_marks m WHERE m.interview_id = i.id AND m.result_version = v.version)) AS has_result,
               (SELECT count(*) FROM attachment_refs a WHERE a.interview_id = i.id)::int AS att
          FROM interviews i LEFT JOIN pipeline_states p ON p.interview_id = i.id
         WHERE i.owner_id = $1 AND ($2::date IS NULL OR i.life_date < $2::date)
@@ -209,13 +236,14 @@ export class RecordStore {
     if (!r.rows[0]) return null;
     const interview = toInterview(r.rows[0]);
     const id = interview.id;
-    const [resumes, items, atts, vers, pipe, audio] = await Promise.all([
+    const [resumes, items, atts, vers, pipe, audio, marks] = await Promise.all([
       this.pool.query('SELECT resumed_at FROM interview_resumes WHERE interview_id = $1 ORDER BY id', [id]),
       this.pool.query('SELECT id, seq, kind, body FROM conversation_items WHERE interview_id = $1 ORDER BY seq', [id]),
       this.pool.query('SELECT id, item_id, storage_key, checksum, kind, original_name FROM attachment_refs WHERE interview_id = $1 ORDER BY saved_at, id', [id]),
       this.pool.query('SELECT kind, version, content FROM record_versions WHERE interview_id = $1 ORDER BY kind, version', [id]),
       this.pool.query('SELECT production, review, backup, quality_reasons FROM pipeline_states WHERE interview_id = $1', [id]),
       this.pool.query('SELECT id, first_saved_at, expires_at, status FROM audio_segments WHERE interview_id = $1 ORDER BY first_saved_at, id', [id]),
+      this.pool.query('SELECT result_version FROM result_version_marks WHERE interview_id = $1 ORDER BY result_version', [id]),
     ]);
     return {
       interview,
@@ -225,6 +253,7 @@ export class RecordStore {
       versions: vers.rows.map((x) => ({ kind: x.kind, version: x.version, content: x.content })),
       pipeline: { production: pipe.rows[0].production, review: pipe.rows[0].review, backup: pipe.rows[0].backup, ...(pipe.rows[0].quality_reasons?.length ? { qualityReasons: pipe.rows[0].quality_reasons } : {}) } as PipelineState,
       audio: audio.rows.map((x) => viewAudio(x, now)),
+      supersededResults: marks.rows.map((x) => x.result_version as number),
     };
   }
 
@@ -357,6 +386,107 @@ export class RecordStore {
       const version = ((last.rows[0]?.version as number | undefined) ?? 0) + 1;
       await c.query('INSERT INTO record_versions (id, interview_id, kind, version, content, created_at) VALUES ($1,$2,$3,$4,$5,$6)', [randomUUID(), interviewId, kind, version, JSON.stringify(content), now]);
       return { version, duplicate: false };
+    });
+  }
+
+  /** RESULT 버전 전체(대체된 것 포함). 소유자가 아니면 NOT_FOUND. */
+  async listResultVersions(ownerId: string, interviewId: string): Promise<ResultVersionRow[]> {
+    const own = await this.pool.query('SELECT 1 FROM interviews WHERE id = $1 AND owner_id = $2', [interviewId, ownerId]);
+    if (!own.rows[0]) throw new RecordError('NOT_FOUND', '기록을 찾을 수 없음');
+    const r = await this.pool.query(
+      `SELECT v.version, v.content, v.created_at, m.superseded_at, m.review_at_supersede, c.confirmed_at
+         FROM record_versions v
+         LEFT JOIN result_version_marks m ON m.interview_id = v.interview_id AND m.result_version = v.version
+         LEFT JOIN result_confirmations c ON c.interview_id = v.interview_id AND c.result_version = v.version
+        WHERE v.interview_id = $1 AND v.kind = 'RESULT' ORDER BY v.version DESC`,
+      [interviewId],
+    );
+    return r.rows.map((x) => ({
+      version: x.version as number, content: x.content, createdAt: x.created_at as Date, supersededAt: (x.superseded_at as Date | null) ?? null,
+      reviewAtSupersede: (x.review_at_supersede as PipelineState['review'] | null) ?? null, confirmedAt: (x.confirmed_at as Date | null) ?? null,
+    }));
+  }
+
+  /**
+   * 사용자의 결과 확인. 지금 정상 완료(COMPLETED)인 현재 결과 버전에만 기록하며, 시간이 지나도 자동으로 만들어지지 않는다.
+   * 같은 버전의 재확인은 처음 확인 시각을 그대로 돌려준다.
+   */
+  async confirmResult(ownerId: string, interviewId: string, version: number, now: Date): Promise<{ confirmedAt: Date; duplicate: boolean }> {
+    return this.tx(async (c) => {
+      const iv = await this.lock(c, ownerId, interviewId);
+      const p = (await c.query('SELECT production, review, backup FROM pipeline_states WHERE interview_id = $1', [interviewId])).rows[0] as PipelineState;
+      const cur = await c.query(
+        `SELECT max(v.version) AS v FROM record_versions v WHERE v.interview_id = $1 AND v.kind = 'RESULT'
+            AND NOT EXISTS (SELECT 1 FROM result_version_marks m WHERE m.interview_id = v.interview_id AND m.result_version = v.version)`, [interviewId]);
+      if (cur.rows[0].v === null || Number(cur.rows[0].v) !== version) throw new RecordError('NOT_CONFIRMABLE', '현재 결과 버전이 아님');
+      if (displayStatus(iv.status, p) !== 'COMPLETED') throw new RecordError('NOT_CONFIRMABLE', '검수를 통과한 완료 결과만 확인할 수 있음');
+      const ins = await c.query('INSERT INTO result_confirmations (interview_id, result_version, confirmed_at) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING', [interviewId, version, now]);
+      const r = await c.query('SELECT confirmed_at FROM result_confirmations WHERE interview_id = $1 AND result_version = $2', [interviewId, version]);
+      return { confirmedAt: r.rows[0].confirmed_at as Date, duplicate: ins.rowCount === 0 };
+    });
+  }
+
+  /**
+   * 결과 수정·재시도 명령을 결과 버전에 연결한다. 모든 변경은 한 트랜잭션이다.
+   * - EXCLUDE/EDIT_TEXT/VOICE: 새 제작 계획 버전(장면·내레이션·자막 재제작 지정), 기존 RESULT 대체 표식, 제작 QUEUED·검수 NONE, 새 작업.
+   * - RETRY: 실패하거나 대기 중인 같은 작업을 다시 대기열에 올린다(자동 재시도·품질 재제작 횟수는 그대로 계승).
+   * 같은 commandId 의 재전송은 처음 결과를 돌려주고, 내용이 다르면 IDEMPOTENCY_CONFLICT 이다.
+   */
+  async reviseResult(
+    ownerId: string, interviewId: string, o: { commandId: string; request: RevisionRequest; job: { kind: string; stages: string[] } }, now: Date,
+  ): Promise<{ duplicate: boolean; planVersion: number | null; jobId: string; revision: number; removedIds: string[]; changedIds: string[]; suggestedKeywords: string[] }> {
+    const hash = createHash('sha256').update(JSON.stringify(o.request)).digest('hex');
+    return this.tx(async (c) => {
+      const iv = await this.lock(c, ownerId, interviewId);
+      const dup = await c.query('SELECT request_hash, plan_version, job_id FROM result_revisions WHERE interview_id = $1 AND command_id = $2', [interviewId, o.commandId]);
+      if (dup.rows[0]) {
+        if (dup.rows[0].request_hash !== hash) throw new RecordError('IDEMPOTENCY_CONFLICT', '같은 명령 식별자에 다른 요청');
+        return { duplicate: true, planVersion: dup.rows[0].plan_version as number | null, jobId: dup.rows[0].job_id as string, revision: iv.revision, removedIds: [], changedIds: [], suggestedKeywords: [] };
+      }
+      if (iv.status !== 'CONFIRMED') throw new RecordError('NOT_REVISABLE', '확정된 기록만 수정할 수 있음');
+      const p = (await c.query('SELECT production, review, backup FROM pipeline_states WHERE interview_id = $1 FOR UPDATE', [interviewId])).rows[0] as PipelineState;
+      const kind: RevisionKind = o.request.kind;
+
+      if (o.request.kind === 'RETRY') {
+        const jr = await c.query('SELECT * FROM jobs WHERE kind = $1 AND subject_id = $2 ORDER BY created_at DESC, id LIMIT 1 FOR UPDATE', [o.job.kind, interviewId]);
+        const j = jr.rows[0] as Record<string, unknown> | undefined;
+        const unsettled = j ? (await c.query(`SELECT 1 FROM job_stages WHERE job_id = $1 AND state IN ('SENT','UNKNOWN')`, [j.id])).rows.length > 0 : false;
+        const retryable = !!j && !unsettled && (j.state === 'FAILED' || (j.state === 'WAITING' && (j.wait_reason === 'BUDGET' || j.wait_reason === 'PERMISSION')));
+        if (!retryable) throw new RecordError('NOT_RETRYABLE', '다시 시도할 수 있는 실패·대기 작업이 없음');
+        const jobId = j!.id as string;
+        await c.query(
+          `INSERT INTO job_requests (job_id, command_id, actor, kind, prior_state, prior_wait_reason, inherited_auto_retries) VALUES ($1,$2,$3,'MANUAL_RETRY',$4,$5,$6)`,
+          [jobId, `result:${interviewId}:${o.commandId}`, ownerId, j!.state, j!.wait_reason, j!.auto_retries_used]);
+        await c.query(`UPDATE jobs SET state='QUEUED', wait_reason=NULL, error_code=NULL, manual_requests=manual_requests+1, updated_at=$2 WHERE id=$1`, [jobId, now]);
+        await c.query("INSERT INTO job_events (job_id, event, code) VALUES ($1,'MANUAL_RETRY',$2)", [jobId, o.commandId]);
+        await c.query("UPDATE pipeline_states SET production = 'QUEUED', updated_at = $2 WHERE interview_id = $1", [interviewId, now]);
+        await c.query('INSERT INTO result_revisions (id, interview_id, command_id, kind, request_hash, plan_version, job_id, remake, created_at) VALUES ($1,$2,$3,$4,$5,NULL,$6,$7,$8)',
+          [randomUUID(), interviewId, o.commandId, kind, hash, jobId, [], now]);
+        return { duplicate: false, planVersion: null, jobId, revision: iv.revision, removedIds: [], changedIds: [], suggestedKeywords: [] };
+      }
+
+      if (p.production === 'QUEUED' || p.production === 'RUNNING' || p.production === 'WAITING_BUDGET') throw new RecordError('REMAKE_IN_PROGRESS', '제작이 진행 중이라 지금은 수정할 수 없음');
+      if (p.production === 'NONE') throw new RecordError('NOT_REVISABLE', '제작된 결과가 아직 없음');
+      const planRow = await c.query("SELECT version, content FROM record_versions WHERE interview_id = $1 AND kind = 'PRODUCTION_PLAN' ORDER BY version DESC LIMIT 1", [interviewId]);
+      if (!planRow.rows[0]) throw new RecordError('NOT_REVISABLE', '수정할 제작 계획이 없음');
+      const out = applyRevision(planRow.rows[0].content as ProductionPlan, o.request);
+      if (!out.ok) throw new RevisionRejected(out);
+      const planVersion = (planRow.rows[0].version as number) + 1;
+      const revision = iv.revision + 1;
+      await c.query('UPDATE interviews SET revision = $2, updated_at = $3 WHERE id = $1', [interviewId, revision, now]);
+      await c.query("INSERT INTO record_versions (id, interview_id, kind, version, content, created_at) VALUES ($1,$2,'PRODUCTION_PLAN',$3,$4,$5)", [randomUUID(), interviewId, planVersion, JSON.stringify(out.plan satisfies RevisedPlan), now]);
+      // 지금까지의 모든 결과는 이 수정으로 대체된다. 새 결과가 검수를 통과하기 전에는 어떤 것도 정상 완성본으로 보이지 않는다.
+      await c.query(
+        `INSERT INTO result_version_marks (interview_id, result_version, superseded_at, review_at_supersede, command_id)
+         SELECT v.interview_id, v.version, $2, $3, $4 FROM record_versions v WHERE v.interview_id = $1 AND v.kind = 'RESULT' ON CONFLICT DO NOTHING`,
+        [interviewId, now, p.review, o.commandId]);
+      await c.query("UPDATE pipeline_states SET production = 'QUEUED', review = 'NONE', quality_reasons = '{}', updated_at = $2 WHERE interview_id = $1", [interviewId, now]);
+      const job = await c.query('INSERT INTO jobs (kind, subject_id, stages, idempotency_key) VALUES ($1,$2,$3,$4) RETURNING id', [o.job.kind, interviewId, o.job.stages, `revise:${interviewId}:${o.commandId}`]);
+      const jobId = job.rows[0].id as string;
+      await c.query("INSERT INTO job_events (job_id, event) VALUES ($1, 'ENQUEUED')", [jobId]);
+      await c.query('INSERT INTO result_revisions (id, interview_id, command_id, kind, request_hash, plan_version, job_id, remake, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
+        [randomUUID(), interviewId, o.commandId, kind, hash, planVersion, jobId, [...out.plan.remake.components], now]);
+      return { duplicate: false, planVersion, jobId, revision, removedIds: out.removedIds, changedIds: out.changedIds, suggestedKeywords: out.suggestedKeywords };
     });
   }
 
