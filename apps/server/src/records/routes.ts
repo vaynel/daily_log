@@ -4,7 +4,7 @@ import path from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import type { SessionClaims } from '../auth/session.js';
 import type { RecordStore, Snapshot } from './store.js';
-import { displayStatus, nextActions, resultFileName, summaryText } from './view.js';
+import { displayStatus, nextActions, resultFileName, resultVersionState, statusWithSupersede, summaryText } from './view.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -33,7 +33,7 @@ export function registerRecordViewRoutes(app: FastifyInstance, opts: { store: Re
     const { rows, nextCursor } = await opts.store.listRecords(owner(req), { limit, before: q.cursor ?? null });
     const records = await Promise.all(rows.map(async (r) => {
       // 정상 완료로 보이는 기록만 결과 파일이 실제로 있는지 확인한다(이 페이지 분량만 stat).
-      let status = displayStatus(r.status, r.pipeline);
+      let status = statusWithSupersede(displayStatus(r.status, r.pipeline), r.resultSuperseded);
       if (status === 'COMPLETED') {
         const name = r.hasResult ? resultFileName(r.resultContent) : null;
         if (!name || !(await exists(videoPath(name)))) status = displayStatus(r.status, r.pipeline, false);
@@ -51,14 +51,16 @@ export function registerRecordViewRoutes(app: FastifyInstance, opts: { store: Re
     const attachments = await opts.store.listAttachments(owner(req), id);
     const summary = latest(snap, 'SUMMARY');
     const result = latest(snap, 'RESULT');
-    const fileName = result ? resultFileName(result.content) : null;
+    const marks = await opts.store.listResultVersions(owner(req), id);
+    const superseded = marks.find((m) => m.version === result?.version)?.superseded ?? false;
+    const fileName = result && !superseded ? resultFileName(result.content) : null;
     const fileAvailable = fileName ? await exists(videoPath(fileName)) : false;
     const { interview, pipeline } = snap;
     return reply.header('cache-control', 'private, no-store').send({
       id, lifeDate: interview.lifeDate, startedAt: interview.startedAt, writingStatus: interview.status, revision: interview.revision,
-      status: displayStatus(interview.status, pipeline, fileAvailable),
+      status: statusWithSupersede(displayStatus(interview.status, pipeline, superseded ? undefined : fileAvailable), superseded),
       pipeline,
-      nextActions: nextActions(interview.status, pipeline, fileAvailable),
+      nextActions: superseded ? nextActions(interview.status, { ...pipeline, production: 'RUNNING' }, false) : nextActions(interview.status, pipeline, fileAvailable),
       conversation: snap.items.map((i) => ({ id: i.id, seq: i.seq, kind: i.kind, body: i.body, attachmentIds: attachments.filter((a) => a.itemId === i.id).map((a) => a.id) })),
       summary: summary ? { version: summary.version, ...summaryText(summary.content) } : null,
       attachments: attachments.map((a) => ({ id: a.id, itemId: a.itemId, kind: a.kind, name: a.name, mime: a.mime, size: a.size, uploadedAt: a.uploadedAt, capturedAt: a.capturedAt })),
@@ -86,11 +88,65 @@ export function registerRecordViewRoutes(app: FastifyInstance, opts: { store: Re
     const result = latest(snap, 'RESULT');
     const name = result ? resultFileName(result.content) : null;
     if (!name || !(await exists(videoPath(name)))) return reply.code(404).send({ error: 'FILE_MISSING', message: '결과 파일이 없어 내려받을 수 없습니다' });
+    // 수정으로 대체된 결과는 새 결과가 등록되기 전에는 정상본으로 내려주지 않는다(TASK-28).
+    if ((await opts.store.listResultVersions(owner(req), id)).find((m) => m.version === result!.version)?.superseded) return reply.code(409).send({ error: 'NOT_DOWNLOADABLE', status: 'PRODUCING', message: '수정한 결과를 다시 만드는 중입니다' });
     // 화면의 DOWNLOAD 규칙과 같은 판단: 제작 완료 + 검수 통과일 때만 내려준다.
     const status = displayStatus(snap.interview.status, snap.pipeline, true);
     if (status !== 'COMPLETED') return reply.code(409).send({ error: 'NOT_DOWNLOADABLE', status, message: '완료되어 검수를 통과한 결과만 내려받을 수 있습니다' });
     return reply.header('cache-control', 'private, no-store').header('x-content-type-options', 'nosniff')
       .header('content-disposition', `attachment; filename*=UTF-8''${encodeURIComponent(name)}`)
       .type('video/mp4').send(createReadStream(videoPath(name)));
+  });
+
+  /** 결과 버전 조회(최신순). 정상본·이전 버전·미통과를 서로 다른 state 로 돌려준다. 파일 경로·이름은 노출하지 않는다. */
+  app.get('/api/records/:id/results', async (req, reply) => {
+    const id = (req.params as { id: string }).id;
+    if (!UUID.test(id)) return reply.code(404).send({ error: 'NOT_FOUND' });
+    const snap = await opts.store.loadById(owner(req), id, now());
+    if (!snap) return reply.code(404).send({ error: 'NOT_FOUND' });
+    const versions = (await opts.store.listResultVersions(owner(req), id)).reverse();
+    const out = await Promise.all(versions.map(async (v, idx) => {
+      const name = resultFileName(v.content);
+      const fileAvailable = name ? await exists(videoPath(name)) : false;
+      const status = displayStatus(snap.interview.status, snap.pipeline, fileAvailable);
+      const st = resultVersionState({ isLatest: idx === 0, superseded: v.superseded, wasPassed: v.wasPassed, status });
+      const downloadable = st.downloadable && fileAvailable;
+      return { version: v.version, state: st.state, downloadable, playable: downloadable, fileAvailable, createdAt: v.createdAt };
+    }));
+    return reply.header('cache-control', 'private, no-store').send({ results: out });
+  });
+
+  /**
+   * 버전별 재생·내려받기. 재생은 Range 를 지원한다(?download=1 이면 첨부로 내려준다).
+   * 허용 여부는 results 목록과 같은 resultVersionState 판정이다.
+   */
+  app.get('/api/records/:id/results/:version/file', async (req, reply) => {
+    const { id, version } = req.params as { id: string; version: string };
+    const q = req.query as { download?: string };
+    if (!UUID.test(id) || !/^[1-9]\d{0,8}$/.test(version)) return reply.code(404).send({ error: 'NOT_FOUND' });
+    const snap = await opts.store.loadById(owner(req), id, now());
+    if (!snap) return reply.code(404).send({ error: 'NOT_FOUND' });
+    const versions = await opts.store.listResultVersions(owner(req), id);
+    const idx = versions.findIndex((v) => v.version === Number(version));
+    if (idx < 0) return reply.code(404).send({ error: 'NOT_FOUND' });
+    const v = versions[idx]!;
+    const name = resultFileName(v.content);
+    if (!name || !(await exists(videoPath(name)))) return reply.code(404).send({ error: 'FILE_MISSING', message: '결과 파일이 없어 재생·내려받기를 할 수 없습니다' });
+    const status = displayStatus(snap.interview.status, snap.pipeline, true);
+    const st = resultVersionState({ isLatest: idx === versions.length - 1, superseded: v.superseded, wasPassed: v.wasPassed, status });
+    if (!st.downloadable) return reply.code(409).send({ error: 'NOT_DOWNLOADABLE', status: st.state === 'NOT_PASSED' ? status : st.state, message: '완료되어 검수를 통과한 결과만 재생·내려받을 수 있습니다' });
+    const full = videoPath(name);
+    const size = (await stat(full)).size;
+    reply.header('cache-control', 'private, no-store').header('x-content-type-options', 'nosniff').header('accept-ranges', 'bytes').header('x-result-state', st.state)
+      .header('content-disposition', `${q.download === '1' ? 'attachment' : 'inline'}; filename*=UTF-8''${encodeURIComponent(name)}`).type('video/mp4');
+    const range = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range ?? ''));
+    if (range && (range[1] || range[2])) {
+      let start = range[1] ? Number(range[1]) : size - Number(range[2]);
+      let end = range[1] && range[2] ? Number(range[2]) : size - 1;
+      start = Math.max(0, start); end = Math.min(end, size - 1);
+      if (start > end || start >= size) return reply.code(416).header('content-range', `bytes */${size}`).send();
+      return reply.code(206).header('content-range', `bytes ${start}-${end}/${size}`).header('content-length', end - start + 1).send(createReadStream(full, { start, end }));
+    }
+    return reply.header('content-length', size).send(createReadStream(full));
   });
 }

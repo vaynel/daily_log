@@ -7,6 +7,7 @@ import { registerRecordViewRoutes } from './records/routes.js';
 import type { RecordStore } from './records/store.js';
 import { registerInterview } from './interview/routes.js';
 import type { ExclusionRuleStore } from './briefing/rules.js';
+import { registerRevisionRoutes } from './records/revision.js';
 import { registerBriefing } from './briefing/routes.js';
 import type { ProInfer } from './briefing/briefing.js';
 import type { LiveUsageStore } from './interview/usage.js';
@@ -50,6 +51,7 @@ export function buildApp(opts: AppOptions = {}) {
   }
   if (opts.records && opts.interview && opts.briefing) {
     registerBriefing(app, { records: opts.records, usage: opts.interview.usage, infer: opts.briefing.infer, rules: opts.briefing.rules, now: opts.now });
+    registerRevisionRoutes(app, { store: opts.records, rules: opts.briefing.rules, now: opts.now });
   }
   if (opts.notifications) registerNotifyRoutes(app, { service: opts.notifications, vapidPublicKey: opts.vapidPublicKey });
   return app;

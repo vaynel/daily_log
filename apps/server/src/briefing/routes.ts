@@ -37,12 +37,12 @@ export interface BriefingRouteOptions {
 
 interface StoredBriefing { kind: 'BRIEFING'; items: BriefingItem[]; diary: string }
 
-const latestBriefing = (snap: Snapshot): { version: number; items: BriefingItem[] } | null => {
+export const latestBriefing = (snap: Snapshot): { version: number; items: BriefingItem[] } | null => {
   const v = snap.versions.filter((x) => x.kind === 'SUMMARY' && (x.content as StoredBriefing | null)?.kind === 'BRIEFING').sort((a, b) => b.version - a.version)[0];
   return v ? { version: v.version, items: (v.content as StoredBriefing).items } : null;
 };
 
-const content = (items: BriefingItem[]): StoredBriefing => ({ kind: 'BRIEFING', items, diary: viewOf(items).summary.map((s) => s.text).join(' ') });
+export const briefingContent = (items: BriefingItem[]): StoredBriefing => ({ kind: 'BRIEFING', items, diary: viewOf(items).summary.map((s) => s.text).join(' ') });
 
 /**
  * 통합 브리핑 라우트. 인증은 전역 훅이 먼저 처리하고 소유자는 세션 sub 이다.
@@ -96,7 +96,7 @@ export function registerBriefing(app: FastifyInstance, o: BriefingRouteOptions) 
         attachments: snap.attachments, infer: o.infer!, rules,
       });
       if (!gen.ok) return { gen } as const;
-      const saved = await o.records.appendVersion(ownerId, id, 'SUMMARY', content(gen.items), now());
+      const saved = await o.records.appendVersion(ownerId, id, 'SUMMARY', briefingContent(gen.items), now());
       return { gen, version: saved.version } as const;
     })();
     inflight.set(key, work);
@@ -125,7 +125,7 @@ export function registerBriefing(app: FastifyInstance, o: BriefingRouteOptions) 
     if (cur.version !== b.version) return reply.code(409).send({ error: 'STALE_BRIEFING', message: '화면의 브리핑이 최신이 아닙니다. 새로 불러오세요.' });
     const res = applyCorrection(cur.items, { itemId: b.itemId, action: b.action, text: b.text as string | undefined } satisfies Correction, o.rules ? await o.rules.list(ownerId) : []);
     if (!res.ok) return reply.code(res.code === 'NOT_FOUND' ? 404 : 422).send({ error: res.code });
-    const saved = await o.records.appendVersion(ownerId, id, 'SUMMARY', content(res.items), now());
+    const saved = await o.records.appendVersion(ownerId, id, 'SUMMARY', briefingContent(res.items), now());
     // 응답은 바뀐 항목과 짧은 안내만 음성으로 쓰게 한다. 전체 브리핑 안내문(speech)은 화면 표시용 값으로만 함께 준다.
     return { ...present(snap, { version: saved.version, items: res.items }), changed: { id: res.changed.id, text: res.changed.text, inVideo: res.changed.inVideo, excludedReason: res.changed.excludedReason }, correctionSpeech: res.speech, repeatsFullBriefing: false };
   });
@@ -154,7 +154,7 @@ export function registerBriefing(app: FastifyInstance, o: BriefingRouteOptions) 
     if (cur.version !== b.version) return reply.code(409).send({ error: 'STALE_BRIEFING', message: '화면의 브리핑이 최신이 아닙니다. 새로 불러오세요.' });
     const res = applyCorrection(cur.items, { itemId: b.itemId, action: 'EXCLUDE' });
     if (!res.ok) return reply.code(res.code === 'NOT_FOUND' ? 404 : 422).send({ error: res.code });
-    const saved = await o.records.appendVersion(ownerId, id, 'SUMMARY', content(res.items), now());
+    const saved = await o.records.appendVersion(ownerId, id, 'SUMMARY', briefingContent(res.items), now());
     const base = { ...present(snap, { version: saved.version, items: res.items }), scope, executed: true, originalDeleted: false, ruleSaved: false };
     if (scope === 'THIS_VIDEO') return { ...base, correctionSpeech: res.speech };
     const target = cur.items.find((i) => i.id === b.itemId)!;
