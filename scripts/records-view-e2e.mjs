@@ -132,7 +132,7 @@ try {
 
     // AC-4: 파일 누락 → 다운로드 없음·경고 / 파일 있음 → 실제 내려받기
     await list.locator('li[data-life-date="2026-10-05"] button').click();
-    await page.getByTestId('result-file-missing').waitFor();
+    await page.getByTestId('result-problem').waitFor();
     assert.equal(await page.getByTestId('download-result').count(), 0);
     assert.doesNotMatch(await page.getByTestId('next-actions').innerText(), /내려받기/);
     assert.match(await page.getByTestId('pipeline').innerText(), /백업 실패/);
