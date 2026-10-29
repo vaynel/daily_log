@@ -4,6 +4,7 @@ import path from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import type { SessionClaims } from '../auth/session.js';
 import type { RecordStore, Snapshot } from './store.js';
+import { latestBriefing } from '../briefing/routes.js';
 import { displayStatus, nextActions, resultFileName, resultVersionState, statusWithSupersede, summaryText } from './view.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -64,7 +65,9 @@ export function registerRecordViewRoutes(app: FastifyInstance, opts: { store: Re
       conversation: snap.items.map((i) => ({ id: i.id, seq: i.seq, kind: i.kind, body: i.body, attachmentIds: attachments.filter((a) => a.itemId === i.id).map((a) => a.id) })),
       summary: summary ? { version: summary.version, ...summaryText(summary.content) } : null,
       attachments: attachments.map((a) => ({ id: a.id, itemId: a.itemId, kind: a.kind, name: a.name, mime: a.mime, size: a.size, uploadedAt: a.uploadedAt, capturedAt: a.capturedAt })),
-      result: result ? { version: result.version, fileAvailable } : null,
+      result: result ? { version: result.version, fileAvailable, superseded } : null,
+      // 확정된 기록에서만 수정 대상 항목(영상에 들어간 것)을 준다. 제외·불확실 항목과 원문 대화는 포함하지 않는다.
+      revisableItems: interview.status === 'CONFIRMED' ? (latestBriefing(snap)?.items ?? []).filter((i) => i.inVideo && i.excludedReason === null).map((i) => ({ id: i.id, text: i.text })) : [],
     });
   });
 

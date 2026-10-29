@@ -9,7 +9,8 @@ export interface RecordDetail {
   conversation: { id: string; seq: number; kind: 'QUESTION' | 'ANSWER'; body: string; attachmentIds: string[] }[];
   summary: { version: number; diary: string | null; learning: string[] } | null;
   attachments: { id: string; itemId: string | null; kind: string; name: string | null; size: number | null; capturedAt: string | null }[];
-  result: { version: number; fileAvailable: boolean } | null;
+  result: { version: number; fileAvailable: boolean; superseded?: boolean } | null;
+  revisableItems?: { id: string; text: string }[];
 }
 
 /** tone 은 색에만 의존하지 않도록 항상 문구와 함께 쓴다. ok 는 정상 완료만. */
@@ -103,3 +104,57 @@ export function initialMonth(rows: RecordRow[], today: Date = new Date()): strin
 }
 
 export const QUALITY_REASON_LABEL: Record<string, string> = { QUALITY_EXHAUSTED: '품질 자동 재제작 1회를 모두 사용했습니다.', BUDGET: '예산 확보를 기다립니다.', PERMISSION: '제작 권한 확인을 기다립니다.' };
+
+// ---- 결과 확인·수정·다운로드(TASK-28) ----
+
+export type ResultVersionState = 'CURRENT' | 'PREVIOUS' | 'NOT_PASSED' | 'SUPERSEDED_NOT_PASSED';
+export interface ResultVersion { version: number; state: ResultVersionState; downloadable: boolean; playable: boolean; fileAvailable: boolean; createdAt: string }
+
+export const RESULT_STATE_LABEL: Record<ResultVersionState, string> = {
+  CURRENT: '현재 완성본', PREVIOUS: '이전 버전(현재 완성본 아님)', NOT_PASSED: '검수 미통과', SUPERSEDED_NOT_PASSED: '미통과 이전 버전',
+};
+
+export const resultFileUrl = (id: string, version: number, download = false) => `/api/records/${id}/results/${version}/file${download ? '?download=1' : ''}`;
+
+/** 영상을 볼 수 없을 때 이유와 가능한 조치(AC-3). 정상 완료이고 파일이 있으면 null. */
+export function resultProblem(status: DisplayStatus, fileAvailable: boolean | undefined): { reason: string; actions: string[] } | null {
+  if (status === 'COMPLETED' && fileAvailable !== false) return null;
+  switch (status) {
+    case 'RESULT_FILE_MISSING': case 'COMPLETED':
+      return { reason: '결과 파일을 찾을 수 없어 재생·내려받기를 할 수 없습니다.', actions: ['잠시 뒤 새로고침해 보세요.', '계속 같으면 “다시 만들기”로 영상을 새로 만드세요.', '백업이 확인된 기록이면 관리자에게 복구를 요청하세요.'] };
+    case 'REVIEW_REJECTED':
+      return { reason: '영상이 검수를 통과하지 못해 보여드리지 않습니다.', actions: ['내용을 수정한 뒤 “다시 만들기”를 누르세요.', '문제가 되는 부분을 영상에서 빼고 다시 만들 수 있습니다.'] };
+    case 'FAILED':
+      return { reason: '제작 처리 중 오류가 나서 영상이 만들어지지 않았습니다.', actions: ['“다시 시도”를 누르세요.'] };
+    case 'BUDGET_WAIT':
+      return { reason: '이번 달 추가 비용 한도 때문에 제작이 대기 중입니다.', actions: ['한도가 풀리면 자동으로 이어집니다. 유료로 자동 전환하지 않습니다.'] };
+    case 'REVIEW_PENDING':
+      return { reason: '영상이 만들어졌고 검수를 기다립니다. 통과 전에는 볼 수 없습니다.', actions: ['검수가 끝날 때까지 기다려 주세요.'] };
+    case 'PRODUCING':
+      return { reason: '영상을 만들고 있습니다. 수정한 경우 이전 영상은 완성본이 아니라 이전 버전으로만 표시됩니다.', actions: ['끝나면 이 화면에 표시됩니다.'] };
+    default:
+      return { reason: '아직 볼 수 있는 영상이 없습니다.', actions: [] };
+  }
+}
+
+export type RevisionRequest =
+  | { type: 'EXCLUDE'; itemId: string }
+  | { type: 'EDIT_TEXT'; itemId: string; text: string }
+  | { type: 'VOICE'; text: string; itemId?: string }
+  | { type: 'RETRY' };
+
+export interface RevisionOutcome { executed: boolean; message: string; ok: boolean }
+
+/** 수정 요청을 보낸다. commandId 는 요청마다 새로 만들고 재전송에는 같은 값을 쓴다(중복 제작 방지). */
+export async function postRevision(id: string, req: RevisionRequest, commandId: string, f: typeof fetch = fetch): Promise<RevisionOutcome> {
+  try {
+    const r = await f(`/api/records/${id}/revisions`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...req, commandId }) });
+    const body = (await r.json().catch(() => ({}))) as { executed?: boolean; message?: string; error?: string };
+    if (r.status === 401 || r.status === 403) return { ok: false, executed: false, message: '접근이 만료되었습니다. 다시 로그인해 주세요.' };
+    if (r.ok && body.executed) return { ok: true, executed: true, message: '수정 요청을 접수했습니다. 영상을 다시 만들고 있고, 끝나기 전에는 이전 영상이 완성본으로 표시되지 않습니다.' };
+    if (r.ok) return { ok: true, executed: false, message: body.message ?? '아무것도 바꾸지 않았습니다.' };
+    return { ok: false, executed: false, message: body.message ?? '수정 요청을 처리하지 못했습니다. 잠시 뒤 다시 시도해 주세요.' };
+  } catch {
+    return { ok: false, executed: false, message: '연결을 확인하고 다시 시도해 주세요. 아무것도 바꾸지 않았습니다.' };
+  }
+}

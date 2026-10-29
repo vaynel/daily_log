@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ResultPanel } from './ResultPanel';
+import { postRevision, type ResultVersion, type RevisionRequest } from './records';
 import { QUALITY_REASON_LABEL, ACTION_LABEL, byLifeDate, coversMonth, fetchJson, initialMonth, recordsUrl, monthGrid, shiftMonth, PIPELINE_LABEL, STATUS_INFO, type DisplayStatus, type Loaded, type RecordDetail, type RecordRow, type RecordsPage } from './records';
 
 function Badge({ status }: { status: DisplayStatus }) {
@@ -132,12 +134,24 @@ export function RecordDetailView({ id, onBack }: { id: string; onBack: () => voi
       <button onClick={onBack}>← 목록</button>
       {!r && <p>불러오는 중</p>}
       {r && r.state !== 'ok' && <Problem r={r} onRetry={load} />}
-      {r?.state === 'ok' && <Detail d={r.data} />}
+      {r?.state === 'ok' && <Detail d={r.data} onChanged={() => void fetchJson<RecordDetail>(`/api/records/${id}`).then(setR)} />}
     </section>
   );
 }
 
-function Detail({ d }: { d: RecordDetail }) {
+function Detail({ d, onChanged }: { d: RecordDetail; onChanged: () => void }) {
+  const [versions, setVersions] = useState<ResultVersion[] | null>(null);
+  const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let live = true;
+    if (d.result) void fetchJson<{ results: ResultVersion[] }>(`/api/records/${d.id}/results`).then((r) => { if (live) setVersions(r.state === 'ok' ? r.data.results : []); });
+    return () => { live = false; };
+  }, [d.id, d.status, d.result]);
+  const onRevise = (req: RevisionRequest) => {
+    setBusy(true);
+    void postRevision(d.id, req, crypto.randomUUID()).then((o) => { setNotice({ ok: o.ok, text: o.message }); if (o.executed) onChanged(); }).finally(() => setBusy(false));
+  };
   const info = STATUS_INFO[d.status];
   const att = (aid: string) => d.attachments.find((a) => a.id === aid);
   const link = (a: RecordDetail['attachments'][number]) => (
@@ -158,9 +172,7 @@ function Detail({ d }: { d: RecordDetail }) {
       <p data-testid="next-actions">
         가능한 다음 행동: {d.nextActions.length ? d.nextActions.map((a) => ACTION_LABEL[a]).join(' / ') : '없음'}
       </p>
-      {d.result && (d.result.fileAvailable
-        ? <p><a className="button" data-testid="download-result" href={`/api/records/${d.id}/result/file`} download>영상 내려받기</a></p>
-        : <p role="alert" data-testid="result-file-missing">결과 파일을 찾을 수 없어 내려받을 수 없습니다.</p>)}
+      <ResultPanel d={d} versions={versions} notice={notice} busy={busy} onRevise={onRevise} />
 
       <h4>정리된 일기</h4>
       {d.summary?.diary ? <p data-testid="diary">{d.summary.diary}</p> : <p>아직 정리된 일기가 없습니다.</p>}
