@@ -15,8 +15,10 @@ export function ResultPanel({ d, versions, notice, busy, onRevise }: ResultPanel
   const [text, setText] = useState('');
   const [editId, setEditId] = useState<string | null>(null);
   const problem = resultProblem(d.status, d.result?.fileAvailable);
-  const current = versions?.find((v) => v.state === 'CURRENT' && v.playable) ?? null;
-  const previous = (versions ?? []).filter((v) => v.state !== 'CURRENT');
+  // 현재 완성본은 상세 응답(서버가 같은 판정으로 COMPLETED·파일 있음을 확인)으로 바로 정한다. 버전 목록은 이전 결과 표시용이다.
+  const currentVersion = d.status === 'COMPLETED' && d.result && !d.result.superseded && d.result.fileAvailable ? d.result.version : null;
+  const current = currentVersion === null ? null : { version: currentVersion };
+  const previous = (versions ?? []).filter((v) => v.state !== 'CURRENT' && v.version !== currentVersion);
   const confirmed = d.status !== 'WRITING';
   const canRevise = !!onRevise && !busy && (d.nextActions.includes('DOWNLOAD') || d.nextActions.includes('EDIT_AND_REMAKE'));
   const canRetry = !!onRevise && !busy && d.nextActions.includes('RETRY');
@@ -34,7 +36,6 @@ export function ResultPanel({ d, versions, notice, busy, onRevise }: ResultPanel
           <p><a className="button" data-testid="download-result" href={resultFileUrl(d.id, current.version, true)} download>영상 내려받기</a></p>
         </>
       )}
-      {confirmed && !problem && !current && versions && <p role="status" data-testid="result-loading-versions">영상 정보를 확인하고 있습니다.</p>}
       {confirmed && problem && (
         <div role="alert" data-testid="result-problem">
           <p><strong>{problem.reason}</strong></p>

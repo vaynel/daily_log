@@ -122,7 +122,7 @@ try {
     await detail.getByTestId('status-hint').waitFor();
     assert.equal(await detail.getByTestId('status-badge').innerText(), '결과 파일 없음');
     assert.ok(!(await detail.getByTestId('status-hint').innerText()).includes('제작과 검수가 끝났습니다'));
-    assert.equal(await page.getByTestId('result-file-missing').count(), 1);
+    assert.equal(await page.getByTestId('result-problem').count(), 1);
     assert.equal(await page.getByTestId('download-result').count(), 0);
     await shot(page, `${name}-detail-result-missing`);
     await page.getByRole('button', { name: '← 목록' }).click();
