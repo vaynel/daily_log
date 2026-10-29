@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { estimateTtsSeconds, ttsCostKrw, type Pricing } from '../voice/pricing.js';
-import { paidCall } from '../budget/gateway.js';
-import type { MonthlyLedger, Purpose } from '../budget/ledger.js';
+import { paidCall, type PaidLedger } from '../budget/gateway.js';
+import type { Purpose } from '../budget/ledger.js';
 import { geminiTts, type TtsResult } from '../voice/transports.js';
 import { MAX_TOTAL_SEC, type Scene, type ScenePlan } from './scenePlan.js';
 
@@ -69,11 +69,11 @@ export function isSilent(r: TtsResult): boolean {
   return false;
 }
 
-const keyOf = (plan: ScenePlan, s: Scene, voice: VoiceConfig) =>
+export const narrationKey = (plan: ScenePlan, s: Scene, voice: VoiceConfig) =>
   `narr:${plan.lifeDate}:${plan.briefingVersion}:${s.key}:${createHash('sha256').update(`${voice.voiceName}\n${voice.styleInstruction}\n${s.narration}`).digest('hex').slice(0, 16)}`;
 
 export async function synthesizeNarration(i: {
-  plan: ScenePlan; voice: VoiceConfig; tts: NarrationTts; ledger: MonthlyLedger; pricing: Pricing; purpose?: Purpose; maxTotalSec?: number;
+  plan: ScenePlan; voice: VoiceConfig; tts: NarrationTts; ledger: PaidLedger; pricing: Pricing; purpose?: Purpose; maxTotalSec?: number;
 }): Promise<NarrationResult> {
   const { plan, voice } = i;
   if (!plan.scenes.length) return { ok: false, code: 'NO_SCENES' };
@@ -84,7 +84,7 @@ export async function synthesizeNarration(i: {
   for (const s of plan.scenes) {
     const chars = s.narration.replace(/\s+/g, '').length;
     const r = await paidCall<TtsResult>({
-      ledger: i.ledger, provider: 'gemini', operation: 'tts', purpose: i.purpose ?? 'PRODUCT', idempotencyKey: keyOf(plan, s, voice),
+      ledger: i.ledger, provider: 'gemini', operation: 'tts', purpose: i.purpose ?? 'PRODUCT', idempotencyKey: narrationKey(plan, s, voice),
       estimateKrw: ttsCostKrw(i.pricing, chars, estimateTtsSeconds(chars)),
       run: () => i.tts(s.narration, voice),
       actualKrw: (v) => ttsCostKrw(i.pricing, chars, v.outputSeconds),

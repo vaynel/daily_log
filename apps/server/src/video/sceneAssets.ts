@@ -3,8 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
-import { paidCall } from '../budget/gateway.js';
-import type { MonthlyLedger } from '../budget/ledger.js';
+import { paidCall, type PaidLedger } from '../budget/gateway.js';
 import { TransportError } from '../voice/transports.js';
 import { keyOutBackground } from './keying.js';
 import { AssetStore, sha256, type AssetMeta, type AssetStatus } from './assetStore.js';
@@ -58,7 +57,7 @@ export type AssetResult =
 
 export interface AssetDeps {
   store: AssetStore;
-  ledger: MonthlyLedger;
+  ledger: PaidLedger;
   provider: ImageProvider;
   /** 캐릭터 A 기준 시트 파일 경로(assets/character/A-ref-v1.jpg). */
   referenceSheetPath: string;

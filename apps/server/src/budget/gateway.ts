@@ -20,8 +20,11 @@ export function classifyFailure(e: unknown): FailureClass {
   return 'UNKNOWN';
 }
 
+/** 유료 호출 경계가 쓰는 원장 기능. 재시작 복구 래퍼가 같은 모양으로 감쌀 수 있다. */
+export type PaidLedger = Pick<MonthlyLedger, 'reserve' | 'confirm' | 'releaseUnsent' | 'markUnknown'>;
+
 export interface PaidCall<T> {
-  ledger: MonthlyLedger;
+  ledger: PaidLedger;
   provider: string;
   operation: string;
   purpose: Purpose;

@@ -178,5 +178,5 @@ export function planOf(items: BriefingItem[], briefingVersion: number): Producti
 }
 
 export const VIDEO_JOB_KIND = 'VIDEO_PRODUCTION';
-export const VIDEO_JOB_STAGES = ['PRODUCE'];
+export const VIDEO_JOB_STAGES = ['scenePlan', 'narration', 'sceneAssets', 'render', 'quality'];
 export const videoJobKey = (interviewId: string, briefingVersion: number) => `produce:${interviewId}:${briefingVersion}`;

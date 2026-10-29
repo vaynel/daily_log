@@ -11,6 +11,15 @@ export class NonRetryableError extends Error {
   constructor(readonly code: string) { super(code); }
 }
 
+/** 처리기 안에서 예산이 모자라 호출하지 못함(호출 전). 작업은 예산 대기로 두고 StageHandler.waitEstimateKrw 이상 확보되면 깨운다. */
+export class BudgetWaitError extends Error {
+  constructor(readonly code = 'BUDGET_EXCEEDED') { super(code); }
+}
+/** 처리기 안에서 보낸 외부 요청의 결과가 불명확함(재전송 금지). 사람이 결과를 확인할 때까지 대기한다. */
+export class ExternalUnknownError extends Error {
+  constructor(readonly code = 'EXTERNAL_RESULT_UNKNOWN') { super(code); }
+}
+
 /** Quality failure is a decision, not a processing exception. Only named stages are invalidated. */
 export class QualityRejectedError extends Error {
   constructor(readonly report: unknown, readonly repairStages: string[], readonly permissionGranted: boolean) { super('QUALITY_REJECTED'); }
@@ -44,6 +53,8 @@ export interface StageHandler {
   execute(ctx: StageContext): Promise<StageOutput>;
   /** 있으면 유료 호출이다: 예산 예약 → 외부 요청 식별자 저장 → 실행 순으로만 진행한다. */
   paid?: { provider: string; operation: string; estimateKrw: number; purpose?: Purpose };
+  /** paid 없이 처리기 안에서 원장을 직접 쓰는 단계의 예산 대기 해제 기준(원). BudgetWaitError 로 대기한 작업을 이 금액 이상 남으면 깨운다. */
+  waitEstimateKrw?: number;
   /** 결과가 불명확한 외부 요청의 처리 결과를 제공자에게 조회한다. 없으면 사람 확인을 기다린다. */
   lookup?(externalRequestId: string, ctx: StageContext): Promise<LookupOutcome>;
 }
@@ -72,6 +83,7 @@ const toJob = (r: Row): JobRow => ({
 });
 
 type Step = 'CONTINUE' | 'STOP';
+const estimateOf = (h?: StageHandler) => h?.paid?.estimateKrw ?? h?.waitEstimateKrw ?? 0;
 
 export class JobQueue {
   constructor(private readonly d: QueueDeps) {}
@@ -143,11 +155,11 @@ export class JobQueue {
   private async nextPaidEstimate(job: JobRow): Promise<number> {
     if (job.qualityReasons.includes('BUDGET')) {
       const r = await this.pool.query('SELECT quality_repair_stages FROM jobs WHERE id=$1', [job.id]);
-      return (r.rows[0].quality_repair_stages as string[]).reduce((n, s) => n + (this.d.handlers[job.kind]?.[s]?.paid?.estimateKrw ?? 0), 0);
+      return (r.rows[0].quality_repair_stages as string[]).reduce((n, s) => n + estimateOf(this.d.handlers[job.kind]?.[s]), 0);
     }
     const done = new Set((await this.stages(job.id)).filter((s) => s.state === 'DONE').map((s) => s.stage));
     const next = job.stages.find((s) => !done.has(s));
-    return (next && this.d.handlers[job.kind]?.[next]?.paid?.estimateKrw) || 0;
+    return next ? estimateOf(this.d.handlers[job.kind]?.[next]) : 0;
   }
 
   /** 대기 중인 작업 하나를 가져와 처리한다. 처리한 작업이 없으면 null. */
@@ -287,6 +299,14 @@ export class JobQueue {
       await this.upsertStage(job.id, stage, 'FAILED', 0, null, null, e.code);
       return this.wait(job, 'PERMISSION', stage, e.code);
     }
+    if (e instanceof BudgetWaitError) {
+      await this.upsertStage(job.id, stage, 'FAILED', 0, null, null, e.code);
+      return this.wait(job, 'BUDGET', stage, e.code);
+    }
+    if (e instanceof ExternalUnknownError) {
+      await this.upsertStage(job.id, stage, 'FAILED', 0, null, null, e.code);
+      return this.wait(job, 'EXTERNAL_RESULT_UNKNOWN', stage, e.code);
+    }
     if (e instanceof NonRetryableError) {
       await this.upsertStage(job.id, stage, 'FAILED', 0, null, null, e.code);
       return this.fail(job, e.code, stage);
@@ -298,7 +318,7 @@ export class JobQueue {
   private async qualityRejected(job: JobRow, stage: string, e: QualityRejectedError): Promise<Step> {
     const repair = [...new Set([...e.repairStages, stage])];
     if (!repair.length || repair.some(s => !job.stages.includes(s))) return this.fail(job, 'QUALITY_REPAIR_INVALID', stage);
-    const estimate = repair.reduce((n, s) => n + (this.d.handlers[job.kind]?.[s]?.paid?.estimateKrw ?? 0), 0);
+    const estimate = repair.reduce((n, s) => n + estimateOf(this.d.handlers[job.kind]?.[s]), 0);
     const budgetOk = (await this.d.ledger.snapshot()).remainingKrw >= estimate;
     const c = await this.pool.connect();
     try {
