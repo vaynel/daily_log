@@ -47,12 +47,11 @@ const characterJpeg = (seed: string): Buffer => {
 };
 export const photoJpeg = (): Buffer => lavfi('testsrc2=s=640x480:d=1', 'jpg', ['-frames:v', '1']);
 let overlayPng: Buffer | null = null;
-const mockOverlay = (calls: { n: number }, delayMs: () => number, fault?: (n: number) => Error | null): OverlayRenderer => async () => {
+const mockOverlay = (calls: { n: number }, hook?: (n: number) => Promise<void> | void, fault?: (n: number) => Error | null): OverlayRenderer => async () => {
   calls.n++;
   const err = fault?.(calls.n);
   if (err) throw err;
-  const d = delayMs();
-  if (d) await new Promise((r) => setTimeout(r, d));
+  await hook?.(calls.n);
   overlayPng ??= lavfi('color=c=0xff000080:s=720x1280,format=rgba', 'png', ['-frames:v', '1']);
   return overlayPng;
 };
@@ -64,8 +63,8 @@ export interface HarnessOptions {
   voice?: VoiceConfig;
   /** 장면 검수 근거: false 를 돌려주면 사실 검수가 실패한다(품질 재제작 시험용). */
   factsPass?: () => boolean;
-  /** 렌더 오버레이 지연(ms). SIGKILL 시험이 렌더 도중 프로세스를 끊기 위해 쓴다. */
-  overlayDelayMs?: () => number;
+  /** 렌더 오버레이 호출 직전 훅. SIGKILL 시험이 렌더 도중 프로세스를 멈춰 세우는 데 쓴다. */
+  overlayHook?: (n: number) => Promise<void> | void;
   /** 오버레이(렌더) 일시 오류 주입: n번째 호출에서 오류를 던진다. */
   overlayFault?: (n: number) => Error | null;
   /** 단계 시작 알림(자식 프로세스 신호용). */
@@ -81,7 +80,9 @@ export const DEFAULT_VOICE: VoiceConfig = { version: 'mock-1', provider: 'mock',
 
 export function createHarness(o: HarnessOptions) {
   const calls = { infer: 0, tts: [] as { text: string; voice: string }[], image: 0, overlay: { n: 0 }, stt: 0, assess: 0 };
-  const audioText = new Map<string, string>();
+  // 모의 전사 원본: 합성한 문장을 음성 해시로 파일에 남겨 다른 프로세스(재시작)에서도 같은 전사가 나오게 한다.
+  const sttDir = path.join(o.dir, 'mock-stt');
+  mkdirSync(sttDir, { recursive: true });
   let voice = o.voice ?? DEFAULT_VOICE;
 
   const infer: ProInfer = async ({ text }) => {
@@ -102,7 +103,7 @@ export function createHarness(o: HarnessOptions) {
     const sec = Math.max(1, Math.round((text.replace(/\s+/g, '').length / 6) * 10) / 10);
     // 문장마다 다른 주파수라 음성 바이트가 문장을 식별한다(모의 전사용).
     const audio = mockWav(sec, 200 + (parseInt(sha(text).slice(0, 4), 16) % 600) + (v.voiceName === DEFAULT_VOICE.voiceName ? 0 : 1000));
-    audioText.set(sha(audio), text);
+    writeFileSync(path.join(sttDir, sha(audio)), text);
     return { audio, mime: 'audio/wav', outputSeconds: sec };
   };
   const image: ImageProvider = async (req) => {
@@ -111,7 +112,7 @@ export function createHarness(o: HarnessOptions) {
   };
   const quality: QualityEvidence = {
     // 전사는 합성 요청에 쓰인 문장 그대로(모의). 실제 STT 가 아니다.
-    async transcribe(audio) { calls.stt++; return audioText.get(sha(audio)) ?? ''; },
+    async transcribe(audio) { calls.stt++; try { return readFileSync(path.join(sttDir, sha(audio)), 'utf8'); } catch { return ''; } },
     async assess() {
       calls.assess++;
       const ok = o.factsPass?.() ?? true;
@@ -131,7 +132,7 @@ export function createHarness(o: HarnessOptions) {
     infer: () => infer, voice: () => voice, tts, image,
     referenceSheetPath: path.join(repo, 'character/A-ref-v1.jpg'),
     loadPhoto: async () => photo,
-    render: { overlay: mockOverlay(calls.overlay, () => o.overlayDelayMs?.() ?? 0, o.overlayFault), workDir: path.join(o.dir, 'render-work') },
+    render: { overlay: mockOverlay(calls.overlay, o.overlayHook, o.overlayFault), workDir: path.join(o.dir, 'render-work') },
     gate: new RenderGate(o.pool),
     rules: { list: async () => [] },
     quality, heartbeatMs: Math.max(50, Math.floor((o.leaseMs ?? 60_000) / 3)), now: HARNESS_CLOCK,
