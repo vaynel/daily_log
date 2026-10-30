@@ -1,6 +1,6 @@
 /**
  * 제작 파이프라인 SIGKILL 재시작 E2E 전용 자식 프로세스(빌드 산출물로 실행, 모의 제공자만). PGOPTIONS 로 시험 스키마를 지정한다.
- * 모드: seed <dir> | work <dir> <releaseFile> <hangAt: render|tts2|none>
+ * 모드: seed <dir> | work <dir> <releaseFile> <hangAt: render|tts2|between|none>
  * work 는 hangAt 지점에서 releaseFile 이 생길 때까지 멈추고(`HANG <지점>` 출력) 그 상태에서 시험이 SIGKILL 한다.
  */
 import { existsSync } from 'node:fs';
@@ -16,6 +16,8 @@ const LEASE_MS = 1500;
 const h = createHarness({
   pool, dir, leaseMs: LEASE_MS,
   onTts: async (text, n) => { console.log(`TTS ${n}`); if (hangAt === 'tts2' && n === 2) await hang('tts2'); },
+  // between: 앞 장면 음성 결제·보관이 끝난 뒤, 다음 장면 예약 전(조회 5번째 = 2번째 장면 시작; 앞 3번은 재사용 점검)
+  onCacheGet: async (n) => { if (hangAt === 'between' && n === 5) await hang('between'); },
   overlayHook: async (n) => { if (hangAt === 'render' && n === 1) await hang('render'); },
 });
 

@@ -11,7 +11,7 @@ import { RecordStore } from '../records/store.js';
 import { DEFAULT_PRICING } from '../voice/pricing.js';
 import type { VoiceConfig } from './narration.js';
 import type { OverlayRenderer } from './overlay.js';
-import { createVideoHandlers, pipelineOnStopped, type PipelineDeps, type QualityEvidence } from './pipeline.js';
+import { createVideoHandlers, diskNarrationCache, pipelineOnStopped, type PipelineDeps, type QualityEvidence } from './pipeline.js';
 import { RenderGate } from './renderGate.js';
 import type { ImageProvider } from './sceneAssets.js';
 
@@ -69,6 +69,8 @@ export interface HarnessOptions {
   overlayFault?: (n: number) => Error | null;
   /** 단계 시작 알림(자식 프로세스 신호용). */
   onTts?: (text: string, n: number) => void | Promise<void>;
+  /** 음성 보관소 조회 훅(n번째 조회 직전). 장면 사이(앞 장면 결제·보관 완료, 다음 장면 예약 전)에서 멈추는 데 쓴다. */
+  onCacheGet?: (n: number) => Promise<void> | void;
   /** 모의 TTS 오류 주입: 던지면 해당 호출이 실패한다. */
   ttsFault?: (n: number) => Error | null;
   leaseMs?: number;
@@ -135,7 +137,9 @@ export function createHarness(o: HarnessOptions) {
     render: { overlay: mockOverlay(calls.overlay, o.overlayHook, o.overlayFault), workDir: path.join(o.dir, 'render-work') },
     gate: new RenderGate(o.pool),
     rules: { list: async () => [] },
-    quality, heartbeatMs: Math.max(50, Math.floor((o.leaseMs ?? 60_000) / 3)), now: HARNESS_CLOCK,
+    quality,
+    narrationCache: o.onCacheGet ? (d) => { const c = diskNarrationCache(d); let n = 0; return { get: async (k) => { await o.onCacheGet!(++n); return c.get(k); }, put: (k, r) => c.put(k, r) }; } : undefined,
+    heartbeatMs: Math.max(50, Math.floor((o.leaseMs ?? 60_000) / 3)), now: HARNESS_CLOCK,
   };
   const handlers = createVideoHandlers(deps);
   const queue = new JobQueue({ pool: o.pool, ledger, handlers: { [VIDEO_JOB_KIND]: handlers }, onStopped: pipelineOnStopped(o.pool), leaseMs: o.leaseMs });

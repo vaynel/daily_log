@@ -106,6 +106,21 @@ try {
   const tts = t.entriesAfter.filter((e) => e.idempotency_key.startsWith('narr:'));
   assert.equal(tts.length, 2, 'TTS 원장 2건(확정 1 + 응답 불명 1)');
   console.log(`2) PASS 음성 합성 중 SIGKILL → 재전송 없음, WAITING/EXTERNAL_RESULT_UNKNOWN, TTS 원장 ${tts.map((e) => e.state).join('+')} 중복 0`);
+  // 3) 유료 단계 도중이지만 호출 사이(앞 장면 음성 결제·보관 완료, 다음 장면 예약 전)에 종료: 이어서 남은 장면만 합성해 완료
+  const m = await scenario('between', 'between');
+  assert.equal(m.job.state, 'SUCCEEDED');
+  assert.ok(m.b.lines.includes('CALLS tts=2 image=2 infer=0'), `재시작 후 남은 2장면 음성 + 이미지 2건만 호출: ${m.b.lines.join('|')}`);
+  assert.equal(m.entriesAtKill.filter((e) => e.idempotency_key.startsWith('narr:')).length, 1, '종료 시점 TTS 원장 1건');
+  const nm = m.entriesAfter.filter((e) => e.idempotency_key.startsWith('narr:'));
+  assert.equal(nm.length, 3, 'TTS 원장 3건(장면당 1건)');
+  assert.ok(m.entriesAfter.every((e) => e.state === 'CONFIRMED'), '모든 원장 항목 CONFIRMED');
+  assert.ok(m.entriesAtKill.every((e) => m.entriesAfter.some((x) => x.idempotency_key === e.idempotency_key)), '종료 전 항목 유지');
+  const mr = await m.q("SELECT content FROM record_versions WHERE kind='RESULT'");
+  assert.equal(mr.length, 1);
+  const mi = mediaInfo(join(m.dir, 'videos', mr[0].content.file));
+  assert.ok(mi.w === 720 && mi.h === 1280 && mi.sec > 1 && mi.sec <= 180);
+  assert.deepEqual((await m.q('SELECT production, review FROM pipeline_states'))[0], { production: 'DONE', review: 'PASSED' });
+  console.log(`3) PASS 음성 단계 장면 사이 SIGKILL → 첫 장면 음성 재사용, 남은 2장면만 합성, TTS 원장 ${nm.length}건 중복 0, 완료(MP4 ${mi.w}x${mi.h} ${mi.sec}s)`);
   console.log('pipeline-restart-e2e PASS');
 } catch (e) {
   failed = true;

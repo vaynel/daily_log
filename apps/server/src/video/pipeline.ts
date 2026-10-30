@@ -72,6 +72,8 @@ export interface PipelineDeps {
   rules: { list(ownerId: string): Promise<ExclusionRule[]> };
   /** 없으면 품질 검수는 근거 부족으로 실패한다(통과로 추정하지 않음). */
   quality: QualityEvidence | null;
+  /** 음성 보관소 교체 지점(시험이 장면 사이에서 프로세스를 멈출 때 사용). 기본은 디스크 보관소. */
+  narrationCache?: (dir: string) => NarrationCache;
   heartbeatMs: number;
   ffmpeg?: string;
   now?: () => Date;
@@ -132,7 +134,7 @@ const withHeartbeat = async <T>(ctx: StageContext, ms: number, fn: () => Promise
 export function createVideoHandlers(d: PipelineDeps): Record<string, StageHandler> {
   const now = d.now ?? (() => new Date());
   const root = (id: string) => path.join(d.workDir, 'interviews', id);
-  const cache = (id: string) => diskNarrationCache(path.join(root(id), 'tts'));
+  const cache = (id: string) => (d.narrationCache ?? diskNarrationCache)(path.join(root(id), 'tts'));
   const assetStore = new AssetStore(path.join(d.workDir, 'assets'));
   const generation = (ctx: StageContext) => ctx.qualityGeneration ?? 0;
   const variant = (ctx: StageContext) => (generation(ctx) > 0 ? `q${generation(ctx)}` : '');
