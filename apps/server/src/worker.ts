@@ -10,6 +10,7 @@ import { createDriveFactory } from './backup/drive.js';
 import { BACKUP_KIND, BackupService } from './backup/service.js';
 import { TokenVault } from './backup/vault.js';
 import { UnconfiguredSender, WebPushSender, loadVapidKeys } from './notify/sender.js';
+import { RetentionService } from './retention/service.js';
 
 const config = loadConfigOrExit();
 const pool = createPool(config.databaseUrl);
@@ -28,6 +29,10 @@ const backup: BackupService = new BackupService({ pool, queue, fileStorageDir: c
 handlers[BACKUP_KIND] = backup.handlers();
 const sweepEveryMs = Number(process.env.BACKUP_SWEEP_INTERVAL_MS ?? '3600000');
 let lastSweep = 0;
+// 서버 사본 수명 정리(휴지통 만료·음성·한 달 자동 정리). Drive 백업 확인은 BackupService 의 판정을 그대로 쓴다.
+const retention = new RetentionService({ pool, fileStorageDir: config.fileStorageDir, readiness: (o, i) => backup.cleanupReadiness(o, i, { live: true }) });
+const retentionEveryMs = Number(process.env.RETENTION_SWEEP_INTERVAL_MS ?? '3600000');
+let lastRetention = 0;
 
 const notifier = new NotificationService({ pool, sender: config.vapidKeysFile ? new WebPushSender(loadVapidKeys(config.vapidKeysFile)) : new UnconfiguredSender() });
 
@@ -43,6 +48,10 @@ while (!stopping) {
   if (Date.now() - lastSweep >= sweepEveryMs) { // 변경이 없으면 작업을 만들지 않는 멱등 훑기: 하루에 여러 번 돌아도 중복 복사가 없다.
     lastSweep = Date.now();
     await backup.sweep().catch((e) => console.error('backup sweep error:', e instanceof Error ? e.name : 'ERROR'));
+  }
+  if (Date.now() - lastRetention >= retentionEveryMs) {
+    lastRetention = Date.now();
+    await retention.sweep().catch((e) => console.error('retention sweep error:', e instanceof Error ? e.name : 'ERROR'));
   }
   await notifier.run(); // 알림 단계는 내부에서 오류를 격리한다(작업 큐와 독립)
   await new Promise((r) => setTimeout(r, config.workerPollIntervalMs));

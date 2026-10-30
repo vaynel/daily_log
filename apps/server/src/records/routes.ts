@@ -4,6 +4,7 @@ import path from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import type { SessionClaims } from '../auth/session.js';
 import type { RecordStore, Snapshot } from './store.js';
+import { retentionNotice } from '../retention/view.js';
 import { displayStatus, nextActions, resultFileName, summaryText } from './view.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -54,6 +55,7 @@ export function registerRecordViewRoutes(app: FastifyInstance, opts: { store: Re
     const fileName = result ? resultFileName(result.content) : null;
     const fileAvailable = fileName ? await exists(videoPath(fileName)) : false;
     const { interview, pipeline } = snap;
+    const ret = await opts.store.retentionOf(owner(req), id, now());
     return reply.header('cache-control', 'private, no-store').send({
       id, lifeDate: interview.lifeDate, startedAt: interview.startedAt, writingStatus: interview.status, revision: interview.revision,
       status: displayStatus(interview.status, pipeline, fileAvailable),
@@ -63,6 +65,7 @@ export function registerRecordViewRoutes(app: FastifyInstance, opts: { store: Re
       summary: summary ? { version: summary.version, ...summaryText(summary.content) } : null,
       attachments: attachments.map((a) => ({ id: a.id, itemId: a.itemId, kind: a.kind, name: a.name, mime: a.mime, size: a.size, uploadedAt: a.uploadedAt, capturedAt: a.capturedAt })),
       result: result ? { version: result.version, fileAvailable } : null,
+      retention: ret ? retentionNotice(ret, now()) : null,
     });
   });
 

@@ -55,11 +55,13 @@ const SHA = /^[a-f0-9]{64}$/;
  */
 export async function buildBackupPlan(pool: pg.Pool, fileStorageDir: string, interviewId: string): Promise<BackupPlan | null> {
   const iv = (await pool.query(
-    `SELECT id, owner_id, to_char(life_date,'YYYY-MM-DD') AS life_date, status, revision FROM interviews WHERE id=$1`, [interviewId])).rows[0];
+    `SELECT id, owner_id, to_char(life_date,'YYYY-MM-DD') AS life_date, status, revision, deleted_at, server_cleaned_at FROM interviews WHERE id=$1`, [interviewId])).rows[0];
   if (!iv) return null;
+  // 휴지통·서버 사본 정리(TASK-29) 후의 기록은 백업 대상이 아니다: 비어 있거나 지워진 내용을 새 버전으로 올리지 않는다(Drive 의 기존 백업은 그대로).
+  if (iv.deleted_at || iv.server_cleaned_at) return null;
   const [items, atts, vers] = await Promise.all([
-    pool.query('SELECT id, seq, kind, body FROM conversation_items WHERE interview_id=$1 ORDER BY seq', [interviewId]),
-    pool.query(`SELECT id, item_id, storage_key, checksum, kind, original_name, mime_type, size_bytes FROM attachment_refs WHERE interview_id=$1 ORDER BY saved_at, id`, [interviewId]),
+    pool.query('SELECT id, seq, kind, body FROM conversation_items WHERE interview_id=$1 AND deleted_at IS NULL ORDER BY seq', [interviewId]),
+    pool.query(`SELECT id, item_id, storage_key, checksum, kind, original_name, mime_type, size_bytes FROM attachment_refs WHERE interview_id=$1 AND deleted_at IS NULL ORDER BY saved_at, id`, [interviewId]),
     pool.query('SELECT kind, version, content FROM record_versions WHERE interview_id=$1 ORDER BY kind, version', [interviewId]),
   ]);
   const lifeDate = iv.life_date as string;

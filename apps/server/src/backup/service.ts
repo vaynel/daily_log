@@ -73,8 +73,8 @@ export class BackupService {
   /** 하루 1회 이상 호출되는 훑기. 내용이 있는 모든 기록을 대상으로 하며 변경이 없으면 아무 작업도 만들지 않는다. */
   async sweep(): Promise<{ enqueued: number; verified: number }> {
     const ids = (await this.d.pool.query(
-      `SELECT i.id FROM interviews i WHERE EXISTS (SELECT 1 FROM conversation_items c WHERE c.interview_id=i.id)
-         OR EXISTS (SELECT 1 FROM attachment_refs a WHERE a.interview_id=i.id) OR EXISTS (SELECT 1 FROM record_versions v WHERE v.interview_id=i.id)
+      `SELECT i.id FROM interviews i WHERE i.deleted_at IS NULL AND i.server_cleaned_at IS NULL AND (EXISTS (SELECT 1 FROM conversation_items c WHERE c.interview_id=i.id AND c.deleted_at IS NULL)
+         OR EXISTS (SELECT 1 FROM attachment_refs a WHERE a.interview_id=i.id AND a.deleted_at IS NULL) OR EXISTS (SELECT 1 FROM record_versions v WHERE v.interview_id=i.id))
        ORDER BY i.life_date`)).rows.map((r) => r.id as string);
     let enqueued = 0, verified = 0;
     for (const id of ids) {

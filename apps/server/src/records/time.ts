@@ -37,3 +37,11 @@ export function addCalendarMonthSeoul(at: Date): Date {
   return new Date(ms - SEOUL_OFFSET_MS);
 }
 
+
+/** 사용자 삭제 후 휴지통 보관 기간(일). 한 달 자동 정리와는 별개의 정책이다. */
+export const TRASH_DAYS = 30;
+
+/** 삭제 시각부터 30일(24시간 x 30) 뒤. 이 시각 이전까지만 복구할 수 있다(정확히 이 시각부터는 만료). */
+export function addTrashPeriod(deletedAt: Date): Date {
+  return new Date(deletedAt.getTime() + TRASH_DAYS * 24 * 60 * 60 * 1000);
+}

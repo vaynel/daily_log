@@ -37,6 +37,8 @@ export class AttachmentService {
         { itemId: i.itemId, storageKey, checksum: v.checksum, kind: v.kind, name: i.name.slice(0, 200), mime: v.mime, size: v.size, capturedAt: v.capturedAt, capturedSource: v.capturedSource },
         i.now,
       );
+      // 저장하는 사이 다른 기록의 정리 작업이 같은 파일을 지웠다면 다시 쓴다(참조가 생긴 뒤에는 정리 작업이 지우지 않는다).
+      await this.writeOnce(full, i.bytes);
       return { ...res, storageKey, kind: v.kind, capturedAt: v.capturedAt, capturedSource: v.capturedSource, size: v.size, storedNewFile: created };
     } catch (e) {
       // 같은 파일을 다른 요청이 이미 참조 중일 수 있으므로, 이번 요청이 만든 파일이고 참조가 하나도 없을 때만 지운다.

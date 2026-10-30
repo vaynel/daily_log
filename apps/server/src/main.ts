@@ -18,6 +18,7 @@ import { BackupService } from './backup/service.js';
 import { TokenVault } from './backup/vault.js';
 import { JobQueue } from './jobs/queue.js';
 import { UnconfiguredSender, loadVapidKeys } from './notify/sender.js';
+import { RetentionService } from './retention/service.js';
 
 const config = loadConfigOrExit();
 const auth = loadAuthConfig();
@@ -48,6 +49,7 @@ const app = buildApp({
   sessionSecret: config.sessionSecret,
   fileStorageDir: config.fileStorageDir,
   records: new RecordStore(pool),
+  retention: new RetentionService({ pool, fileStorageDir: config.fileStorageDir, readiness: (o, i) => backup.cleanupReadiness(o, i, { live: true }) }),
   briefing: { infer: briefingInfer, rules: new PgRuleStore(pool) },
   entries: { list: async () => (await pool.query('SELECT id, entry_date, body FROM sample_entries ORDER BY entry_date DESC')).rows },
   interview: {

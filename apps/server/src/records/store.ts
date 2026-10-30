@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type pg from 'pg';
 import { LIMITS } from '../attachments/policy.js';
-import { addCalendarMonthSeoul, isValidDate, seoulDate, suggestLifeDate } from './time.js';
+import { addCalendarMonthSeoul, addTrashPeriod, isValidDate, seoulDate, suggestLifeDate } from './time.js';
 
 export type RecordErrorCode =
   | 'INVALID_LIFE_DATE'
@@ -12,6 +12,10 @@ export type RecordErrorCode =
   | 'CONFIRMED_LOCKED'
   | 'STALE_BRIEFING'
   | 'AUDIO_EXPIRED'
+  | 'IN_TRASH'
+  | 'TRASH_EXPIRED'
+  | 'RECORD_PURGED'
+  | 'SERVER_CLEANED'
   | 'TOO_MANY_ATTACHMENTS';
 
 export class RecordError extends Error {
@@ -108,8 +112,9 @@ export class RecordStore {
 
   /** 소유자의 인터뷰를 잠그고 반환. 없거나 타 소유자면 NOT_FOUND. */
   private async lock(c: Q, ownerId: string, interviewId: string): Promise<Interview> {
-    const r = await c.query(`SELECT ${INTERVIEW_COLS} FROM interviews WHERE id = $1 AND owner_id = $2 FOR UPDATE`, [interviewId, ownerId]);
+    const r = await c.query(`SELECT ${INTERVIEW_COLS}, deleted_at, server_purged_at, server_cleaned_at FROM interviews WHERE id = $1 AND owner_id = $2 FOR UPDATE`, [interviewId, ownerId]);
     if (!r.rows[0]) throw new RecordError('NOT_FOUND', '기록을 찾을 수 없음');
+    assertNotDeleted(r.rows[0]);
     return toInterview(r.rows[0]);
   }
 
@@ -132,8 +137,9 @@ export class RecordStore {
     if (!isValidDate(date)) throw new RecordError('INVALID_LIFE_DATE', '생활일 형식 오류');
     return this.tx(async (c) => {
       const resume = async (): Promise<Interview | null> => {
-        const r = await c.query(`SELECT ${INTERVIEW_COLS} FROM interviews WHERE owner_id = $1 AND life_date = $2 FOR UPDATE`, [ownerId, date]);
+        const r = await c.query(`SELECT ${INTERVIEW_COLS}, deleted_at, server_purged_at, server_cleaned_at FROM interviews WHERE owner_id = $1 AND life_date = $2 FOR UPDATE`, [ownerId, date]);
         if (!r.rows[0]) return null;
+        assertNotDeleted(r.rows[0]);
         const iv = toInterview(r.rows[0]);
         await c.query('INSERT INTO interview_resumes (interview_id, resumed_at) VALUES ($1, $2)', [iv.id, now]);
         return iv;
@@ -163,8 +169,9 @@ export class RecordStore {
   /** 재접속 이어하기. 생활일은 원래 값 유지, 실제 재개 시각만 기록. 기록이 없으면 NOT_FOUND(자동 생성 금지). */
   async resumeInterview(ownerId: string, lifeDate: string, now: Date): Promise<Snapshot> {
     await this.tx(async (c) => {
-      const r = await c.query('SELECT id FROM interviews WHERE owner_id = $1 AND life_date = $2 FOR UPDATE', [ownerId, lifeDate]);
+      const r = await c.query('SELECT id, deleted_at, server_purged_at, server_cleaned_at FROM interviews WHERE owner_id = $1 AND life_date = $2 FOR UPDATE', [ownerId, lifeDate]);
       if (!r.rows[0]) throw new RecordError('NOT_FOUND', '해당 생활일의 기록이 없음');
+      assertNotDeleted(r.rows[0]);
       await c.query('INSERT INTO interview_resumes (interview_id, resumed_at) VALUES ($1, $2)', [r.rows[0].id, now]);
     });
     const snap = await this.load(ownerId, lifeDate, now);
@@ -182,9 +189,9 @@ export class RecordStore {
       `SELECT i.id, to_char(i.life_date, 'YYYY-MM-DD') AS life_date, i.status, p.production, p.review, p.backup, p.quality_reasons,
               (SELECT v.content FROM record_versions v WHERE v.interview_id = i.id AND v.kind = 'RESULT' ORDER BY v.version DESC LIMIT 1) AS result_content,
               EXISTS (SELECT 1 FROM record_versions v WHERE v.interview_id = i.id AND v.kind = 'RESULT') AS has_result,
-              (SELECT count(*) FROM attachment_refs a WHERE a.interview_id = i.id)::int AS att
+              (SELECT count(*) FROM attachment_refs a WHERE a.interview_id = i.id AND a.deleted_at IS NULL)::int AS att
          FROM interviews i LEFT JOIN pipeline_states p ON p.interview_id = i.id
-        WHERE i.owner_id = $1 AND ($2::date IS NULL OR i.life_date < $2::date)
+        WHERE i.owner_id = $1 AND i.deleted_at IS NULL AND ($2::date IS NULL OR i.life_date < $2::date)
         ORDER BY i.life_date DESC LIMIT $3`,
       [ownerId, page.before ?? null, page.limit + 1],
     );
@@ -199,20 +206,20 @@ export class RecordStore {
 
   /** id 로 읽기 전용 조회(소유자 확인). 없거나 타 소유자면 null. */
   async loadById(ownerId: string, id: string, now: Date): Promise<Snapshot | null> {
-    const r = await this.pool.query('SELECT to_char(life_date, \'YYYY-MM-DD\') AS d FROM interviews WHERE id = $1 AND owner_id = $2', [id, ownerId]);
+    const r = await this.pool.query('SELECT to_char(life_date, \'YYYY-MM-DD\') AS d FROM interviews WHERE id = $1 AND owner_id = $2 AND deleted_at IS NULL', [id, ownerId]);
     return r.rows[0] ? this.load(ownerId, r.rows[0].d as string, now) : null;
   }
 
   /** 읽기 전용 조회. 어떤 경우에도 행을 만들지 않는다. */
   async load(ownerId: string, lifeDate: string, now: Date): Promise<Snapshot | null> {
-    const r = await this.pool.query(`SELECT ${INTERVIEW_COLS} FROM interviews WHERE owner_id = $1 AND life_date = $2`, [ownerId, lifeDate]);
+    const r = await this.pool.query(`SELECT ${INTERVIEW_COLS} FROM interviews WHERE owner_id = $1 AND life_date = $2 AND deleted_at IS NULL`, [ownerId, lifeDate]);
     if (!r.rows[0]) return null;
     const interview = toInterview(r.rows[0]);
     const id = interview.id;
     const [resumes, items, atts, vers, pipe, audio] = await Promise.all([
       this.pool.query('SELECT resumed_at FROM interview_resumes WHERE interview_id = $1 ORDER BY id', [id]),
-      this.pool.query('SELECT id, seq, kind, body FROM conversation_items WHERE interview_id = $1 ORDER BY seq', [id]),
-      this.pool.query('SELECT id, item_id, storage_key, checksum, kind, original_name FROM attachment_refs WHERE interview_id = $1 ORDER BY saved_at, id', [id]),
+      this.pool.query('SELECT id, seq, kind, body FROM conversation_items WHERE interview_id = $1 AND deleted_at IS NULL ORDER BY seq', [id]),
+      this.pool.query('SELECT id, item_id, storage_key, checksum, kind, original_name FROM attachment_refs WHERE interview_id = $1 AND deleted_at IS NULL ORDER BY saved_at, id', [id]),
       this.pool.query('SELECT kind, version, content FROM record_versions WHERE interview_id = $1 ORDER BY kind, version', [id]),
       this.pool.query('SELECT production, review, backup, quality_reasons FROM pipeline_states WHERE interview_id = $1', [id]),
       this.pool.query('SELECT id, first_saved_at, expires_at, status FROM audio_segments WHERE interview_id = $1 ORDER BY first_saved_at, id', [id]),
@@ -290,6 +297,8 @@ export class RecordStore {
     now: Date,
   ) {
     return this.tx(async (c) => {
+      // 같은 파일을 지우는 정리 작업과 순서를 맞춘다(retention/service.ts removeUnreferencedFile 이 같은 잠금을 쓴다).
+      await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`att:${f.storageKey}`]);
       const iv = await this.lock(c, ownerId, interviewId);
       const ex = await c.query('SELECT id, checksum FROM attachment_refs WHERE interview_id = $1 AND idempotency_key = $2', [interviewId, key]);
       if (ex.rows[0]) {
@@ -297,9 +306,9 @@ export class RecordStore {
         return { id: ex.rows[0].id as string, duplicate: true };
       }
       assertEditable(iv);
-      const same = await c.query('SELECT id FROM attachment_refs WHERE interview_id = $1 AND checksum = $2 ORDER BY saved_at LIMIT 1', [interviewId, f.checksum]);
+      const same = await c.query('SELECT id FROM attachment_refs WHERE interview_id = $1 AND checksum = $2 AND deleted_at IS NULL ORDER BY saved_at LIMIT 1', [interviewId, f.checksum]);
       if (same.rows[0]) return { id: same.rows[0].id as string, duplicate: true };
-      const n = await c.query('SELECT count(*)::int AS n FROM attachment_refs WHERE interview_id = $1', [interviewId]);
+      const n = await c.query('SELECT count(*)::int AS n FROM attachment_refs WHERE interview_id = $1 AND deleted_at IS NULL', [interviewId]);
       if ((n.rows[0].n as number) >= MAX_ATTACHMENTS_PER_RECORD) throw new RecordError('TOO_MANY_ATTACHMENTS', '기록당 첨부 개수 제한');
       if (f.itemId) {
         const it = await c.query('SELECT 1 FROM conversation_items WHERE id = $1 AND interview_id = $2', [f.itemId, interviewId]);
@@ -322,10 +331,12 @@ export class RecordStore {
 
   /** 기록의 첨부 목록. 촬영 시각이 없으면 capturedAt 은 null(업로드 시각 uploadedAt 과 별개). */
   async listAttachments(ownerId: string, interviewId: string) {
-    await this.tx((c) => this.lock(c, ownerId, interviewId));
+    // 읽기 전용: 정리된(CLEANED) 기록도 조회는 되어야 하므로 쓰기용 잠금(lock)을 쓰지 않는다. 휴지통 기록은 NOT_FOUND 와 같게 취급한다.
+    const own = await this.pool.query('SELECT 1 FROM interviews WHERE id = $1 AND owner_id = $2 AND deleted_at IS NULL', [interviewId, ownerId]);
+    if (!own.rows[0]) throw new RecordError('NOT_FOUND', '기록을 찾을 수 없음');
     const r = await this.pool.query(
       `SELECT id, item_id, storage_key, kind, original_name, mime_type, size_bytes, saved_at, captured_at, captured_source
-         FROM attachment_refs WHERE interview_id = $1 ORDER BY saved_at, id`,
+         FROM attachment_refs WHERE interview_id = $1 AND deleted_at IS NULL ORDER BY saved_at, id`,
       [interviewId],
     );
     return r.rows.map((x) => ({
@@ -462,11 +473,174 @@ export class RecordStore {
     if (!out) throw new RecordError('AUDIO_EXPIRED', '만료된 음성 구간');
   }
 
+
+  // ---- 휴지통 (TASK-29) ----
+
+  /** 휴지통 명령용 잠금: 삭제된 기록도 돌려준다(상태 판단은 호출자). */
+  private async lockAny(c: Q, ownerId: string, interviewId: string) {
+    const r = await c.query('SELECT id, deleted_at, purge_at, server_purged_at FROM interviews WHERE id = $1 AND owner_id = $2 FOR UPDATE', [interviewId, ownerId]);
+    if (!r.rows[0]) throw new RecordError('NOT_FOUND', '기록을 찾을 수 없음');
+    return r.rows[0] as { id: string; deleted_at: Date | null; purge_at: Date | null; server_purged_at: Date | null };
+  }
+
+  /**
+   * 기록(하루) 삭제 = 휴지통으로 이동. 삭제 시점부터 30일 동안 복구할 수 있다. 같은 기록을 다시 삭제해도 최초 삭제 시각을 바꾸지 않는다.
+   * 서버 사본만 대상이며 Drive 백업·완성 영상은 건드리지 않는다.
+   */
+  async trashRecord(ownerId: string, interviewId: string, now: Date) {
+    return this.tx(async (c) => {
+      const r = await this.lockAny(c, ownerId, interviewId);
+      if (r.server_purged_at) throw new RecordError('RECORD_PURGED', '서버 사본이 이미 삭제된 기록');
+      if (r.deleted_at) return { deletedAt: r.deleted_at, purgeAt: r.purge_at!, duplicate: true };
+      const purgeAt = addTrashPeriod(now);
+      await c.query('UPDATE interviews SET deleted_at = $2, purge_at = $3, updated_at = $2 WHERE id = $1', [interviewId, now, purgeAt]);
+      return { deletedAt: now, purgeAt, duplicate: false };
+    });
+  }
+
+  /** 휴지통 기록 복구. 만료 시각 이후(= 삭제 후 30일)에는 복구할 수 없다. 만료된 기록의 실제 삭제는 정리 훑기가 한다. */
+  async restoreRecord(ownerId: string, interviewId: string, now: Date) {
+    return this.tx(async (c) => {
+      const r = await this.lockAny(c, ownerId, interviewId);
+      if (r.server_purged_at) throw new RecordError('RECORD_PURGED', '서버 사본이 삭제되어 복구할 수 없음');
+      if (!r.deleted_at) return { restored: false, duplicate: true };
+      if (now >= r.purge_at!) throw new RecordError('TRASH_EXPIRED', '휴지통 보관 30일이 지나 복구할 수 없음');
+      await c.query('UPDATE interviews SET deleted_at = NULL, purge_at = NULL, updated_at = $2 WHERE id = $1', [interviewId, now]);
+      return { restored: true, duplicate: false };
+    });
+  }
+
+  /** 기록 일부 삭제: 대화 항목 한 건(그 항목에 연결된 첨부 포함)을 휴지통으로. */
+  async trashItem(ownerId: string, interviewId: string, itemId: string, now: Date) {
+    return this.tx(async (c) => {
+      await this.lock(c, ownerId, interviewId);
+      const it = await c.query('SELECT deleted_at, purge_at FROM conversation_items WHERE id = $1 AND interview_id = $2 FOR UPDATE', [itemId, interviewId]);
+      if (!it.rows[0]) throw new RecordError('NOT_FOUND', '대화 항목을 찾을 수 없음');
+      if (it.rows[0].deleted_at) return { purgeAt: it.rows[0].purge_at as Date, duplicate: true };
+      const purgeAt = addTrashPeriod(now);
+      await c.query('UPDATE conversation_items SET deleted_at = $2, purge_at = $3 WHERE id = $1', [itemId, now, purgeAt]);
+      await c.query('UPDATE attachment_refs SET deleted_at = $2, purge_at = $3 WHERE item_id = $1 AND deleted_at IS NULL', [itemId, now, purgeAt]);
+      await c.query('UPDATE interviews SET updated_at = $2 WHERE id = $1', [interviewId, now]);
+      return { purgeAt, duplicate: false };
+    });
+  }
+
+  /** 기록 일부 삭제: 첨부 한 건을 휴지통으로. 같은 파일을 다른 기록이 참조해도 그쪽 참조·파일은 그대로다(실제 파일 삭제는 정리 훑기가 참조 수를 확인한 뒤에만). */
+  async trashAttachment(ownerId: string, interviewId: string, attachmentId: string, now: Date) {
+    return this.tx(async (c) => {
+      await this.lock(c, ownerId, interviewId);
+      const a = await c.query('SELECT deleted_at, purge_at FROM attachment_refs WHERE id = $1 AND interview_id = $2 FOR UPDATE', [attachmentId, interviewId]);
+      if (!a.rows[0]) throw new RecordError('NOT_FOUND', '첨부를 찾을 수 없음');
+      if (a.rows[0].deleted_at) return { purgeAt: a.rows[0].purge_at as Date, duplicate: true };
+      const purgeAt = addTrashPeriod(now);
+      await c.query('UPDATE attachment_refs SET deleted_at = $2, purge_at = $3 WHERE id = $1', [attachmentId, now, purgeAt]);
+      await c.query('UPDATE interviews SET updated_at = $2 WHERE id = $1', [interviewId, now]);
+      return { purgeAt, duplicate: false };
+    });
+  }
+
+  /** 휴지통의 일부 항목 복구(항목 복구는 함께 삭제된 연결 첨부도 되살린다). */
+  async restoreItem(ownerId: string, interviewId: string, itemId: string, now: Date) {
+    return this.tx(async (c) => {
+      await this.lock(c, ownerId, interviewId);
+      const it = await c.query('SELECT deleted_at, purge_at FROM conversation_items WHERE id = $1 AND interview_id = $2 FOR UPDATE', [itemId, interviewId]);
+      if (!it.rows[0]) throw new RecordError('NOT_FOUND', '대화 항목을 찾을 수 없음 (이미 삭제되었을 수 있음)');
+      if (!it.rows[0].deleted_at) return { restored: false, duplicate: true };
+      if (now >= (it.rows[0].purge_at as Date)) throw new RecordError('TRASH_EXPIRED', '휴지통 보관 30일이 지나 복구할 수 없음');
+      await c.query('UPDATE attachment_refs SET deleted_at = NULL, purge_at = NULL WHERE item_id = $1 AND deleted_at = $2', [itemId, it.rows[0].deleted_at]);
+      await c.query('UPDATE conversation_items SET deleted_at = NULL, purge_at = NULL WHERE id = $1', [itemId]);
+      await c.query('UPDATE interviews SET updated_at = $2 WHERE id = $1', [interviewId, now]);
+      return { restored: true, duplicate: false };
+    });
+  }
+
+  async restoreAttachment(ownerId: string, interviewId: string, attachmentId: string, now: Date) {
+    return this.tx(async (c) => {
+      await this.lock(c, ownerId, interviewId);
+      const a = await c.query('SELECT item_id, deleted_at, purge_at FROM attachment_refs WHERE id = $1 AND interview_id = $2 FOR UPDATE', [attachmentId, interviewId]);
+      if (!a.rows[0]) throw new RecordError('NOT_FOUND', '첨부를 찾을 수 없음 (이미 삭제되었을 수 있음)');
+      if (!a.rows[0].deleted_at) return { restored: false, duplicate: true };
+      if (now >= (a.rows[0].purge_at as Date)) throw new RecordError('TRASH_EXPIRED', '휴지통 보관 30일이 지나 복구할 수 없음');
+      if (a.rows[0].item_id) {
+        const it = await c.query('SELECT deleted_at FROM conversation_items WHERE id = $1', [a.rows[0].item_id]);
+        if (it.rows[0]?.deleted_at) throw new RecordError('IN_TRASH', '연결된 대화 항목이 휴지통에 있음. 항목을 먼저 복구하세요');
+      }
+      await c.query('UPDATE attachment_refs SET deleted_at = NULL, purge_at = NULL WHERE id = $1', [attachmentId]);
+      await c.query('UPDATE interviews SET updated_at = $2 WHERE id = $1', [interviewId, now]);
+      return { restored: true, duplicate: false };
+    });
+  }
+
+  /** 소유자의 휴지통: 삭제된 기록(남은 기간 포함)과 살아 있는 기록 안의 삭제된 일부 항목·첨부. 서버 사본이 이미 영구 삭제된 기록은 나오지 않는다. */
+  async listTrash(ownerId: string, now: Date) {
+    const recs = await this.pool.query(
+      `SELECT id, to_char(life_date, 'YYYY-MM-DD') AS life_date, deleted_at, purge_at FROM interviews
+        WHERE owner_id = $1 AND deleted_at IS NOT NULL AND server_purged_at IS NULL ORDER BY deleted_at DESC, id`, [ownerId]);
+    const parts = await this.pool.query(
+      `SELECT 'ITEM' AS kind, c.id, i.id AS interview_id, to_char(i.life_date, 'YYYY-MM-DD') AS life_date, c.deleted_at, c.purge_at, NULL::text AS name
+         FROM conversation_items c JOIN interviews i ON i.id = c.interview_id WHERE i.owner_id = $1 AND i.deleted_at IS NULL AND c.deleted_at IS NOT NULL
+       UNION ALL
+       SELECT 'ATTACHMENT', a.id, i.id, to_char(i.life_date, 'YYYY-MM-DD'), a.deleted_at, a.purge_at, a.original_name
+         FROM attachment_refs a JOIN interviews i ON i.id = a.interview_id WHERE i.owner_id = $1 AND i.deleted_at IS NULL AND a.deleted_at IS NOT NULL AND
+          NOT EXISTS (SELECT 1 FROM conversation_items c2 WHERE c2.id = a.item_id AND c2.deleted_at IS NOT NULL)
+       ORDER BY deleted_at DESC, id`, [ownerId]);
+    const left = (purgeAt: Date) => Math.max(0, Math.ceil((purgeAt.getTime() - now.getTime()) / 86_400_000));
+    return {
+      records: recs.rows.map((x) => ({ id: x.id as string, lifeDate: x.life_date as string, deletedAt: x.deleted_at as Date, purgeAt: x.purge_at as Date, daysLeft: left(x.purge_at as Date), restorable: now < (x.purge_at as Date) })),
+      parts: parts.rows.map((x) => ({ kind: x.kind as 'ITEM' | 'ATTACHMENT', id: x.id as string, interviewId: x.interview_id as string, lifeDate: x.life_date as string, name: (x.name as string | null) ?? null, deletedAt: x.deleted_at as Date, purgeAt: x.purge_at as Date, daysLeft: left(x.purge_at as Date), restorable: now < (x.purge_at as Date) })),
+    };
+  }
+
+  /**
+   * 서버 사본의 보관 상태(화면 문구용). 서버 사본이 어떻게 되었든 Drive 백업·완성 영상은 이 값과 무관하게 보존된다.
+   * serverCopy: PRESENT(있음) / TRASHED(휴지통) / CLEANED(한 달 자동 정리됨) / PURGED(영구 삭제됨).
+   */
+  async retentionOf(ownerId: string, interviewId: string, now: Date) {
+    const r = (await this.pool.query(
+      `SELECT deleted_at, purge_at, server_purged_at, server_cleaned_at, cleanup_blocked_reason, cleanup_checked_at, created_at FROM interviews WHERE id = $1 AND owner_id = $2`, [interviewId, ownerId])).rows[0];
+    if (!r) return null;
+    const serverCopy = r.server_purged_at ? 'PURGED' : r.deleted_at ? 'TRASHED' : r.server_cleaned_at ? 'CLEANED' : 'PRESENT';
+    return {
+      serverCopy: serverCopy as 'PRESENT' | 'TRASHED' | 'CLEANED' | 'PURGED',
+      trashPurgeAt: (r.purge_at as Date | null) ?? null,
+      cleanupDueAt: addCalendarMonthSeoul(r.created_at as Date),
+      cleanupBlockedReason: (r.cleanup_blocked_reason as string | null) ?? null,
+      cleanupCheckedAt: (r.cleanup_checked_at as Date | null) ?? null,
+      restorable: !!r.deleted_at && !r.server_purged_at && now < (r.purge_at as Date),
+    };
+  }
+
+  /** 음성 구간에 파일 위치를 연결(파일이 있을 때만). 만료 시각은 바꾸지 않는다. */
+  async attachAudioFile(ownerId: string, interviewId: string, audioId: string, fileKey: string) {
+    if (!/^[\w][\w.-]{0,150}$/.test(fileKey) || fileKey.includes('..')) throw new RecordError('INVALID_STATE', '음성 파일 이름 오류');
+    return this.tx(async (c) => {
+      await this.lock(c, ownerId, interviewId);
+      const r = await c.query('UPDATE audio_segments SET file_key = $3 WHERE id = $1 AND interview_id = $2 AND file_deleted_at IS NULL RETURNING id', [audioId, interviewId, fileKey]);
+      if (!r.rows[0]) throw new RecordError('NOT_FOUND', '음성 구간 없음');
+    });
+  }
+
+  /** 처리 작업이 음성을 읽는 동안 표시한다. 표시된 구간은 만료 시각이 지나도 처리 종료를 확인할 때까지 삭제하지 않는다(만료 시각 자체는 그대로). */
+  async setAudioProcessing(ownerId: string, interviewId: string, audioId: string, inProcessing: boolean) {
+    return this.tx(async (c) => {
+      await this.lock(c, ownerId, interviewId);
+      const r = await c.query('UPDATE audio_segments SET in_processing = $3 WHERE id = $1 AND interview_id = $2 RETURNING id', [audioId, interviewId, inProcessing]);
+      if (!r.rows[0]) throw new RecordError('NOT_FOUND', '음성 구간 없음');
+    });
+  }
+
   /** 만료 시각이 지난 음성을 EXPIRED로 확정(만료 시각은 그대로). 인터뷰·상태 행은 만들거나 지우지 않는다. */
   async expireAudio(now: Date): Promise<number> {
     const r = await this.pool.query("UPDATE audio_segments SET status = 'EXPIRED', status_changed_at = $1 WHERE expires_at <= $1 AND status <> 'EXPIRED'", [now]);
     return r.rowCount ?? 0;
   }
+}
+
+/** 휴지통(또는 서버 사본 영구 삭제) 상태의 기록에는 어떤 쓰기도 하지 않는다. */
+function assertNotDeleted(r: Record<string, unknown>) {
+  if (r.server_purged_at) throw new RecordError('RECORD_PURGED', '서버 사본이 삭제된 기록');
+  if (r.deleted_at) throw new RecordError('IN_TRASH', '휴지통에 있는 기록. 복구한 뒤 사용하세요');
+  if (r.server_cleaned_at) throw new RecordError('SERVER_CLEANED', '한 달이 지나 서버 사본이 정리된 기록. Drive 백업에 보존되어 있습니다');
 }
 
 /** 확정된 기록은 저장 요청으로 바뀌지 않는다. 수정은 startProduction의 새 revision으로만 남긴다. */

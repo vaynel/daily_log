@@ -4,6 +4,8 @@ import type { AuthConfig } from './auth/config.js';
 import { AttachmentService } from './attachments/service.js';
 import { registerRecordRoutes } from './attachments/routes.js';
 import { registerRecordViewRoutes } from './records/routes.js';
+import { registerTrashRoutes } from './retention/routes.js';
+import type { RetentionService } from './retention/service.js';
 import type { RecordStore } from './records/store.js';
 import { registerInterview } from './interview/routes.js';
 import type { ExclusionRuleStore } from './briefing/rules.js';
@@ -27,6 +29,8 @@ export interface AppOptions {
   drive?: DriveConnectionStore;
   backup?: BackupService;
   records?: RecordStore;
+  /** 휴지통·영구 삭제 명령(TASK-29). records 와 함께 있을 때만 라우트를 등록한다. */
+  retention?: RetentionService;
   now?: () => Date;
   /** 제품 음성 인터뷰(Gemini Live). usage 와 records 가 있으면 라우트를 등록하고, live 가 null 이면 대화 시작은 fail closed. */
   interview?: { usage: LiveUsageStore; live: LiveConfig | null; monthly?: MonthlyLedger; sessionDir: string; liveNow?: () => number };
@@ -50,6 +54,7 @@ export function buildApp(opts: AppOptions = {}) {
   if (opts.records) {
     registerRecordRoutes(app, { store: opts.records, attachments: new AttachmentService(opts.records, opts.fileStorageDir ?? ''), now: opts.now });
     registerRecordViewRoutes(app, { store: opts.records, fileStorageDir: opts.fileStorageDir ?? '', now: opts.now });
+    if (opts.retention) registerTrashRoutes(app, { store: opts.records, retention: opts.retention, now: opts.now });
   }
   if (opts.records && opts.interview) {
     registerInterview(app, { records: opts.records, authenticate, now: opts.now, ...opts.interview });
