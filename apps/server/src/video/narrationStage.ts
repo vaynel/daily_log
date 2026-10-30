@@ -1,6 +1,6 @@
-import type { MonthlyLedger } from '../budget/ledger.js';
+import type { MonthlyLedger, Purpose } from '../budget/ledger.js';
 import type { Pricing } from '../voice/pricing.js';
-import { synthesizeNarration, type NarrationFailure, type NarrationSegment, type NarrationTts, type VoiceConfig } from './narration.js';
+import { synthesizeNarration, type NarrationCache, type NarrationFailure, type NarrationSegment, type NarrationTts, type VoiceConfig } from './narration.js';
 import type { ScenePlan } from './scenePlan.js';
 import { buildSubtitles, checkSubtitles, type SubtitleCue, type SubtitleIssue } from './subtitles.js';
 import { planZoom, type LearningMaterial, type ZoomPlan } from './zoom.js';
@@ -26,7 +26,7 @@ export type NarrationStageResult =
  * 학습 자료(materials)는 장면 근거가 된 확정 기록의 코드·수식·노트 원문이다.
  */
 export async function runNarrationStage(i: {
-  plan: ScenePlan; voice: VoiceConfig; tts: NarrationTts; ledger: MonthlyLedger; pricing: Pricing; materials?: LearningMaterial[];
+  plan: ScenePlan; voice: VoiceConfig; tts: NarrationTts; ledger: MonthlyLedger; pricing: Pricing; materials?: LearningMaterial[]; cache?: NarrationCache; purpose?: Purpose; variant?: string;
 }): Promise<NarrationStageResult> {
   const syn = await synthesizeNarration(i);
   if (!syn.ok) return syn;

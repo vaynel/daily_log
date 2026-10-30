@@ -78,11 +78,12 @@ export function isSilent(r: TtsResult): boolean {
   return false;
 }
 
-const keyOf = (plan: ScenePlan, s: Scene, voice: VoiceConfig) =>
-  `narr:${plan.lifeDate}:${plan.briefingVersion}:${s.key}:${createHash('sha256').update(`${voice.voiceName}\n${voice.styleInstruction}\n${s.narration}`).digest('hex').slice(0, 16)}`;
+/** 장면 음성 요청의 멱등키. variant 는 품질 재제작처럼 같은 입력을 일부러 다시 합성할 때만 둔다. */
+export const narrationKey = (plan: ScenePlan, s: Scene, voice: VoiceConfig, variant = '') =>
+  `narr:${plan.lifeDate}:${plan.briefingVersion}:${s.key}:${createHash('sha256').update(`${voice.voiceName}\n${voice.styleInstruction}\n${s.narration}${variant ? `\n${variant}` : ''}`).digest('hex').slice(0, 16)}`;
 
 export async function synthesizeNarration(i: {
-  plan: ScenePlan; voice: VoiceConfig; tts: NarrationTts; ledger: MonthlyLedger; pricing: Pricing; purpose?: Purpose; maxTotalSec?: number; cache?: NarrationCache;
+  plan: ScenePlan; voice: VoiceConfig; tts: NarrationTts; ledger: MonthlyLedger; pricing: Pricing; purpose?: Purpose; maxTotalSec?: number; cache?: NarrationCache; variant?: string;
 }): Promise<NarrationResult> {
   const { plan, voice } = i;
   if (!plan.scenes.length) return { ok: false, code: 'NO_SCENES' };
@@ -92,7 +93,7 @@ export async function synthesizeNarration(i: {
   let cursor = 0, cost = 0;
   for (const s of plan.scenes) {
     const chars = s.narration.replace(/\s+/g, '').length;
-    const key = keyOf(plan, s, voice);
+    const key = narrationKey(plan, s, voice, i.variant);
     const cached = await i.cache?.get(key);
     let value: TtsResult;
     let actualKrw: number;
