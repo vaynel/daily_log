@@ -146,4 +146,16 @@ describe.skipIf(!url)('확정 브리핑 → 제작 파이프라인 (실제 Postg
     const purposes = (await pool.query("SELECT purpose, count(*)::int AS n FROM budget_entries GROUP BY purpose")).rows;
     expect(purposes.find((p) => p.purpose === 'RETRY')?.n).toBeGreaterThan(0);
   }, 180_000);
+
+  it('AC-5: 예산이 부족하면 외부 호출 없이 예산 대기(WAITING_BUDGET)가 되고 재시도 횟수를 쓰지 않는다', async () => {
+    const h = createHarness({ pool, dir, ledgerLimitKrw: 1 });
+    const s = await seedConfirmedBriefing(h, pool, TEXTS);
+    await h.drain();
+    expect(await h.queue.get(s.jobId)).toMatchObject({ state: 'WAITING', waitReason: 'BUDGET', autoRetriesUsed: 0, errorCode: 'BUDGET_EXCEEDED' });
+    expect(h.calls.tts).toHaveLength(0);
+    expect(h.calls.image).toBe(0);
+    const snap = (await h.records.loadById(s.owner, s.interviewId, new Date()))!;
+    expect(snap.pipeline.production).toBe('WAITING_BUDGET');
+    expect(fetchGuard).not.toHaveBeenCalled();
+  }, 60_000);
 });
