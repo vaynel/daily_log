@@ -6,6 +6,15 @@ interface Discovery {
   authorization_endpoint: string;
   token_endpoint: string;
   jwks_uri: string;
+  revocation_endpoint?: string;
+}
+
+export interface TokenResponse {
+  id_token?: string;
+  scope?: string;
+  access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
 }
 
 export interface IdClaims {
@@ -72,7 +81,7 @@ export class OidcClient {
   }
 
   /** authorization code 교환. 응답의 scope/id_token 은 호출자가 검증한다. */
-  async exchange(code: string, verifier: string, redirectUri: string): Promise<{ id_token?: string; scope?: string }> {
+  async exchange(code: string, verifier: string, redirectUri: string): Promise<TokenResponse> {
     const m = await this.meta();
     const res = await this.fetchImpl(m.token_endpoint, {
       method: 'POST',
@@ -87,7 +96,41 @@ export class OidcClient {
       }),
     });
     if (!res.ok) throw new OidcError('token_exchange_failed');
-    return (await res.json()) as { id_token?: string; scope?: string };
+    return (await res.json()) as TokenResponse;
+  }
+
+  /**
+   * 갱신 토큰으로 접근 토큰을 새로 받는다. 거절(invalid_grant: 철회·만료)은 'invalid_grant', 네트워크·서버 오류는 'refresh_transient' 로 구분한다.
+   */
+  async refresh(refreshToken: string): Promise<{ accessToken: string; expiresInSeconds: number }> {
+    const m = await this.meta();
+    let res: Response;
+    try {
+      res = await this.fetchImpl(m.token_endpoint, {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: refreshToken, client_id: this.cfg.clientId, client_secret: this.cfg.clientSecret }),
+      });
+    } catch {
+      throw new OidcError('refresh_transient');
+    }
+    if (res.status === 400 || res.status === 401) throw new OidcError('invalid_grant');
+    if (!res.ok) throw new OidcError('refresh_transient');
+    const j = (await res.json().catch(() => null)) as TokenResponse | null;
+    if (!j?.access_token) throw new OidcError('refresh_transient');
+    return { accessToken: j.access_token, expiresInSeconds: typeof j.expires_in === 'number' ? j.expires_in : 3600 };
+  }
+
+  /** 연결 해제 시 Google 쪽 토큰 철회(최선 노력). 실패해도 서버의 토큰 삭제는 진행한다. */
+  async revoke(token: string): Promise<boolean> {
+    try {
+      const m = await this.meta();
+      if (!m.revocation_endpoint) return false;
+      const res = await this.fetchImpl(m.revocation_endpoint, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ token }) });
+      return res.ok;
+    } catch {
+      return false;
+    }
   }
 
   /** 서명(RS256, JWKS)·iss·aud·exp·nonce 를 검증한다. email_verified 는 호출자(allowlist 단계)에서 확인한다. */
