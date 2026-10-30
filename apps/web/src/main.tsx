@@ -4,6 +4,7 @@ import { InterviewScreen } from './InterviewScreen';
 import { NotifySettings } from './NotifySettings';
 import { recordIdFromSearch } from './notify';
 import { RecordDetailView, RecordsBrowser, type RecordsMode } from './RecordsView';
+import { TrashView } from './TrashView';
 
 type Session = { email: string; name: string | null; driveConnected: boolean };
 type View =
@@ -49,13 +50,17 @@ function Home({ session, onLogout }: { session: Session; onLogout: () => void })
   const [openId, setOpenId] = useState<string | null>(() => recordIdFromSearch(window.location.search)); // 알림 클릭: ?record=<id> 로 해당 기록 상세를 연다
   const [mode, setMode] = useState<RecordsMode>('list');
   const [month, setMonth] = useState<string | null>(null); // 상세에서 돌아와도 보던 달을 유지
+  const [trash, setTrash] = useState(false);
+  const [listKey, setListKey] = useState(0); // 복구·삭제 뒤 목록을 다시 불러오기 위한 키
   return (
     <section data-testid="screen-home" className="card">
       <h2>내 기록</h2>
       <p data-testid="account">{session.email} 로 로그인됨</p>
       <p data-testid="drive-status">Google Drive: {session.driveConnected ? '연결됨' : '연결 안 됨 (선택 사항)'}</p>
       {!session.driveConnected && <a className="button secondary" href="/auth/drive/connect">Google Drive 연결</a>}
-      {openId ? <RecordDetailView id={openId} onBack={() => setOpenId(null)} /> : <RecordsBrowser mode={mode} onMode={setMode} month={month} onMonth={setMonth} onOpen={setOpenId} />}
+      {trash ? <TrashView onBack={() => { setTrash(false); setListKey((k) => k + 1); }} />
+        : openId ? <RecordDetailView id={openId} onBack={() => { setOpenId(null); setListKey((k) => k + 1); }} />
+        : <><RecordsBrowser key={listKey} mode={mode} onMode={setMode} month={month} onMonth={setMonth} onOpen={setOpenId} /><button data-testid="open-trash" onClick={() => setTrash(true)}>휴지통</button></>}
       <InterviewScreen />
       <NotifySettings />
       <button onClick={onLogout}>로그아웃</button>

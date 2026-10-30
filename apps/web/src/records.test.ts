@@ -69,3 +69,25 @@ describe('목록 페이지 나누기 보조', () => {
     expect(STATUS_INFO.RESULT_FILE_MISSING.hint).not.toContain('제작과 검수가 끝났습니다');
   });
 });
+
+describe('휴지통 화면 도우미', () => {
+  it('남은 기간 문구는 복구 가능 여부를 반영하고 만료 후에는 복구 안내를 하지 않는다', async () => {
+    const { trashRemaining } = await import('./records.js');
+    expect(trashRemaining(30, true)).toBe('30일 안에 복구할 수 있습니다.');
+    expect(trashRemaining(1, true)).toBe('오늘 안에 복구해야 합니다.');
+    expect(trashRemaining(0, false)).toMatch(/복구 기간이 지났/);
+  });
+  it('명령 실패는 서버 오류 코드별 안내로, 세션 만료·네트워크는 따로 구분한다', async () => {
+    const { postJson, commandErrorText, BACKUP_KEPT_TEXT } = await import('./records.js');
+    const f = (status: number, body: unknown) => (async () => new Response(JSON.stringify(body), { status })) as unknown as typeof fetch;
+    expect(await postJson('/x', {}, f(200, { restored: true }))).toEqual({ ok: true, data: { restored: true } });
+    expect(await postJson('/x', {}, f(410, { error: 'TRASH_EXPIRED' }))).toEqual({ ok: false, status: 410, code: 'TRASH_EXPIRED' });
+    expect(await postJson('/x', {}, f(401, {}))).toMatchObject({ ok: false, code: 'EXPIRED' });
+    expect(await postJson('/x', {}, (async () => { throw new TypeError('x'); }) as never)).toMatchObject({ ok: false, code: 'NETWORK' });
+    expect(commandErrorText('TRASH_EXPIRED')).toMatch(/30일/);
+    expect(commandErrorText('RECORD_PURGED')).toMatch(/Drive 백업은 유지/);
+    expect(commandErrorText('UNKNOWN_X')).toMatch(/처리하지 못했습니다/);
+    expect(BACKUP_KEPT_TEXT).toMatch(/Drive 백업과 완성 영상은 .*유지/);
+    expect(BACKUP_KEPT_TEXT).not.toMatch(/모두 삭제|전체 삭제/);
+  });
+});

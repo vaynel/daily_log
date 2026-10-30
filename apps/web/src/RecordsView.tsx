@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { QUALITY_REASON_LABEL, ACTION_LABEL, byLifeDate, coversMonth, fetchJson, initialMonth, recordsUrl, monthGrid, shiftMonth, PIPELINE_LABEL, STATUS_INFO, type DisplayStatus, type Loaded, type RecordDetail, type RecordRow, type RecordsPage } from './records';
+import { BACKUP_KEPT_TEXT, QUALITY_REASON_LABEL, ACTION_LABEL, commandErrorText, postJson, byLifeDate, coversMonth, fetchJson, initialMonth, recordsUrl, monthGrid, shiftMonth, PIPELINE_LABEL, STATUS_INFO, type DisplayStatus, type Loaded, type RecordDetail, type RecordRow, type RecordsPage } from './records';
 
 function Badge({ status }: { status: DisplayStatus }) {
   const s = STATUS_INFO[status];
@@ -127,25 +127,55 @@ export function RecordDetailView({ id, onBack }: { id: string; onBack: () => voi
   const [r, setR] = useState<Loaded<RecordDetail> | null>(null);
   const load = useCallback(() => { setR(null); void fetchJson<RecordDetail>(`/api/records/${id}`).then(setR); }, [id]);
   useEffect(load, [load]);
+  // 항목·첨부 삭제 뒤에는 화면을 비우지 않고 조용히 다시 불러와 완료 안내가 사라지지 않게 한다.
+  const refresh = useCallback(() => { void fetchJson<RecordDetail>(`/api/records/${id}`).then(setR); }, [id]);
   return (
     <section data-testid="screen-record-detail">
       <button onClick={onBack}>← 목록</button>
       {!r && <p>불러오는 중</p>}
       {r && r.state !== 'ok' && <Problem r={r} onRetry={load} />}
-      {r?.state === 'ok' && <Detail d={r.data} />}
+      {r?.state === 'ok' && <Detail d={r.data} onChanged={refresh} onTrashed={onBack} />}
     </section>
   );
 }
 
-function Detail({ d }: { d: RecordDetail }) {
+/** 삭제 명령 버튼. 한 번 누르면 결과를 알리는 확인 단계가 나오고, 확인해야 휴지통으로 옮긴다(실수 방지). */
+function TrashButton({ label, what, url, onDone }: { label: string; what: string; url: string; onDone: (text: string) => void }) {
+  const [ask, setAsk] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const go = async () => {
+    setBusy(true);
+    const res = await postJson(url);
+    setBusy(false);
+    if (res.ok) { setAsk(false); onDone(`${what}을(를) 휴지통으로 옮겼습니다. 30일 안에 복구할 수 있습니다. ${BACKUP_KEPT_TEXT}`); } else setErr(commandErrorText(res.code));
+  };
+  if (!ask) return <button data-testid="trash-open" onClick={() => { setErr(null); setAsk(true); }}>{label}</button>;
+  return (
+    <span role="alertdialog" aria-label={`${what} 삭제 확인`} data-testid="trash-confirm">
+      <span>{what}을(를) 휴지통으로 옮깁니다. 30일 안에는 복구할 수 있고, 그 뒤에는 이 앱 서버에서 삭제됩니다. {BACKUP_KEPT_TEXT}</span>
+      <button disabled={busy} data-testid="trash-yes" onClick={() => void go()}>휴지통으로 옮기기</button>
+      <button disabled={busy} data-testid="trash-no" onClick={() => setAsk(false)}>취소</button>
+      {err && <span role="alert" data-testid="trash-error">{err}</span>}
+    </span>
+  );
+}
+
+function Detail({ d, onChanged, onTrashed }: { d: RecordDetail; onChanged: () => void; onTrashed: () => void }) {
+  const [note, setNote] = useState<string | null>(null);
   const info = STATUS_INFO[d.status];
   const att = (aid: string) => d.attachments.find((a) => a.id === aid);
   const link = (a: RecordDetail['attachments'][number]) => (
-    <a href={`/api/records/${d.id}/attachments/${a.id}/file`} download>{a.name ?? '첨부'} ({size(a.size)})</a>
+    <>
+      <a href={`/api/records/${d.id}/attachments/${a.id}/file`} download>{a.name ?? '첨부'} ({size(a.size)})</a>
+      <TrashButton label="첨부 삭제" what={`첨부 ${a.name ?? ''}`.trim()} url={`/api/records/${d.id}/attachments/${a.id}/trash`} onDone={(t) => { setNote(t); onChanged(); }} />
+    </>
   );
   return (
     <>
       <h3>{d.lifeDate} <Badge status={d.status} /></h3>
+      {note && <p role="status" data-testid="trash-done">{note}</p>}
+      {d.retention?.message && <p data-testid="retention-note" data-server-copy={d.retention.serverCopy}>{d.retention.message}</p>}
       <p data-testid="status-hint">{info.hint}</p>
       {!!d.pipeline.qualityReasons?.length && <ul data-testid="quality-reasons" role="status">
         {d.pipeline.qualityReasons.map(reason => <li key={reason}>{QUALITY_REASON_LABEL[reason] ?? '제작 조건을 확인해 주세요.'}</li>)}
@@ -172,6 +202,7 @@ function Detail({ d }: { d: RecordDetail }) {
           {d.conversation.map((c) => (
             <li key={c.id}>
               <span className="who">{c.kind === 'QUESTION' ? '질문' : '내 답'}</span> {c.body}
+              {d.retention?.serverCopy !== 'CLEANED' && <TrashButton label="이 항목 삭제" what="이 대화 항목" url={`/api/records/${d.id}/items/${c.id}/trash`} onDone={(t) => { setNote(t); onChanged(); }} />}
               {c.attachmentIds.map((aid) => { const a = att(aid); return a ? <div key={aid}>첨부: {link(a)}</div> : null; })}
             </li>
           ))}
@@ -181,6 +212,10 @@ function Detail({ d }: { d: RecordDetail }) {
         const loose = d.attachments.filter((a) => !a.itemId);
         return loose.length ? <><h4>첨부</h4><ul data-testid="attachments">{loose.map((a) => <li key={a.id}>{link(a)}</li>)}</ul></> : null;
       })()}
+
+      <h4>기록 삭제</h4>
+      <p>이 날의 기록 전체를 휴지통으로 옮깁니다. 서버 사본만 대상이며 {BACKUP_KEPT_TEXT}</p>
+      <TrashButton label="이 날의 기록 삭제" what={`${d.lifeDate} 기록`} url={`/api/records/${d.id}/trash`} onDone={() => onTrashed()} />
     </>
   );
 }

@@ -10,7 +10,14 @@ export interface RecordDetail {
   summary: { version: number; diary: string | null; learning: string[] } | null;
   attachments: { id: string; itemId: string | null; kind: string; name: string | null; size: number | null; capturedAt: string | null }[];
   result: { version: number; fileAvailable: boolean } | null;
+  retention?: RetentionInfo | null;
 }
+
+/** 서버 사본의 보관 상태. 서버 삭제와 Drive 백업·완성 영상 보존은 항상 따로 알린다. */
+export interface RetentionInfo { serverCopy: 'PRESENT' | 'TRASHED' | 'CLEANED' | 'PURGED'; message: string | null; cleanupPending: string | null; backupKept: boolean }
+export interface TrashRecord { id: string; lifeDate: string; deletedAt: string; purgeAt: string; daysLeft: number; restorable: boolean }
+export interface TrashPart { kind: 'ITEM' | 'ATTACHMENT'; id: string; interviewId: string; lifeDate: string; name: string | null; deletedAt: string; purgeAt: string; daysLeft: number; restorable: boolean }
+export interface TrashData { records: TrashRecord[]; parts: TrashPart[]; backupNote: string }
 
 /** tone 은 색에만 의존하지 않도록 항상 문구와 함께 쓴다. ok 는 정상 완료만. */
 export const STATUS_INFO: Record<DisplayStatus, { label: string; tone: 'ok' | 'info' | 'wait' | 'warn' | 'bad'; hint: string }> = {
@@ -103,3 +110,38 @@ export function initialMonth(rows: RecordRow[], today: Date = new Date()): strin
 }
 
 export const QUALITY_REASON_LABEL: Record<string, string> = { QUALITY_EXHAUSTED: '품질 자동 재제작 1회를 모두 사용했습니다.', BUDGET: '예산 확보를 기다립니다.', PERMISSION: '제작 권한 확인을 기다립니다.' };
+
+/** 삭제 화면 공통 안내: 삭제는 이 앱 서버의 사본에만 적용된다. */
+export const BACKUP_KEPT_TEXT = 'Drive 백업과 완성 영상은 삭제되지 않고 그대로 유지됩니다.';
+
+export const TRASH_ERROR_LABEL: Record<string, string> = {
+  TRASH_EXPIRED: '휴지통 보관 30일이 지나 복구할 수 없습니다.',
+  RECORD_PURGED: '서버 사본이 이미 삭제되어 복구할 수 없습니다. Drive 백업은 유지됩니다.',
+  IN_TRASH: '휴지통에 있는 기록입니다. 먼저 복구해 주세요.',
+  SERVER_CLEANED: '한 달이 지나 서버 사본이 정리된 기록입니다. Drive 백업에 보존되어 있습니다.',
+  NOT_FOUND: '기록을 찾을 수 없습니다. 이미 삭제되었을 수 있습니다.',
+  CONFIRM_REQUIRED: '영구 삭제는 확인이 필요합니다.',
+};
+
+/** 휴지통 남은 기간 문구. 만료되었거나 복구 불가이면 복구 버튼 대신 이 문구를 보여 준다. */
+export function trashRemaining(daysLeft: number, restorable: boolean): string {
+  if (!restorable) return '복구 기간이 지났습니다. 곧 서버에서 삭제됩니다.';
+  return daysLeft <= 1 ? '오늘 안에 복구해야 합니다.' : `${daysLeft}일 안에 복구할 수 있습니다.`;
+}
+
+export type PostResult<T> = { ok: true; data: T } | { ok: false; status: number; code: string };
+
+/** POST 명령. 실패는 서버가 준 오류 코드를 그대로 돌려주고, 세션 만료(401/403)는 EXPIRED 로 구분한다. */
+export async function postJson<T = Record<string, unknown>>(url: string, body?: unknown, f: typeof fetch = fetch): Promise<PostResult<T>> {
+  try {
+    const r = await f(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body ?? {}) });
+    if (r.status === 401 || r.status === 403) return { ok: false, status: r.status, code: 'EXPIRED' };
+    const data = (await r.json().catch(() => ({}))) as T & { error?: string };
+    if (!r.ok) return { ok: false, status: r.status, code: data.error ?? 'ERROR' };
+    return { ok: true, data };
+  } catch {
+    return { ok: false, status: 0, code: 'NETWORK' };
+  }
+}
+
+export const commandErrorText = (code: string) => (code === 'EXPIRED' ? '접근이 만료되었습니다. 다시 로그인해 주세요.' : code === 'NETWORK' ? '연결을 확인하고 다시 시도해 주세요.' : (TRASH_ERROR_LABEL[code] ?? '처리하지 못했습니다. 잠시 후 다시 시도해 주세요.'));
