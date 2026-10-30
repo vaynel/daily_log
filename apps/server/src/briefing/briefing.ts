@@ -178,5 +178,7 @@ export function planOf(items: BriefingItem[], briefingVersion: number): Producti
 }
 
 export const VIDEO_JOB_KIND = 'VIDEO_PRODUCTION';
-export const VIDEO_JOB_STAGES = ['PRODUCE'];
+/** 제작 작업 단계(순서대로). 처리기는 video/pipeline.ts 가 같은 이름으로 등록한다. */
+export const VIDEO_STAGES = { scenePlan: 'scene_plan', narration: 'narration', assets: 'assets', render: 'render', quality: 'quality' } as const;
+export const VIDEO_JOB_STAGES: string[] = [VIDEO_STAGES.scenePlan, VIDEO_STAGES.narration, VIDEO_STAGES.assets, VIDEO_STAGES.render, VIDEO_STAGES.quality];
 export const videoJobKey = (interviewId: string, briefingVersion: number) => `produce:${interviewId}:${briefingVersion}`;

@@ -11,6 +11,15 @@ export class NonRetryableError extends Error {
   constructor(readonly code: string) { super(code); }
 }
 
+/** 예산이 부족해 호출을 보내지 못함(호출 전). 예산이 확보될 때까지 대기하며 재시도 횟수를 쓰지 않는다. */
+export class BudgetWaitError extends Error {
+  constructor(readonly code = 'BUDGET_EXCEEDED') { super(code); }
+}
+/** 외부 요청을 보냈지만 결과를 알 수 없음. 재전송하지 않고 결과 확인을 기다린다. */
+export class ExternalUnknownError extends Error {
+  constructor(readonly code = 'CALL_UNKNOWN') { super(code); }
+}
+
 /** Quality failure is a decision, not a processing exception. Only named stages are invalidated. */
 export class QualityRejectedError extends Error {
   constructor(readonly report: unknown, readonly repairStages: string[], readonly permissionGranted: boolean) { super('QUALITY_REJECTED'); }
@@ -44,6 +53,8 @@ export interface StageHandler {
   execute(ctx: StageContext): Promise<StageOutput>;
   /** 있으면 유료 호출이다: 예산 예약 → 외부 요청 식별자 저장 → 실행 순으로만 진행한다. */
   paid?: { provider: string; operation: string; estimateKrw: number; purpose?: Purpose };
+  /** paid 없이 처리기 안에서 직접 원장(paidCall)을 쓰는 단계의 다음 예상 비용. 예산 대기 작업을 깨울 때만 쓰며 여기서 예약하지는 않는다. */
+  waitEstimateKrw?: number;
   /** 결과가 불명확한 외부 요청의 처리 결과를 제공자에게 조회한다. 없으면 사람 확인을 기다린다. */
   lookup?(externalRequestId: string, ctx: StageContext): Promise<LookupOutcome>;
 }
@@ -60,6 +71,8 @@ export interface QueueDeps {
   /** 권한 대기 작업을 다시 시작해도 되는지. 기본은 false(사람이 권한을 준 뒤 수동 요청). */
   permissionRestored?: (job: JobRow) => Promise<boolean>;
   leaseMs?: number;
+  /** 작업이 실패·대기로 멈출 때 호출(제작 상태 표시 갱신용). 오류는 큐 동작에 영향을 주지 않는다. */
+  onStopped?: (job: JobRow, state: 'FAILED' | 'WAITING', code: string, waitReason: WaitReason | null) => Promise<void>;
 }
 
 const MAX_AUTO_RETRIES = 1;
@@ -147,7 +160,7 @@ export class JobQueue {
     }
     const done = new Set((await this.stages(job.id)).filter((s) => s.state === 'DONE').map((s) => s.stage));
     const next = job.stages.find((s) => !done.has(s));
-    return (next && this.d.handlers[job.kind]?.[next]?.paid?.estimateKrw) || 0;
+    return (next && (this.d.handlers[job.kind]?.[next]?.paid?.estimateKrw ?? this.d.handlers[job.kind]?.[next]?.waitEstimateKrw)) || 0;
   }
 
   /** 대기 중인 작업 하나를 가져와 처리한다. 처리한 작업이 없으면 null. */
@@ -287,6 +300,14 @@ export class JobQueue {
       await this.upsertStage(job.id, stage, 'FAILED', 0, null, null, e.code);
       return this.wait(job, 'PERMISSION', stage, e.code);
     }
+    if (e instanceof BudgetWaitError) {
+      await this.upsertStage(job.id, stage, 'FAILED', 0, null, null, e.code);
+      return this.wait(job, 'BUDGET', stage, e.code);
+    }
+    if (e instanceof ExternalUnknownError) { // 처리기가 직접 원장을 쓴 단계: 원장 항목은 이미 불명으로 보존돼 있다.
+      await this.upsertStage(job.id, stage, 'UNKNOWN', 0, null, null, e.code);
+      return this.wait(job, 'EXTERNAL_RESULT_UNKNOWN', stage, e.code);
+    }
     if (e instanceof NonRetryableError) {
       await this.upsertStage(job.id, stage, 'FAILED', 0, null, null, e.code);
       return this.fail(job, e.code, stage);
@@ -343,11 +364,13 @@ export class JobQueue {
   private async wait(job: JobRow, reason: WaitReason, stage: string, code: string): Promise<Step> {
     await this.setState(job.id, 'WAITING', reason, code, 'RUNNING');
     await this.event(job.id, 'WAITING', stage, reason);
+    await this.d.onStopped?.(job, 'WAITING', code, reason).catch(() => {});
     return 'STOP';
   }
   private async fail(job: JobRow, code: string, stage?: string): Promise<Step> {
     await this.setState(job.id, 'FAILED', null, code, 'RUNNING');
     await this.event(job.id, 'FAILED', stage, code);
+    await this.d.onStopped?.(job, 'FAILED', code, null).catch(() => {});
     return 'STOP';
   }
 
