@@ -47,8 +47,10 @@ const characterJpeg = (seed: string): Buffer => {
 };
 export const photoJpeg = (): Buffer => lavfi('testsrc2=s=640x480:d=1', 'jpg', ['-frames:v', '1']);
 let overlayPng: Buffer | null = null;
-const mockOverlay = (calls: { n: number }, delayMs: () => number): OverlayRenderer => async () => {
+const mockOverlay = (calls: { n: number }, delayMs: () => number, fault?: (n: number) => Error | null): OverlayRenderer => async () => {
   calls.n++;
+  const err = fault?.(calls.n);
+  if (err) throw err;
   const d = delayMs();
   if (d) await new Promise((r) => setTimeout(r, d));
   overlayPng ??= lavfi('color=c=0xff000080:s=720x1280,format=rgba', 'png', ['-frames:v', '1']);
@@ -64,6 +66,8 @@ export interface HarnessOptions {
   factsPass?: () => boolean;
   /** 렌더 오버레이 지연(ms). SIGKILL 시험이 렌더 도중 프로세스를 끊기 위해 쓴다. */
   overlayDelayMs?: () => number;
+  /** 오버레이(렌더) 일시 오류 주입: n번째 호출에서 오류를 던진다. */
+  overlayFault?: (n: number) => Error | null;
   /** 단계 시작 알림(자식 프로세스 신호용). */
   onTts?: (text: string, n: number) => void | Promise<void>;
   /** 모의 TTS 오류 주입: 던지면 해당 호출이 실패한다. */
@@ -127,7 +131,7 @@ export function createHarness(o: HarnessOptions) {
     infer: () => infer, voice: () => voice, tts, image,
     referenceSheetPath: path.join(repo, 'character/A-ref-v1.jpg'),
     loadPhoto: async () => photo,
-    render: { overlay: mockOverlay(calls.overlay, () => o.overlayDelayMs?.() ?? 0), workDir: path.join(o.dir, 'render-work') },
+    render: { overlay: mockOverlay(calls.overlay, () => o.overlayDelayMs?.() ?? 0, o.overlayFault), workDir: path.join(o.dir, 'render-work') },
     gate: new RenderGate(o.pool),
     rules: { list: async () => [] },
     quality, heartbeatMs: Math.max(50, Math.floor((o.leaseMs ?? 60_000) / 3)), now: HARNESS_CLOCK,
@@ -147,34 +151,39 @@ export function createHarness(o: HarnessOptions) {
   };
 }
 
+let ownerSeq = 0;
 export interface SeedItem { text: string; emphasis?: boolean }
 
 /** 확정된 브리핑 1건을 만든다(실제 confirmBriefing 경로: 확정·계획·QUEUED·작업 등록이 한 트랜잭션). */
 export async function seedConfirmedBriefing(
   h: { records: RecordStore }, pool: pg.Pool, texts: SeedItem[], o: { withPhoto?: boolean; owner?: string; lifeDate?: string } = {},
 ) {
-  const owner = o.owner ?? OWNER;
+  const n = ++ownerSeq;
+  const owner = o.owner ?? `${OWNER}-${n}`; // 시험마다 다른 소유자·생활일(같은 날 기록 재개·멱등키 충돌 방지)
+  const lifeDate = o.lifeDate ?? LIFE_DATE;
+  // 음성 멱등키는 생활일·브리핑 버전·장면·문장 해시이므로, 시험마다 문장에 고유 음절을 붙여 서로의 원장 항목과 겹치지 않게 한다.
+  const uniq = String.fromCharCode(0xac00 + n * 11);
+  texts = texts.map((t) => ({ ...t, text: `${t.text.replace(/\.$/, '')} ${uniq}.` }));
   const now = HARNESS_CLOCK();
-  const { interview } = await h.records.startInterview(owner, now, o.lifeDate ?? LIFE_DATE);
+  const { interview } = await h.records.startInterview(owner, now, lifeDate);
   if (o.withPhoto) {
     await h.records.saveFileAttachment(owner, interview.id, 'photo-1', {
       storageKey: 'harness-photo.jpg', checksum: sha('harness-photo'), kind: 'PHOTO', name: 'p.jpg', mime: 'image/jpeg', size: 10,
-      capturedAt: new Date(`${o.lifeDate ?? LIFE_DATE}T01:00:00Z`), capturedSource: 'EXIF',
+      capturedAt: new Date(`${lifeDate}T01:00:00Z`), capturedSource: 'EXIF',
     }, now);
   }
   const items: BriefingItem[] = texts.map((t, i) => ({ id: `s${i + 1}`, kind: 'FACT', source: 'USER', text: t.text, emphasis: !!t.emphasis, inVideo: true, excludedReason: null }));
   await h.records.appendVersion(owner, interview.id, 'SUMMARY', { kind: 'BRIEFING', items, diary: texts.map((t) => t.text).join(' ') }, now);
   const plan = planOf(items, 1);
   const r = await h.records.confirmBriefing(owner, interview.id, { briefingVersion: 1, plan, job: { kind: VIDEO_JOB_KIND, stages: VIDEO_JOB_STAGES, idempotencyKey: videoJobKey(interview.id, 1) } }, now);
-  return { interviewId: interview.id, jobId: r.jobId, owner };
+  return { interviewId: interview.id, jobId: r.jobId, owner, texts };
 }
 
 /**
  * 사용자가 항목을 뺀 새 브리핑을 확인한 상황을 만든다(TASK-28 의 /revisions 가 하는 일의 기록 쪽 절반).
  * 새 SUMMARY(제외 표시)와 새 BRIEFING 제작 계획(briefingVersion+1)만 저장하고 작업은 만들지 않는다.
  */
-export async function recordExclusion(h: { records: RecordStore }, interviewId: string, texts: SeedItem[], excludeIndex: number, o: { owner?: string } = {}) {
-  const owner = o.owner ?? OWNER;
+export async function recordExclusion(h: { records: RecordStore }, owner: string, interviewId: string, texts: SeedItem[], excludeIndex: number) {
   const now = HARNESS_CLOCK();
   const items: BriefingItem[] = texts.map((t, i) => ({
     id: `s${i + 1}`, kind: 'FACT', source: 'USER', text: t.text, emphasis: !!t.emphasis, inVideo: i !== excludeIndex, excludedReason: i === excludeIndex ? 'USER' : null,
