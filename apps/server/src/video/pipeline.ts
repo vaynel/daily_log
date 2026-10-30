@@ -14,7 +14,7 @@ import type { TtsResult } from '../voice/transports.js';
 import { AssetStore } from './assetStore.js';
 import { narrationKey, type NarrationCache, type NarrationSegment, type NarrationTts, type VoiceConfig } from './narration.js';
 import { runNarrationStage } from './narrationStage.js';
-import type { QualityComponent, QualityInput, QualityScene, Assessment } from './quality.js';
+import type { QualityComponent, QualityInput, QualityScene } from './quality.js';
 import { createQualityHandler } from './qualityStage.js';
 import type { RenderDeps, RenderInput } from './render.js';
 import type { RenderGate } from './renderGate.js';
@@ -213,7 +213,11 @@ export function createVideoHandlers(d: PipelineDeps): Record<string, StageHandle
       const val = r.value;
       const manifest: NarrationManifest = {
         v: STAGE_RESULT_VERSION, scriptVersion: sp.version, briefingVersion: sp.plan.briefingVersion, voiceName: voice.voiceName, voiceVersion: voice.version,
-        segments: val.segments.map(({ audio: _audio, ...seg }) => ({ ...seg, key: narrationKey(plan, plan.scenes.find((s) => s.key === seg.sceneKey)!, voice, v) })),
+        segments: val.segments.map((seg) => {
+          const { audio, ...meta } = seg; // 음성 바이트는 매니페스트에 넣지 않는다(키로 보관소에서 읽음)
+          void audio;
+          return { ...meta, key: narrationKey(plan, plan.scenes.find((s) => s.key === seg.sceneKey)!, voice, v) };
+        }),
         subtitles: val.subtitles, zooms: val.zooms, totalSec: val.totalSec, costKrw: val.costKrw,
       };
       await atomicWrite(path.join(root(ctx.subjectId), 'narration.json'), JSON.stringify(manifest));
@@ -297,8 +301,7 @@ export function createVideoHandlers(d: PipelineDeps): Record<string, StageHandle
       for (const s of n.segments) {
         const audio = await c.get(s.key);
         if (!audio) return null;
-        const { key: _key, ...rest } = s;
-        narrationSegs.push({ ...rest, audio: audio.audio });
+        narrationSegs.push({ sceneKey: s.sceneKey, voiceName: s.voiceName, mime: s.mime, durationSec: s.durationSec, startSec: s.startSec, endSec: s.endSec, entryId: s.entryId, audio: audio.audio });
       }
       const scenes = [];
       for (const f of a.frames) scenes.push({ sceneKey: f.sceneKey, frame: await readFile(path.join(root(subjectId), 'frames', f.file)) });
