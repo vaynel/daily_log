@@ -1,0 +1,22 @@
+TAP version 13
+# Subtest: bundle pins exact source commit and lockfile, hashes archive and rejects symbolic revisions
+ok 1 - bundle pins exact source commit and lockfile, hashes archive and rejects symbolic revisions
+  ---
+  duration_ms: 168.936848
+  type: 'test'
+  ...
+# Subtest: switch denies missing, stale, wrong-release and incomplete approval; valid approval changes only release pointer
+ok 2 - switch denies missing, stale, wrong-release and incomplete approval; valid approval changes only release pointer
+  ---
+  duration_ms: 384.790723
+  type: 'test'
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 689.483853

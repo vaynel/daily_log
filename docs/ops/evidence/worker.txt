@@ -1,0 +1,1 @@
+{"result":"PASS","actualWorker":true,"jobs":[{"kind":"drive-backup","state":"WAITING","wait_reason":"PERMISSION","error_code":"DRIVE_NOT_CONNECTED"},{"kind":"VIDEO_PRODUCTION","state":"WAITING","wait_reason":"PERMISSION","error_code":"PRO_UNAVAILABLE"}],"eventCodes":["DRIVE_NOT_CONNECTED","PRO_UNAVAILABLE"],"paidLedgerEntries":0,"termination":"SIGTERM exit 0"}

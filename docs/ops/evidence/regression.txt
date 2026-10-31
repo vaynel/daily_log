@@ -1,0 +1,119 @@
+server-tests
+ Test Files  33 passed (33)
+      Tests  475 passed (475)
+   Start at  01:52:55
+   Duration  345.87s (transform 1.69s, setup 0ms, import 5.87s, tests 334.96s, environment 4ms)
+
+web-tests
+> vitest run --passWithNoTests --no-file-parallelism --maxWorkers=1
+ Test Files  6 passed (6)
+      Tests  39 passed (39)
+   Start at  01:58:41
+   Duration  1.77s (transform 275ms, setup 0ms, import 529ms, tests 222ms, environment 1ms)
+
+siwc-tests
+# Subtest: PKCE sends fresh state/nonce and never tokens or hints in authorize URL
+# Subtest: callback rejects state, expiry, duplicate keys, replay and changed returning client before exchange
+# Subtest: signed identity rejects tampering, issuer, audience, nonce, expiry and account changes; missing grant cannot infer
+# Subtest: protected atomic storage preserves host across import, excludes mismatched registrations, rejects insecure modes and serializes writers
+# Subtest: exchange binds actual nonce, issued client and exact redirect; failed verification never produces credentials
+# Subtest: import rejects forged signature and mismatched account before overwriting saved registration
+# Subtest: permission recovery requests consent only for WAIT_PERMISSION and rechecks the returned grant
+# Subtest: loopback demo cannot contact OpenAI; cross-origin start denied; cancel invalidates callback and secrets never render
+# Subtest: explicit enabled button starts OAuth only after click, matching state denial makes zero token calls
+# Subtest: permission-enable button is explicit, click required, and cancellation preserves waiting credentials
+# Subtest: target, host key and remote paths are validated before any credential read
+# Subtest: no explicit consent means no read, no ssh and local session kept
+# Subtest: missing, permission-less or refresh-less credentials never leave the PC
+# Subtest: expired or expiring access token is renewed with the stored refresh token, then handed off
+# Subtest: fresh token is not refreshed
+# Subtest: permanent refresh failure stops at WAIT_AUTH without sending; the local record is not deleted
+# Subtest: transient refresh failure keeps tokens and a later hand-off can retry
+# Subtest: concurrent hand-offs on a real store rotate the refresh token exactly once and leave no token in args or output
+# Subtest: ssh args are strict, token stays in stdin only; failure and unconfirmed exit keep local session
+# Subtest: success retires the local copy only after server confirmation; retry after lost reply is idempotent
+# Subtest: Windows save -> Linux import over simulated pipe: wrong account rejected, duplicate import keeps server session, expired token rejected
+# Subtest: completion guidance depends on platform and readiness
+# Subtest: launcher preflight gives a clear native OS result and never starts login
+# Subtest: Windows cmd launcher handles missing Node without policy changes or login
+ok 24 - Windows cmd launcher handles missing Node without policy changes or login # SKIP
+# Subtest: native CLI paths accept drive paths but reject UNC, device, ADS and traversal aliases
+# Subtest: unverified support and permission stop before any external call
+# Subtest: HTTP and streaming errors latch wait across restart with no paid fallback or retry
+# Subtest: completion requires terminal event, exact public endpoint/body; lost stream waits for reconciliation
+# Subtest: refresh rotates once under the cross-process store lock and keeps scopes on omitted scope
+# Subtest: terminal refresh clears unusable tokens; ambiguous rotation waits without replay; explicit reconnect recovers
+# Subtest: signout attempts official discovered revocation, clears secrets even if remote revocation is unconfirmed
+# Subtest: SSE frame delimiters split across network chunks still reach completed event
+# Subtest: missing Content-Type is accepted as SSE only with response.completed; explicit other types never succeed
+# Subtest: 4MB cap still applies without Content-Type
+# Subtest: reconcile needs explicit confirm, only leaves WAIT_RECONCILIATION, and never calls the network
+# Subtest: CLI reconcile changes state only with --confirm
+# Subtest: Windows CurrentUser storage encrypts, persists, locks, rejects links and corruption, and deletes
+ok 37 - Windows CurrentUser storage encrypts, persists, locks, rejects links and corruption, and deletes # SKIP
+# Subtest: Windows transaction survives rejected oversize write without truncating the prior session
+ok 38 - Windows transaction survives rejected oversize write without truncating the prior session # SKIP
+# Subtest: Windows lock is released after the Node owner exits inside a transaction
+ok 39 - Windows lock is released after the Node owner exits inside a transaction # SKIP
+# Subtest: summarize: 평균·백분위·비용을 값으로만 요약한다
+# Subtest: summarize: 턴이 없어도 깨지지 않는다
+# tests 41
+# suites 0
+# pass 37
+# fail 0
+# cancelled 0
+# skipped 4
+# todo 0
+# duration_ms 1883.782479
+
+lint — exit 0
+
+> daily-log@0.0.0 lint
+> eslint .
+
+
+
+typecheck — exit 0
+
+> daily-log@0.0.0 typecheck
+> npm run typecheck -ws
+
+
+> @daily-log/server@0.0.0 typecheck
+> tsc --noEmit
+
+
+> @daily-log/web@0.0.0 typecheck
+> tsc --noEmit
+
+
+
+build — exit 0
+
+> daily-log@0.0.0 build
+> npm run build -ws
+
+
+> @daily-log/server@0.0.0 build
+> tsc -p tsconfig.build.json && node ../../scripts/copy-migrations.mjs
+
+
+> @daily-log/web@0.0.0 build
+> tsc --noEmit && vite build
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 41 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                  3.82 kB │ gzip:  1.45 kB
+dist/assets/index-BOJfAiAF.js  286.31 kB │ gzip: 89.72 kB
+✓ built in 1.71s
+
+
+secrets — exit 0
+
+> daily-log@0.0.0 scan:secrets
+> node scripts/scan-secrets.mjs
+
+scan-secrets: 395 files OK

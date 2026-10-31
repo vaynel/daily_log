@@ -1,0 +1,18 @@
+
+> @daily-log/server@0.0.0 test
+> vitest run src/video/pipeline.test.ts --no-file-parallelism --maxWorkers=1
+
+
+ RUN  v4.1.11 /workspace/apps/server
+
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  01:49:27
+   Duration  73.18s (transform 617ms, setup 0ms, import 768ms, tests 72.26s, environment 0ms)
+
+npm notice
+npm notice New major version of npm available! 10.9.9 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice

@@ -1,0 +1,3 @@
+PASS Desktop Chrome: anonymous 4x401, owner 4x200 + attachment/video bytes, logout 4x401, stranger denied + 4x401
+PASS Pixel 7: anonymous 4x401, owner 4x200 + attachment/video bytes, logout 4x401, stranger denied + 4x401
+ACCESS PASS — mock OIDC; PC/Android emulation; real external network/Google/device: 관리자 수행 대기

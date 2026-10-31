@@ -1,0 +1,1 @@
+{"status":"WAITING_APPROVAL","deployed":false,"message":"개통 미완료"}
