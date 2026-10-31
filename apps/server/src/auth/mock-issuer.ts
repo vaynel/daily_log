@@ -33,6 +33,13 @@ export async function startMockIssuer(opts: { clientId: string; clientSecret: st
     denyDrive: false,
     authorizeRequests: [] as URLSearchParams[],
     tokenRequests: 0,
+    /** Drive 갱신 토큰 시뮬레이션: 발급된 토큰, 철회된 토큰, 갱신 요청 수, 갱신 시 서버 오류 */
+    refreshTokens: new Set<string>(),
+    revoked: new Set<string>(),
+    refreshRequests: 0,
+    refreshServerError: false,
+    /** 갱신 토큰을 응답에 넣지 않는다(재동의 없이 재연결하는 경우 시뮬레이션) */
+    omitRefreshToken: false,
   };
   let issuer = '';
 
@@ -43,7 +50,7 @@ export async function startMockIssuer(opts: { clientId: string; clientSecret: st
       res.end(JSON.stringify(o));
     };
     if (url.pathname === '/.well-known/openid-configuration') {
-      return json({ issuer, authorization_endpoint: `${issuer}/authorize`, token_endpoint: `${issuer}/token`, jwks_uri: `${issuer}/jwks` });
+      return json({ issuer, authorization_endpoint: `${issuer}/authorize`, token_endpoint: `${issuer}/token`, jwks_uri: `${issuer}/jwks`, revocation_endpoint: `${issuer}/revoke` });
     }
     if (url.pathname === '/jwks') return json({ keys: [jwk] });
     if (url.pathname === '/authorize') {
@@ -65,12 +72,28 @@ export async function startMockIssuer(opts: { clientId: string; clientSecret: st
       res.writeHead(302, { location: redirect.toString() });
       return res.end();
     }
+    if (url.pathname === '/revoke' && req.method === 'POST') {
+      let body = '';
+      req.on('data', (c) => (body += c));
+      req.on('end', () => {
+        state.revoked.add(new URLSearchParams(body).get('token') ?? '');
+        json({});
+      });
+      return;
+    }
     if (url.pathname === '/token' && req.method === 'POST') {
       let body = '';
       req.on('data', (c) => (body += c));
       req.on('end', () => {
         state.tokenRequests++;
         const f = new URLSearchParams(body);
+        if (f.get('grant_type') === 'refresh_token') {
+          state.refreshRequests++;
+          if (state.refreshServerError) return json({ error: 'temporarily_unavailable' }, 503);
+          const rt = f.get('refresh_token') ?? '';
+          if (f.get('client_secret') !== opts.clientSecret || !state.refreshTokens.has(rt) || state.revoked.has(rt)) return json({ error: 'invalid_grant' }, 400);
+          return json({ access_token: `mock-access-${randomUUID()}`, token_type: 'Bearer', expires_in: 3600 });
+        }
         const entry = codes.get(f.get('code') ?? '');
         codes.delete(f.get('code') ?? ''); // 코드는 1회용
         const okPkce = entry && createHash('sha256').update(f.get('code_verifier') ?? '').digest('base64url') === entry.challenge;
@@ -78,6 +101,10 @@ export async function startMockIssuer(opts: { clientId: string; clientSecret: st
           return json({ error: 'invalid_grant' }, 400);
         }
         const out: Record<string, string> = { access_token: 'mock-access', token_type: 'Bearer', scope: entry.scope };
+        if (entry.scope.includes('drive') && !state.omitRefreshToken) {
+          out.refresh_token = `mock-refresh-${randomUUID()}`;
+          state.refreshTokens.add(out.refresh_token);
+        }
         if (entry.scope.split(' ').includes('openid')) {
           const t = state.tamper;
           const header = { alg: t.alg ?? 'RS256', kid: 'k1', typ: 'JWT' };

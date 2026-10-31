@@ -37,3 +37,7 @@ export function addCalendarMonthSeoul(at: Date): Date {
   return new Date(ms - SEOUL_OFFSET_MS);
 }
 
+
+/** 휴지통 보관 기간: 삭제 시점부터 30일(Asia/Seoul은 DST가 없어 고정 길이). */
+export const TRASH_DAYS = 30;
+export const addTrashPeriod = (deletedAt: Date): Date => new Date(deletedAt.getTime() + TRASH_DAYS * 24 * 60 * 60 * 1000);

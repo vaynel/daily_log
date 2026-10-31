@@ -128,7 +128,7 @@ export class NotificationService {
       for (const slot of reminderSlots(now, time, this.graceMs)) {
         if (slot.state !== 'DUE') continue;
         // 그날 기록을 이미 확정했다면 알릴 필요가 없다.
-        const done = (await this.pool.query(`SELECT 1 FROM interviews WHERE owner_id=$1 AND life_date=$2 AND status='CONFIRMED'`, [owner, slot.date])).rowCount;
+        const done = (await this.pool.query(`SELECT 1 FROM interviews WHERE owner_id=$1 AND life_date=$2 AND status='CONFIRMED' AND deleted_at IS NULL AND server_purged_at IS NULL`, [owner, slot.date])).rowCount;
         if (await this.insert(owner, 'INTERVIEW_REMINDER', slot.date, null, done ? 'SKIPPED' : 'PENDING', done ? 'ALREADY_RECORDED' : null)) created += done ? 0 : 1;
       }
     }
@@ -141,7 +141,7 @@ export class NotificationService {
     const rows = (await this.pool.query(
       `SELECT i.id, i.owner_id, to_char(i.life_date,'YYYY-MM-DD') AS life_date, p.production, p.review, p.backup,
               COALESCE((SELECT max(version) FROM record_versions v WHERE v.interview_id=i.id AND v.kind='RESULT'),0) AS rv
-         FROM interviews i JOIN pipeline_states p ON p.interview_id=i.id WHERE p.updated_at >= $1`, [since])).rows;
+         FROM interviews i JOIN pipeline_states p ON p.interview_id=i.id WHERE p.updated_at >= $1 AND i.deleted_at IS NULL AND i.server_purged_at IS NULL`, [since])).rows;
     let created = 0;
     for (const r of rows) {
       const rv = Number(r.rv);

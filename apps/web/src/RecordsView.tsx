@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ConfirmBox } from './TrashView';
 import { ResultPanel } from './ResultPanel';
-import { postRevision, type ResultVersion, type RevisionRequest } from './records';
-import { QUALITY_REASON_LABEL, ACTION_LABEL, byLifeDate, coversMonth, fetchJson, initialMonth, recordsUrl, monthGrid, shiftMonth, PIPELINE_LABEL, STATUS_INFO, type DisplayStatus, type Loaded, type RecordDetail, type RecordRow, type RecordsPage } from './records';
+import { QUALITY_REASON_LABEL, SCOPE_NOTICE, cleanupReasonLabel, commandError, postCommand, postRevision, ACTION_LABEL, byLifeDate, coversMonth, fetchJson, initialMonth, recordsUrl, monthGrid, shiftMonth, PIPELINE_LABEL, STATUS_INFO, type DisplayStatus, type Loaded, type RecordDetail, type RecordRow, type RecordsPage, type ResultVersion, type RevisionRequest } from './records';
 
 function Badge({ status }: { status: DisplayStatus }) {
   const s = STATUS_INFO[status];
@@ -134,12 +134,23 @@ export function RecordDetailView({ id, onBack }: { id: string; onBack: () => voi
       <button onClick={onBack}>← 목록</button>
       {!r && <p>불러오는 중</p>}
       {r && r.state !== 'ok' && <Problem r={r} onRetry={load} />}
-      {r?.state === 'ok' && <Detail d={r.data} onChanged={() => void fetchJson<RecordDetail>(`/api/records/${id}`).then(setR)} />}
+      {r?.state === 'ok' && <Detail d={r.data} onChanged={() => void fetchJson<RecordDetail>(`/api/records/${id}`).then(setR)} onDeletedRecord={onBack} />}
     </section>
   );
 }
 
-function Detail({ d, onChanged }: { d: RecordDetail; onChanged: () => void }) {
+type Pending = { url: string; title: string; wholeRecord: boolean };
+
+/** 휴지통으로 보내는 삭제 확인. 되돌릴 수 있고(30일) 서버 사본만 대상이라는 점을 먼저 알린다. */
+function TrashConfirm({ p, busy, onYes, onNo }: { p: Pending; busy: boolean; onYes: () => void; onNo: () => void }) {
+  return (
+    <ConfirmBox title={p.title} confirmLabel="휴지통으로 보내기" busy={busy} onConfirm={onYes} onCancel={onNo}>
+      <p data-testid="trash-warning">삭제한 날부터 30일 안에는 휴지통에서 복구할 수 있습니다. {SCOPE_NOTICE}</p>
+    </ConfirmBox>
+  );
+}
+
+function Detail({ d, onChanged, onDeletedRecord }: { d: RecordDetail; onChanged: () => void; onDeletedRecord: () => void }) {
   const [versions, setVersions] = useState<ResultVersion[] | null>(null);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -152,6 +163,20 @@ function Detail({ d, onChanged }: { d: RecordDetail; onChanged: () => void }) {
     setBusy(true);
     void postRevision(d.id, req, crypto.randomUUID()).then((o) => { setNotice({ ok: o.ok, text: o.message }); if (o.executed) onChanged(); }).finally(() => setBusy(false));
   };
+  const [pending, setPending] = useState<Pending | null>(null);
+  const [trashBusy, setTrashBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const confirm = async () => {
+    if (!pending) return;
+    setTrashBusy(true);
+    const res = await postCommand(pending.url);
+    setTrashBusy(false);
+    if (!res.ok) { setErr(commandError(res.code)); setPending(null); return; }
+    setErr(null);
+    setPending(null);
+    if (pending.wholeRecord) onDeletedRecord(); else onChanged();
+  };
+  const ask = (url: string, title: string, wholeRecord = false) => setPending({ url, title, wholeRecord });
   const info = STATUS_INFO[d.status];
   const att = (aid: string) => d.attachments.find((a) => a.id === aid);
   const link = (a: RecordDetail['attachments'][number]) => (
@@ -161,6 +186,11 @@ function Detail({ d, onChanged }: { d: RecordDetail; onChanged: () => void }) {
     <>
       <h3>{d.lifeDate} <Badge status={d.status} /></h3>
       <p data-testid="status-hint">{info.hint}</p>
+      {d.serverCopy?.cleanedAt && <p role="status" data-testid="server-cleaned">한 달이 지나 서버 사본은 정리되었습니다. Google Drive 백업과 완성 영상은 그대로 보관됩니다.</p>}
+      {!d.serverCopy?.cleanedAt && d.serverCopy?.cleanupBlockedReason && <p role="status" data-testid="cleanup-pending">서버 사본 정리 대기: {cleanupReasonLabel(d.serverCopy.cleanupBlockedReason)}. 서버 원본은 유지됩니다.</p>}
+      {err && <p role="alert" data-testid="command-error">{err}</p>}
+      {pending && <TrashConfirm p={pending} busy={trashBusy} onYes={() => void confirm()} onNo={() => setPending(null)} />}
+      {!d.serverCopy?.cleanedAt && <p><button data-testid="trash-record" onClick={() => ask(`/api/records/${d.id}/trash`, `${d.lifeDate} 하루 기록을 휴지통으로 보낼까요?`, true)}>이 날 기록 삭제</button></p>}
       {!!d.pipeline.qualityReasons?.length && <ul data-testid="quality-reasons" role="status">
         {d.pipeline.qualityReasons.map(reason => <li key={reason}>{QUALITY_REASON_LABEL[reason] ?? '제작 조건을 확인해 주세요.'}</li>)}
       </ul>}
@@ -183,7 +213,8 @@ function Detail({ d, onChanged }: { d: RecordDetail; onChanged: () => void }) {
         <ol data-testid="conversation">
           {d.conversation.map((c) => (
             <li key={c.id}>
-              <span className="who">{c.kind === 'QUESTION' ? '질문' : '내 답'}</span> {c.body}
+              <span className="who">{c.kind === 'QUESTION' ? '질문' : '내 답'}</span> {c.body}{' '}
+              <button data-testid="trash-item" aria-label={`${c.kind === 'QUESTION' ? '질문' : '내 답'} ${c.seq}번 삭제`} onClick={() => ask(`/api/records/${d.id}/items/${c.id}/trash`, `${c.kind === 'QUESTION' ? '질문' : '내 답'} ${c.seq}번을 휴지통으로 보낼까요? 연결된 첨부도 함께 옮겨집니다.`)}>삭제</button>
               {c.attachmentIds.map((aid) => { const a = att(aid); return a ? <div key={aid}>첨부: {link(a)}</div> : null; })}
             </li>
           ))}
@@ -191,7 +222,7 @@ function Detail({ d, onChanged }: { d: RecordDetail; onChanged: () => void }) {
       )}
       {(() => {
         const loose = d.attachments.filter((a) => !a.itemId);
-        return loose.length ? <><h4>첨부</h4><ul data-testid="attachments">{loose.map((a) => <li key={a.id}>{link(a)}</li>)}</ul></> : null;
+        return loose.length ? <><h4>첨부</h4><ul data-testid="attachments">{loose.map((a) => <li key={a.id}>{link(a)}{' '}<button data-testid="trash-attachment" aria-label={`첨부 ${a.name ?? ''} 삭제`} onClick={() => ask(`/api/records/${d.id}/attachments/${a.id}/trash`, `첨부 ${a.name ?? ''}를 휴지통으로 보낼까요?`)}>삭제</button></li>)}</ul></> : null;
       })()}
     </>
   );

@@ -68,6 +68,8 @@ export function registerRecordViewRoutes(app: FastifyInstance, opts: { store: Re
       result: result ? { version: result.version, fileAvailable, superseded } : null,
       // 확정된 기록에서만 수정 대상 항목(영상에 들어간 것)을 준다. 제외·불확실 항목과 원문 대화는 포함하지 않는다.
       revisableItems: interview.status === 'CONFIRMED' ? (latestBriefing(snap)?.items ?? []).filter((i) => i.inVideo && i.excludedReason === null).map((i) => ({ id: i.id, text: i.text })) : [],
+      // 서버 사본과 Drive 백업은 따로 다룬다: 정리된 서버 사본은 Drive 백업에 남아 있으며, 정리 대기 사유가 있으면 보여준다.
+      serverCopy: { cleanedAt: interview.serverCleanedAt ?? null, cleanupBlockedReason: interview.cleanupBlockedReason ?? null },
     });
   });
 
