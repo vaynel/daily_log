@@ -63,6 +63,8 @@ export function registerRecordViewRoutes(app: FastifyInstance, opts: { store: Re
       summary: summary ? { version: summary.version, ...summaryText(summary.content) } : null,
       attachments: attachments.map((a) => ({ id: a.id, itemId: a.itemId, kind: a.kind, name: a.name, mime: a.mime, size: a.size, uploadedAt: a.uploadedAt, capturedAt: a.capturedAt })),
       result: result ? { version: result.version, fileAvailable } : null,
+      // 서버 사본과 Drive 백업은 따로 다룬다: 정리된 서버 사본은 Drive 백업에 남아 있으며, 정리 대기 사유가 있으면 보여준다.
+      serverCopy: { cleanedAt: interview.serverCleanedAt ?? null, cleanupBlockedReason: interview.cleanupBlockedReason ?? null },
     });
   });
 

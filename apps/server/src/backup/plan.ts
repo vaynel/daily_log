@@ -30,6 +30,8 @@ export interface BackupPlan {
   items: PlanItem[];
   problems: PlanProblem[];
   fingerprint: string;
+  /** 휴지통에 있는 기록. 정리(서버 사본 삭제) 대상이 아니다. */
+  trashed: boolean;
 }
 
 export const sha256Hex = (b: Buffer | string) => createHash('sha256').update(b).digest('hex');
@@ -55,11 +57,12 @@ const SHA = /^[a-f0-9]{64}$/;
  */
 export async function buildBackupPlan(pool: pg.Pool, fileStorageDir: string, interviewId: string): Promise<BackupPlan | null> {
   const iv = (await pool.query(
-    `SELECT id, owner_id, to_char(life_date,'YYYY-MM-DD') AS life_date, status, revision FROM interviews WHERE id=$1`, [interviewId])).rows[0];
+    `SELECT id, owner_id, to_char(life_date,'YYYY-MM-DD') AS life_date, status, revision, deleted_at FROM interviews WHERE id=$1 AND server_purged_at IS NULL AND server_cleaned_at IS NULL`, [interviewId])).rows[0];
+  // 영구 삭제·한 달 정리로 서버 사본이 없는 기록은 비어 있는 스냅샷을 새 버전으로 올리지 않도록 백업 대상에서 뺀다(기존 Drive 백업은 그대로).
   if (!iv) return null;
   const [items, atts, vers] = await Promise.all([
-    pool.query('SELECT id, seq, kind, body FROM conversation_items WHERE interview_id=$1 ORDER BY seq', [interviewId]),
-    pool.query(`SELECT id, item_id, storage_key, checksum, kind, original_name, mime_type, size_bytes FROM attachment_refs WHERE interview_id=$1 ORDER BY saved_at, id`, [interviewId]),
+    pool.query('SELECT id, seq, kind, body FROM conversation_items WHERE interview_id=$1 AND deleted_at IS NULL ORDER BY seq', [interviewId]),
+    pool.query(`SELECT id, item_id, storage_key, checksum, kind, original_name, mime_type, size_bytes FROM attachment_refs WHERE interview_id=$1 AND deleted_at IS NULL ORDER BY saved_at, id`, [interviewId]),
     pool.query('SELECT kind, version, content FROM record_versions WHERE interview_id=$1 ORDER BY kind, version', [interviewId]),
   ]);
   const lifeDate = iv.life_date as string;
@@ -117,5 +120,5 @@ export async function buildBackupPlan(pool: pg.Pool, fileStorageDir: string, int
   }
 
   const fingerprint = sha256Hex(out.map((i) => `${i.kind}|${i.key}|${i.sha256}`).sort().join('\n') + '\n' + problems.map((p) => `${p.kind}|${p.key}|${p.code}`).sort().join('\n'));
-  return { interviewId, ownerId: iv.owner_id as string, lifeDate, status: iv.status as string, revision: Number(iv.revision), items: out, problems, fingerprint };
+  return { interviewId, ownerId: iv.owner_id as string, lifeDate, status: iv.status as string, revision: Number(iv.revision), items: out, problems, fingerprint, trashed: iv.deleted_at !== null };
 }

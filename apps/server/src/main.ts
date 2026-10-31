@@ -8,6 +8,7 @@ import { PgRuleStore } from './briefing/rules.js';
 import { PgLiveUsageStore } from './interview/usage.js';
 import { createProInfer, loadSiwcRuntime } from './briefing/pro.js';
 import { RecordStore } from './records/store.js';
+import { RetentionService } from './retention/service.js';
 import { readKeyFile } from './voice/keys.js';
 import { loadLiveConfig, type LiveConfig } from './voice/live.js';
 import { NotificationService } from './notify/service.js';
@@ -48,6 +49,7 @@ const app = buildApp({
   sessionSecret: config.sessionSecret,
   fileStorageDir: config.fileStorageDir,
   records: new RecordStore(pool),
+  retention: new RetentionService({ pool, fileStorageDir: config.fileStorageDir, backup }),
   briefing: { infer: briefingInfer, rules: new PgRuleStore(pool) },
   entries: { list: async () => (await pool.query('SELECT id, entry_date, body FROM sample_entries ORDER BY entry_date DESC')).rows },
   interview: {

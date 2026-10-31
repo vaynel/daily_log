@@ -9,6 +9,7 @@ import { PgDriveConnections } from './backup/connections.js';
 import { createDriveFactory } from './backup/drive.js';
 import { BACKUP_KIND, BackupService } from './backup/service.js';
 import { TokenVault } from './backup/vault.js';
+import { RetentionService } from './retention/service.js';
 import { UnconfiguredSender, WebPushSender, loadVapidKeys } from './notify/sender.js';
 
 const config = loadConfigOrExit();
@@ -28,6 +29,10 @@ const backup: BackupService = new BackupService({ pool, queue, fileStorageDir: c
 handlers[BACKUP_KIND] = backup.handlers();
 const sweepEveryMs = Number(process.env.BACKUP_SWEEP_INTERVAL_MS ?? '3600000');
 let lastSweep = 0;
+// 수명 훑기(음성 삭제·휴지통 만료·한 달 서버 사본 정리·파일 삭제 재시도). Drive 에는 읽기 확인만 하고 삭제 요청은 없다.
+const retention = new RetentionService({ pool, fileStorageDir: config.fileStorageDir, backup });
+const retentionEveryMs = Number(process.env.RETENTION_SWEEP_INTERVAL_MS ?? '900000');
+let lastRetention = 0;
 
 const notifier = new NotificationService({ pool, sender: config.vapidKeysFile ? new WebPushSender(loadVapidKeys(config.vapidKeysFile)) : new UnconfiguredSender() });
 
@@ -43,6 +48,11 @@ while (!stopping) {
   if (Date.now() - lastSweep >= sweepEveryMs) { // 변경이 없으면 작업을 만들지 않는 멱등 훑기: 하루에 여러 번 돌아도 중복 복사가 없다.
     lastSweep = Date.now();
     await backup.sweep().catch((e) => console.error('backup sweep error:', e instanceof Error ? e.name : 'ERROR'));
+  }
+  if (Date.now() - lastRetention >= retentionEveryMs) {
+    lastRetention = Date.now();
+    const r = await retention.sweepAll();
+    console.log('retention sweep', JSON.stringify(r));
   }
   await notifier.run(); // 알림 단계는 내부에서 오류를 격리한다(작업 큐와 독립)
   await new Promise((r) => setTimeout(r, config.workerPollIntervalMs));
