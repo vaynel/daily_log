@@ -7,6 +7,7 @@ import { createPool } from '../db/pool.js';
 import { RecordStore } from '../records/store.js';
 import { NotificationService } from '../notify/service.js';
 import { UnconfiguredSender } from '../notify/sender.js';
+import { MemoryLiveUsageStore } from '../interview/usage.js';
 
 const issuer = await startMockIssuer({ clientId: 'demo-client', clientSecret: 'demo-secret-not-real' });
 issuer.state.account = { sub: 'demo-owner', email: process.env.DEMO_LOGIN_EMAIL ?? 'owner@example.test', email_verified: true, name: 'Demo Owner' };
@@ -15,6 +16,9 @@ const auth = loadAuthConfig({ GOOGLE_CLIENT_ID: 'demo-client', GOOGLE_CLIENT_SEC
 const pool = process.env.DATABASE_URL ? createPool(process.env.DATABASE_URL) : undefined;
 const records = pool ? new RecordStore(pool) : undefined;
 const notifications = pool ? new NotificationService({ pool, sender: new UnconfiguredSender() }) : undefined;
-const app = buildApp({ records, notifications, auth, sessionSecret: 'demo-session-secret-not-real-0000', fileStorageDir: process.env.FILE_STORAGE_DIR ?? '/tmp', entries: { list: async () => [{ id: '1', body: '합성 예시 기록' }] } });
+// 결과 수정(POST /api/records/:id/revisions)은 interview·briefing 옵션이 있어야 등록된다. 모의 전용: 대화(live)·Pro 정리(infer)는 null 이라 외부 호출 없이 fail closed.
+const interview = records ? { usage: new MemoryLiveUsageStore(), live: null, sessionDir: process.env.FILE_STORAGE_DIR ?? '/tmp' } : undefined;
+const briefing = records ? { infer: null } : undefined;
+const app = buildApp({ records, notifications, interview, briefing, auth, sessionSecret: 'demo-session-secret-not-real-0000', fileStorageDir: process.env.FILE_STORAGE_DIR ?? '/tmp', entries: { list: async () => [{ id: '1', body: '합성 예시 기록' }] } });
 await app.listen({ port: 3000, host: '127.0.0.1' });
 console.log('auth demo ready (mock issuer', issuer.issuer, ')');
