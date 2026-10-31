@@ -59,6 +59,15 @@ export type NarrationResult = { ok: true; segments: NarrationSegment[]; totalSec
 
 export const PAUSE_SEC = 0.5;
 
+/**
+ * 장면 음성의 영속 보관소(요청 식별자 기준). 결제 확정 뒤 프로세스가 죽어도 같은 음성을 다시 쓰므로
+ * 재시작 때 같은 장면을 다시 합성(재과금)하지 않는다. put 은 제공자 응답을 받은 직후 원장 확정보다 먼저 호출된다.
+ */
+export interface NarrationCache {
+  get(key: string): Promise<TtsResult | null>;
+  put(key: string, r: TtsResult): Promise<void>;
+}
+
 /** 길이 0·빈 오디오·완전 무음 PCM(WAV)은 실패로 본다. 무음 정상 영상 방지(AC-5). */
 export function isSilent(r: TtsResult): boolean {
   if (!r.audio || r.audio.length <= 44 || !(r.outputSeconds > 0)) return true;
@@ -69,11 +78,12 @@ export function isSilent(r: TtsResult): boolean {
   return false;
 }
 
-const keyOf = (plan: ScenePlan, s: Scene, voice: VoiceConfig) =>
-  `narr:${plan.lifeDate}:${plan.briefingVersion}:${s.key}:${createHash('sha256').update(`${voice.voiceName}\n${voice.styleInstruction}\n${s.narration}`).digest('hex').slice(0, 16)}`;
+/** 장면 음성 요청의 멱등키. variant 는 품질 재제작처럼 같은 입력을 일부러 다시 합성할 때만 둔다. */
+export const narrationKey = (plan: ScenePlan, s: Scene, voice: VoiceConfig, variant = '') =>
+  `narr:${plan.lifeDate}:${plan.briefingVersion}:${s.key}:${createHash('sha256').update(`${voice.voiceName}\n${voice.styleInstruction}\n${s.narration}${variant ? `\n${variant}` : ''}`).digest('hex').slice(0, 16)}`;
 
 export async function synthesizeNarration(i: {
-  plan: ScenePlan; voice: VoiceConfig; tts: NarrationTts; ledger: MonthlyLedger; pricing: Pricing; purpose?: Purpose; maxTotalSec?: number;
+  plan: ScenePlan; voice: VoiceConfig; tts: NarrationTts; ledger: MonthlyLedger; pricing: Pricing; purpose?: Purpose; maxTotalSec?: number; cache?: NarrationCache; variant?: string;
 }): Promise<NarrationResult> {
   const { plan, voice } = i;
   if (!plan.scenes.length) return { ok: false, code: 'NO_SCENES' };
@@ -83,20 +93,30 @@ export async function synthesizeNarration(i: {
   let cursor = 0, cost = 0;
   for (const s of plan.scenes) {
     const chars = s.narration.replace(/\s+/g, '').length;
-    const r = await paidCall<TtsResult>({
-      ledger: i.ledger, provider: 'gemini', operation: 'tts', purpose: i.purpose ?? 'PRODUCT', idempotencyKey: keyOf(plan, s, voice),
-      estimateKrw: ttsCostKrw(i.pricing, chars, estimateTtsSeconds(chars)),
-      run: () => i.tts(s.narration, voice),
-      actualKrw: (v) => ttsCostKrw(i.pricing, chars, v.outputSeconds),
-    });
-    if (!r.ok) {
-      if (r.code === 'BUDGET_EXCEEDED') return { ok: false, code: 'BUDGET_EXCEEDED', sceneKey: s.key };
-      return { ok: false, code: r.code === 'CALL_UNKNOWN' ? 'TTS_UNKNOWN' : 'TTS_FAILED', sceneKey: s.key };
+    const key = narrationKey(plan, s, voice, i.variant);
+    const cached = await i.cache?.get(key);
+    let value: TtsResult;
+    let actualKrw: number;
+    let entryId: string;
+    if (cached) { // 이미 합성·결제된 음성: 호출하지 않는다(비용 0 추가).
+      value = cached; actualKrw = 0; entryId = `cache:${key}`;
+    } else {
+      const r = await paidCall<TtsResult>({
+        ledger: i.ledger, provider: 'gemini', operation: 'tts', purpose: i.purpose ?? 'PRODUCT', idempotencyKey: key,
+        estimateKrw: ttsCostKrw(i.pricing, chars, estimateTtsSeconds(chars)),
+        run: async () => { const v = await i.tts(s.narration, voice); if (!isSilent(v)) await i.cache?.put(key, v); return v; },
+        actualKrw: (v) => ttsCostKrw(i.pricing, chars, v.outputSeconds),
+      });
+      if (!r.ok) {
+        if (r.code === 'BUDGET_EXCEEDED') return { ok: false, code: 'BUDGET_EXCEEDED', sceneKey: s.key };
+        return { ok: false, code: r.code === 'CALL_UNKNOWN' ? 'TTS_UNKNOWN' : 'TTS_FAILED', sceneKey: s.key };
+      }
+      value = r.value; actualKrw = r.actualKrw; entryId = r.entryId;
     }
-    if (isSilent(r.value)) return { ok: false, code: 'TTS_EMPTY', sceneKey: s.key };
-    cost += r.actualKrw;
-    const durationSec = Math.round(r.value.outputSeconds * 100) / 100;
-    segments.push({ sceneKey: s.key, voiceName: voice.voiceName, mime: r.value.mime, audio: r.value.audio, durationSec, startSec: round2(cursor), endSec: round2(cursor + durationSec), entryId: r.entryId });
+    if (isSilent(value)) return { ok: false, code: 'TTS_EMPTY', sceneKey: s.key };
+    cost += actualKrw;
+    const durationSec = Math.round(value.outputSeconds * 100) / 100;
+    segments.push({ sceneKey: s.key, voiceName: voice.voiceName, mime: value.mime, audio: value.audio, durationSec, startSec: round2(cursor), endSec: round2(cursor + durationSec), entryId });
     cursor += durationSec + PAUSE_SEC;
   }
   const totalSec = round2(cursor - PAUSE_SEC);

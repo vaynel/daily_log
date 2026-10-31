@@ -67,7 +67,7 @@ export interface AssetDeps {
   detectText?: (image: Buffer) => Promise<boolean>;
 }
 
-const hashKey = (...parts: string[]) => sha256(Buffer.from(parts.join('\u0000'))).slice(0, 32);
+const hashKey = (...parts: string[]) => sha256(Buffer.from(parts.filter((p, n) => n < 3 || p).join('\u0000'))).slice(0, 32); // 3번째 뒤 빈 조각은 키에 넣지 않아 기존 키를 바꾸지 않는다
 
 /** 장면(자산 키)당 글자 의심 재생성은 1회까지. */
 export const MAX_TEXT_REGEN = 1;
@@ -127,25 +127,25 @@ async function produce(
 }
 
 /** 사진 → 색연필 스케치 배경. 사진은 메타데이터를 벗겨 보내고, 결과가 입력과 같으면 실패로 둔다. */
-export async function generateBackground(d: AssetDeps, i: { photo: Buffer; visual: string; excludedPhrases?: string[] }): Promise<AssetResult> {
+export async function generateBackground(d: AssetDeps, i: { photo: Buffer; visual: string; excludedPhrases?: string[]; /** 품질 재제작처럼 같은 입력을 일부러 다시 만들 때만. */ variant?: string }): Promise<AssetResult> {
   const stripped = await stripPhoto(i.photo, d.ffmpeg);
   const visual = sanitizeVisual(i.visual, i.excludedPhrases).text;
   const prompt = backgroundPrompt(visual);
   const photoSha = sha256(stripped);
   return produce(d, {
-    key: hashKey('bg', photoSha, prompt), kind: 'BACKGROUND', prompt: (retry) => (retry ? backgroundPrompt(visual, true) : prompt), checkText: true, images: [{ mime: 'image/jpeg', data: stripped }],
+    key: hashKey('bg', photoSha, prompt, i.variant ?? ''), kind: 'BACKGROUND', prompt: (retry) => (retry ? backgroundPrompt(visual, true) : prompt), checkText: true, images: [{ mime: 'image/jpeg', data: stripped }],
     mustDiffer: [photoSha, sha256(i.photo)], meta: { sourceSha256: photoSha },
   });
 }
 
 /** 기준 시트를 참조로 넣어 표정·동작 자산을 만든다. 같은 표정·동작은 다시 만들지 않고 재사용한다. */
-export async function generatePose(d: AssetDeps, i: { expression: Expression; action: Action }): Promise<AssetResult> {
+export async function generatePose(d: AssetDeps, i: { expression: Expression; action: Action; variant?: string }): Promise<AssetResult> {
   if (!EXPRESSIONS.includes(i.expression) || !ACTIONS.includes(i.action)) throw new Error('지원하지 않는 표정·동작');
   const sheet = await readFile(d.referenceSheetPath);
   const sheetSha = sha256(sheet);
   if (sheetSha !== REFERENCE_SHEET_SHA256) return { ok: false, key: hashKey('pose', sheetSha), code: 'SHEET_MISMATCH', status: null };
   return produce(d, {
-    key: hashKey('pose', sheetSha, i.expression, i.action), kind: 'POSE', prompt: posePrompt(i.expression, i.action),
+    key: hashKey('pose', sheetSha, i.expression, i.action, i.variant ?? ''), kind: 'POSE', prompt: posePrompt(i.expression, i.action),
     images: [{ mime: 'image/jpeg', data: sheet }], mustDiffer: [sheetSha], meta: { referenceSha256: sheetSha },
   });
 }

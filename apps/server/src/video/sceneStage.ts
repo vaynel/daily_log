@@ -28,6 +28,8 @@ export const latestScenePlan = (snap: Snapshot): { version: number; plan: SceneP
  */
 export async function runScenePlanStage(i: {
   records: SceneRecords; ownerId: string; interviewId: string; infer: ProInfer | null; narration?: Partial<NarrationConfig>; now?: () => Date;
+  /** true 면 같은 브리핑 버전의 기존 장면 계획을 재사용하지 않고 새로 만든다(품질 재제작). */
+  regenerate?: boolean;
 }): Promise<SceneStageResult> {
   const now = (i.now ?? (() => new Date()))();
   const snap = await i.records.loadById(i.ownerId, i.interviewId, now);
@@ -35,7 +37,7 @@ export async function runScenePlanStage(i: {
   const input = snap.versions.filter((v) => v.kind === 'PRODUCTION_PLAN' && isBriefingPlan(v.content)).sort((a, b) => b.version - a.version)[0]?.content as ProductionPlan | undefined;
   if (snap.interview.status !== 'CONFIRMED' || !input) return { ok: false, code: 'NOT_CONFIRMED' };
   const prior = latestScenePlan(snap);
-  if (prior && prior.plan.briefingVersion === input.briefingVersion) return { ok: true, version: prior.version, duplicate: true, plan: prior.plan };
+  if (!i.regenerate && prior && prior.plan.briefingVersion === input.briefingVersion) return { ok: true, version: prior.version, duplicate: true, plan: prior.plan };
   if (!i.infer) return { ok: false, code: 'PRO_UNAVAILABLE' };
   const photos: PhotoRef[] = (await i.records.listAttachments(i.ownerId, i.interviewId)).filter((a) => a.kind === 'PHOTO').map((a) => ({ id: a.id, capturedAt: a.capturedAt }));
   const r = await buildScenePlan({ plan: input, photos, lifeDate: snap.interview.lifeDate, infer: i.infer, narration: i.narration });
