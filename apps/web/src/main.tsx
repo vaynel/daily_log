@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { InterviewScreen } from './InterviewScreen';
 import { NotifySettings } from './NotifySettings';
 import { recordIdFromSearch } from './notify';
+import { TrashView } from './TrashView';
 import { RecordDetailView, RecordsBrowser, type RecordsMode } from './RecordsView';
 
 type Session = { email: string; name: string | null; driveConnected: boolean };
@@ -47,6 +48,7 @@ function Notice({ title, children, action }: { title: string; children: string; 
 
 function Home({ session, onLogout }: { session: Session; onLogout: () => void }) {
   const [openId, setOpenId] = useState<string | null>(() => recordIdFromSearch(window.location.search)); // 알림 클릭: ?record=<id> 로 해당 기록 상세를 연다
+  const [trash, setTrash] = useState(false);
   const [mode, setMode] = useState<RecordsMode>('list');
   const [month, setMonth] = useState<string | null>(null); // 상세에서 돌아와도 보던 달을 유지
   return (
@@ -55,7 +57,12 @@ function Home({ session, onLogout }: { session: Session; onLogout: () => void })
       <p data-testid="account">{session.email} 로 로그인됨</p>
       <p data-testid="drive-status">Google Drive: {session.driveConnected ? '연결됨' : '연결 안 됨 (선택 사항)'}</p>
       {!session.driveConnected && <a className="button secondary" href="/auth/drive/connect">Google Drive 연결</a>}
-      {openId ? <RecordDetailView id={openId} onBack={() => setOpenId(null)} /> : <RecordsBrowser mode={mode} onMode={setMode} month={month} onMonth={setMonth} onOpen={setOpenId} />}
+      {trash ? <TrashView onBack={() => setTrash(false)} /> : openId ? <RecordDetailView id={openId} onBack={() => setOpenId(null)} /> : (
+        <>
+          <p><button data-testid="open-trash" onClick={() => setTrash(true)}>휴지통</button></p>
+          <RecordsBrowser mode={mode} onMode={setMode} month={month} onMonth={setMonth} onOpen={setOpenId} />
+        </>
+      )}
       <InterviewScreen />
       <NotifySettings />
       <button onClick={onLogout}>로그아웃</button>

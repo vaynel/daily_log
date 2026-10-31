@@ -10,6 +10,7 @@ export interface RecordDetail {
   summary: { version: number; diary: string | null; learning: string[] } | null;
   attachments: { id: string; itemId: string | null; kind: string; name: string | null; size: number | null; capturedAt: string | null }[];
   result: { version: number; fileAvailable: boolean } | null;
+  serverCopy?: { cleanedAt: string | null; cleanupBlockedReason: string | null };
 }
 
 /** tone 은 색에만 의존하지 않도록 항상 문구와 함께 쓴다. ok 는 정상 완료만. */
@@ -103,3 +104,55 @@ export function initialMonth(rows: RecordRow[], today: Date = new Date()): strin
 }
 
 export const QUALITY_REASON_LABEL: Record<string, string> = { QUALITY_EXHAUSTED: '품질 자동 재제작 1회를 모두 사용했습니다.', BUDGET: '예산 확보를 기다립니다.', PERMISSION: '제작 권한 확인을 기다립니다.' };
+
+/** 삭제 화면에 항상 같이 보이는 범위 안내. 서버 사본과 Drive 백업·완성 영상은 서로 다른 보관 정책이다. */
+export const SCOPE_NOTICE = '서버에 있는 사본만 지워집니다. Google Drive 백업과 완성 영상은 지워지지 않습니다.';
+
+export interface TrashEntry {
+  scope: 'RECORD' | 'ITEM' | 'ATTACHMENT'; recordId: string; lifeDate: string; id: string; label: string; preview?: string;
+  deletedAt: string; purgeAt: string; canRestore: boolean;
+}
+export const SCOPE_LABEL: Record<TrashEntry['scope'], string> = { RECORD: '하루 기록', ITEM: '대화 항목', ATTACHMENT: '첨부' };
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** 복구 가능한 남은 일수(올림). 보관 기간이 끝났으면 0. */
+export function daysLeft(purgeAt: string, now: Date = new Date()): number {
+  const ms = new Date(purgeAt).getTime() - now.getTime();
+  return ms <= 0 ? 0 : Math.ceil(ms / DAY_MS);
+}
+export const remainingLabel = (purgeAt: string, now: Date = new Date()) => {
+  const d = daysLeft(purgeAt, now);
+  return d === 0 ? '보관 기간(30일)이 끝났습니다. 복구할 수 없습니다' : `${d}일 안에 복구할 수 있습니다`;
+};
+
+/** 한 달 서버 사본 정리가 미뤄진 사유(민감정보 없는 코드). 대기 중에는 서버 원본이 그대로 유지된다. */
+export const CLEANUP_REASON_LABEL: Record<string, string> = {
+  BACKUP_NOT_CURRENT: '최신 내용의 Google Drive 백업이 아직 확인되지 않았습니다',
+  BACKUP_INCOMPLETE: 'Google Drive 백업이 아직 끝나지 않았습니다',
+  VERIFY_MISMATCH: 'Google Drive 백업 파일이 서버 내용과 일치하지 않습니다',
+  SOURCE_INCOMPLETE: '일부 원본 파일 문제로 백업이 완료되지 않았습니다',
+  PROCESSING: '이 기록의 처리가 끝나기를 기다립니다',
+  CHANGED_DURING_CHECK: '확인하는 동안 내용이 바뀌어 다시 확인합니다',
+  DRIVE_NOT_CONNECTED: 'Google Drive가 연결되지 않았습니다',
+  DRIVE_AUTH_EXPIRED: 'Google Drive 연결이 만료되었습니다',
+  DRIVE_UNREACHABLE: 'Google Drive에 접근할 수 없습니다',
+};
+export const cleanupReasonLabel = (code: string) => CLEANUP_REASON_LABEL[code] ?? '백업 확인을 기다립니다';
+
+export type CommandResult = { ok: true } | { ok: false; code: string };
+/** 휴지통 명령 요청. 실패는 서버 오류 코드(TRASH_EXPIRED 등)를 그대로 돌려준다. */
+export async function postCommand(url: string, body?: object, f: typeof fetch = fetch): Promise<CommandResult> {
+  try {
+    const r = await f(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body ?? {}) });
+    if (r.ok) return { ok: true };
+    const j = (await r.json().catch(() => ({}))) as { error?: string };
+    return { ok: false, code: r.status === 401 || r.status === 403 ? 'EXPIRED' : j.error ?? 'ERROR' };
+  } catch {
+    return { ok: false, code: 'NETWORK' };
+  }
+}
+export const COMMAND_ERROR_LABEL: Record<string, string> = {
+  TRASH_EXPIRED: '보관 기간 30일이 지나 복구할 수 없습니다.', NOT_FOUND: '대상을 찾을 수 없습니다.', EXPIRED: '접근이 만료되었습니다. 다시 로그인해 주세요.',
+  NETWORK: '연결을 확인하고 다시 시도해 주세요.', INVALID_STATE: '이미 처리된 항목입니다. 목록을 새로 고쳐 주세요.', RECORD_IN_TRASH: '휴지통에 있는 기록입니다. 먼저 복구해 주세요.',
+};
+export const commandError = (code: string) => COMMAND_ERROR_LABEL[code] ?? '처리하지 못했습니다. 잠시 후 다시 시도해 주세요.';

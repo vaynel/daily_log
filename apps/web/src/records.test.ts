@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { byLifeDate, coversMonth, fetchJson, initialMonth, monthGrid, PAGE_SIZE, recordsUrl, shiftMonth, STATUS_INFO, type RecordRow } from './records.js';
+import { cleanupReasonLabel, commandError, daysLeft, postCommand, remainingLabel, SCOPE_NOTICE, byLifeDate, coversMonth, fetchJson, initialMonth, monthGrid, PAGE_SIZE, recordsUrl, shiftMonth, STATUS_INFO, type RecordRow } from './records.js';
 
 const res = (status: number, body: unknown = {}) => (async () => new Response(JSON.stringify(body), { status })) as unknown as typeof fetch;
 
@@ -67,5 +67,29 @@ describe('목록 페이지 나누기 보조', () => {
   it('결과 파일 없음은 ok 가 아닌 경고 톤', () => {
     expect(STATUS_INFO.RESULT_FILE_MISSING).toMatchObject({ label: '결과 파일 없음', tone: 'warn' });
     expect(STATUS_INFO.RESULT_FILE_MISSING.hint).not.toContain('제작과 검수가 끝났습니다');
+  });
+});
+
+describe('휴지통 표시 규칙', () => {
+  const now = new Date('2026-02-01T00:00:00Z');
+  it('남은 일수는 올림이고 보관 기간이 끝나면 0이며 복구 문구가 사라진다', () => {
+    expect(daysLeft('2026-03-03T00:00:00Z', now)).toBe(30);
+    expect(daysLeft('2026-02-01T00:00:01Z', now)).toBe(1);
+    expect(daysLeft('2026-02-01T00:00:00Z', now)).toBe(0);
+    expect(remainingLabel('2026-02-04T00:00:00Z', now)).toBe('3일 안에 복구할 수 있습니다');
+    expect(remainingLabel('2026-01-31T00:00:00Z', now)).toContain('복구할 수 없습니다');
+  });
+  it('삭제 범위 안내는 서버 사본과 Drive 백업·완성 영상을 구분한다', () => {
+    expect(SCOPE_NOTICE).toContain('서버에 있는 사본만');
+    expect(SCOPE_NOTICE).toContain('Google Drive 백업과 완성 영상은 지워지지 않습니다');
+  });
+  it('명령 실패는 서버 오류 코드로 구분한다(만료·네트워크)', async () => {
+    const f = (status: number, body: unknown) => (async () => new Response(JSON.stringify(body), { status })) as unknown as typeof fetch;
+    expect(await postCommand('/x', {}, f(200, {}))).toEqual({ ok: true });
+    expect(await postCommand('/x', {}, f(410, { error: 'TRASH_EXPIRED' }))).toEqual({ ok: false, code: 'TRASH_EXPIRED' });
+    expect(await postCommand('/x', {}, f(401, {}))).toEqual({ ok: false, code: 'EXPIRED' });
+    expect(await postCommand('/x', {}, (async () => { throw new TypeError('x'); }) as never)).toEqual({ ok: false, code: 'NETWORK' });
+    expect(commandError('TRASH_EXPIRED')).toContain('30일');
+    expect(cleanupReasonLabel('BACKUP_NOT_CURRENT')).toContain('백업');
   });
 });
