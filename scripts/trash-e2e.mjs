@@ -81,7 +81,7 @@ let passed = 0;
 const ok = (name) => { passed++; console.log(`PASS ${name}`); };
 const shot = async (page, name) => { if (shotDir) await page.screenshot({ path: path.join(shotDir, `${name}.png`), fullPage: true }); };
 const text = (page, sel) => page.locator(sel).first().innerText();
-const open = async (page, id) => {
+const open = async (page) => {
   await page.goto(base + '/');
   await page.locator('[data-testid=screen-home]').waitFor();
   await page.locator('[data-testid=records-list]').waitFor();
