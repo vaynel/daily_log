@@ -1,6 +1,6 @@
 // TASK-28 브라우저 E2E: 결과 재생·다운로드·수정 요청·이전 버전 표시를 PC(1280x800)와 Android 에뮬레이션(412x915 터치)에서 확인한다.
-// 실제 Android 기기 검증이 아니다. 서버+vite+Chromium 을 동시에 띄우므로 pids 제한이 있는 워커 컨테이너에서는 실행하지 말고
-// 호스트(워커 이미지)에서 단독으로 실행한다: DATABASE_URL, PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH 필요. E2E_SHOT_DIR 이 있으면 화면을 저장한다.
+// 실제 Android 기기 검증이 아니다. 자원이 제한된 워커 컨테이너에서는 먼저 `npm run build -w apps/web` 로 정적 빌드한 뒤 vite preview(가벼운 단일 프로세스)로 서빙한다.
+// DATABASE_URL, PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH 필요. E2E_SHOT_DIR 이 있으면 화면을 저장한다.
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
@@ -59,16 +59,22 @@ const seed = async (date, pipe, file) => {
   return id;
 };
 await mkdir(path.join(store, 'videos'), { recursive: true });
-const ok = await seed('2026-10-01', { production: 'DONE', review: 'PASSED' }, 'ok.mp4');
-const rejected = await seed('2026-10-02', { production: 'DONE', review: 'REJECTED' }, 'rejected.mp4');
-const missing = await seed('2026-10-03', { production: 'DONE', review: 'PASSED' }, 'missing.mp4');
-await rm(path.join(store, 'videos', 'missing.mp4'));
+// 프로필마다 새 기록을 만든다(PC 에서 수정한 기록이 Android 시험의 시작 상태를 바꾸지 않게).
+const seedSet = async (day) => {
+  const ids = {
+    ok: await seed(`2026-10-0${day}`, { production: 'DONE', review: 'PASSED' }, `ok${day}.mp4`),
+    rejected: await seed(`2026-10-1${day}`, { production: 'DONE', review: 'REJECTED' }, `rejected${day}.mp4`),
+    missing: await seed(`2026-10-2${day}`, { production: 'DONE', review: 'PASSED' }, `missing${day}.mp4`),
+  };
+  await rm(path.join(store, 'videos', `missing${day}.mp4`));
+  return ids;
+};
 
 let browser;
 try {
   const server = start(['--import', 'tsx', 'apps/server/src/auth/demo.ts'], { FILE_STORAGE_DIR: store, DATABASE_URL: dbUrl.toString() });
   await waitFor(server, /auth demo ready/);
-  const web = start(['node_modules/vite/bin/vite.js', 'apps/web', '--strictPort']);
+  const web = start(['node_modules/vite/bin/vite.js', 'preview', 'apps/web', '--port', '5173', '--strictPort']);
   await waitFor(web, /Local:/);
   browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH, headless: true, args: ['--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--renderer-process-limit=1', '--no-zygote', '--num-raster-threads=1'] });
   const profiles = [
@@ -77,7 +83,13 @@ try {
   ];
   const shot = async (page, name) => { if (shotDir) { await mkdir(shotDir, { recursive: true }); await page.screenshot({ path: path.join(shotDir, `${name}.png`), fullPage: true }); } };
   const out = [];
+  let day = 0;
+  const idsAll = {};
   for (const [name, opts] of profiles) {
+    day++;
+    const { ok, rejected } = await seedSet(day);
+    idsAll[name] = { ok, rejected };
+    const D = (k) => ({ ok: `2026-10-0${day}`, rejected: `2026-10-1${day}`, missing: `2026-10-2${day}` })[k];
     const ctx = await browser.newContext({ ...opts, acceptDownloads: true });
     const page = await ctx.newPage();
     await page.goto('http://127.0.0.1:5173/');
@@ -87,10 +99,10 @@ try {
     const open = async (date) => { await list.locator(`li[data-life-date="${date}"] button`).click(); await page.getByTestId('result-panel').waitFor(); };
 
     // AC-1: 재생 요소 + 실제 내려받기
-    await open('2026-10-01');
+    await open(D('ok'));
     await page.getByTestId('result-video').waitFor();
     const [dl] = await Promise.all([page.waitForEvent('download'), page.getByTestId('download-result').click()]);
-    assert.equal(dl.suggestedFilename(), 'ok.mp4');
+    assert.equal(dl.suggestedFilename(), `ok${day}.mp4`);
     await shot(page, `${name}-result-ok`);
     // AC-5: 수정(영상에서 빼기) → 이전 영상이 완성본으로 남지 않는다
     await page.getByRole('button', { name: /영상에서 빼기: 점심에 김치찌개/ }).click();
@@ -103,23 +115,23 @@ try {
     await page.getByRole('button', { name: '← 목록' }).click();
 
     // AC-3: 검수 미통과 / 파일 없음 — 이유와 가능한 조치
-    await open('2026-10-02');
+    await open(D('rejected'));
     assert.equal(await page.getByTestId('result-video').count(), 0);
     assert.match(await page.getByTestId('result-problem').innerText(), /검수를 통과하지 못/);
     await shot(page, `${name}-result-rejected`);
     await page.getByRole('button', { name: '← 목록' }).click();
-    await open('2026-10-03');
+    await open(D('missing'));
     assert.match(await page.getByTestId('result-problem').innerText(), /결과 파일을 찾을 수 없어/);
     assert.ok((await page.getByTestId('result-actions').locator('li').count()) >= 1);
     await shot(page, `${name}-result-missing`);
 
     // 직접 URL: 미통과 결과는 409
-    const r = await page.request.get(`/api/records/${rejected}/results/1/file`);
+    const r = await page.request.get(`http://127.0.0.1:5173/api/records/${rejected}/results/1/file`);
     assert.equal(r.status(), 409);
     out.push({ profile: name, result: 'PASS' });
     await ctx.close();
   }
-  console.log(JSON.stringify({ e2e: out, ids: { ok, rejected, missing } }));
+  console.log(JSON.stringify({ e2e: out, ids: idsAll }));
 } finally {
   await browser?.close();
   for (const p of procs) { try { process.kill(-p.pid, 'SIGTERM'); } catch { /* 이미 종료 */ } }
