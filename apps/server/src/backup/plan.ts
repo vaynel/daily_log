@@ -10,7 +10,7 @@ export type BackupKind = 'RECORD' | 'ATTACHMENT' | 'VIDEO';
 export interface PlanItem {
   kind: BackupKind;
   key: string;
-  /** 대응 버전 정보. 기록: revision 과 요약/계획/결과 버전, 첨부: 내용 해시, 영상: RESULT 버전. */
+  /** 대응 버전 정보. 기록: revision·요약/계획/결과 버전과 스냅샷 SHA-256, 첨부: 내용 해시, 영상: RESULT 버전. */
   label: string;
   sha256: string;
   size: number;
@@ -84,7 +84,9 @@ export async function buildBackupPlan(pool: pg.Pool, fileStorageDir: string, int
     versions: vers.rows.map((x) => ({ kind: x.kind, version: x.version, content: x.content })),
   };
   const bytes = Buffer.from(JSON.stringify(snapshot, null, 2), 'utf8');
-  out.push(mk('RECORD', 'record.json', `rev${snapshot.revision}.s${maxOf('SUMMARY')}.p${maxOf('PRODUCTION_PLAN')}.r${maxOf('RESULT')}`, sha256Hex(bytes), bytes.length, 'application/json', { bytes }));
+  // 내용 변경은 revision 증가 없이도 가능하다. 기존 바이트·파일명·중복 방지 키는 유지한다.
+  const snapshotSha = sha256Hex(bytes);
+  out.push(mk('RECORD', 'record.json', `rev${snapshot.revision}.s${maxOf('SUMMARY')}.p${maxOf('PRODUCTION_PLAN')}.r${maxOf('RESULT')}.sha${snapshotSha}`, snapshotSha, bytes.length, 'application/json', { bytes }));
 
   // 2) 첨부 원본(내용 해시 이름으로 한 번만 저장된 파일). 같은 파일을 여러 참조가 가리켜도 한 건.
   const seen = new Set<string>();

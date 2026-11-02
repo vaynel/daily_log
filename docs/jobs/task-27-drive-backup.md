@@ -7,7 +7,7 @@
 - **목록(D29-02)** `plan.ts`: 기록 스냅샷(JSON: 대화 항목·첨부 목록·요약/계획/결과 버전·revision) + 첨부 원본 + 최신 RESULT 영상. **음성은 조회하지 않고** 스냅샷에도 필드가 없으며 `backup_items.item_kind`가 RECORD/ATTACHMENT/VIDEO로만 제한된다. 실제 여유 용량은 `about.storageQuota`(limit·usage)로 계산하고, 올릴 바이트가 남은 용량보다 크면 하나도 올리지 않는다(limit 없는 무제한 계정은 검사 한도 없음).
 - **복사(D29-03)** 작업 큐 종류 `drive-backup`, 단계 `preflight → copy → finalize`. 
   - 중복 방지: `(소유자, 기록, 종류, 키, 내용 SHA-256)` 유일. 내용이 같으면 작업도 업로드도 없다(`enqueueInterview`가 이미 전부 검증되었으면 작업 없이 VERIFIED). 작업 멱등키 `drive-backup:<기록>:<목록 지문>`.
-  - 버전: 파일은 새로 만들기만 하고 기존 파일을 갱신·삭제하지 않는다. 이름 `<생활일>_<종류>_<sha8>_<키>`, 폴더 `Daily Log Backup/<생활일>/`, appProperties에 `dlInterview`·`dlKind`·`dlVersion`(기록 `rev<N>.s<요약>.p<계획>.r<결과>`, 첨부 `sha<12>`, 영상 `result.v<N>`)·`dlItemKey`.
+  - 버전: 파일은 새로 만들기만 하고 기존 파일을 갱신·삭제하지 않는다. 이름 `<생활일>_<종류>_<sha8>_<키>`, 폴더 `Daily Log Backup/<생활일>/`, appProperties에 `dlInterview`·`dlKind`·`dlVersion`(기록 `rev<N>.s<요약>.p<계획>.r<결과>.sha<스냅샷 SHA-256 64자리>`, 첨부 `sha<12>`, 영상 `result.v<N>`)·`dlItemKey`.
   - 응답 유실: 올리기 전에 `dlItemKey`로 같은 파일을 찾아 이어받는다. 올린 직후 크기·MD5를 Drive에서 다시 읽어 대조하고, `finalize`가 현재 목록 전부를 다시 대조한 뒤에만 VERIFIED.
   - 서버 파일 해시가 기록과 다르면 그 항목은 올리지 않고(`SOURCE_CORRUPT`) 나머지를 올린 뒤 `SOURCE_INCOMPLETE`로 실패.
   - `sweep()`은 워커가 `BACKUP_SWEEP_INTERVAL_MS`(기본 1시간)마다 호출하는 멱등 훑기라 하루 1회 이상 돌아도 중복 복사가 없다.
@@ -35,3 +35,7 @@
 ## 한계 / 미실행
 - 실제 Google Drive·Google OAuth 호출은 이 러너에서 하지 않았다(가짜 Drive 서버 사용). 실제 업로드 확인은 PM이 관리자 계정으로 서버에서 수행한다.
 - 영상은 메모리에 읽어 한 번에 올린다(세로 180초 영상 규모 가정).
+
+## TASK-128 기록 버전 표시
+
+기록 내용이 revision 증가 없이 바뀌어도 새 스냅샷의 SHA-256으로 버전을 구분한다. 동일 내용은 같은 표시를 생성한다. 스냅샷 바이트·Drive 이름·중복 방지 키는 변경하지 않으며, 이미 업로드된 파일과 DB의 이전 버전 표시는 갱신하지 않는다. 이전 형식 백업도 내용 해시로 재사용하여 재업로드하지 않는다.
