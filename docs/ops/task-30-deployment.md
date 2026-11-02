@@ -24,6 +24,79 @@ PM 제공 사실: `daily.log2u.me`는 현재 VPN/LAN 전용 nginx와 수동 갱�
 
 외부 방화벽은 ingress 443만 허용하고 DB·Redis·API3300은 외부에 열지 않는다. 앱 shell 정적 자산은 로그인 전에도 내려갈 수 있으나 개인 데이터는 포함하지 않는다. 개인 기록/첨부/영상은 반드시 인증 API를 경유한다. URL 퍼센트 인코딩 우회도 기존 전역 인증 훅으로 차단한다. 프록시가 `/api` 경로를 다른 정적 위치로 재작성해서는 안 된다. Google 콜백 쿼리·쿠키·개인 원문을 프록시 로그에 남기지 않도록 해당 vhost 로그 정책도 관리자 검토 대상이다.
 
+## TASK-127 재발 방지: 업로드 한도와 worker 기동 순서
+
+TASK-114 실사용에서 보고된 nginx 413(약 3.2MB 사진)과 DB보다 먼저 뜬 worker의 시작 제한 실패를 예방하는 절차다. 아래는 관리자 실행용이며 TASK-127에서 운영 설정을 변경하거나 배포하지 않는다. 기존 TASK-30 검증 이력과 현재 운영 상태를 혼동하지 않는다.
+
+### nginx 사진 업로드 한도
+
+앱의 `apps/server/src/attachments/policy.ts`는 사진 한 장을 **10MiB(10 × 1024 × 1024 bytes)**까지 허용한다. `routes.ts`의 요청 본문 한도는 이 값 + 1024 bytes다. nginx는 앱보다 먼저 요청을 거부할 수 있으므로 **`client_max_body_size 11m;`**(11MiB, 사진 한도보다 1MiB 여유)를 설정한다. `10m`은 여유가 없고, `0`은 무제한이므로 이 운영 기준에서는 사용하지 않는다. 앱 자체의 10MiB 검증은 그대로 유지한다.
+
+위치: 관리자가 확인한 `/etc/nginx/conf.d/daily-log.conf`의 `server_name daily.log2u.me`를 가진 **HTTPS `server` 블록 안**. 기존 TLS·proxy·정적 파일 설정은 보존하고 다음 한 줄을 추가한다(완성된 vhost 대체 파일이 아님).
+
+```nginx
+client_max_body_size 11m;
+```
+
+`/api/records/:id/attachments`에 매칭되는 `location`과 그 `include`에 더 작은 값이 있으면 그 값이 우선하므로 함께 확인한다. 다른 vhost의 설정만 바꾸거나 HTTP 리디렉션 블록에만 넣어서는 해결되지 않는다. 앞단 프록시가 있다면 그 요청 한도도 확인한다.
+
+관리자가 해당 vhost 사본을 별도 보존한 후 편집하고, 기존 관리 권한 세션에서 아래 명령을 수행한다. 검사 실패 시 reload하지 않고 원인을 해결하거나 사본으로 복구한다.
+
+```sh
+nginx -t && systemctl reload nginx
+```
+
+공식 기준: [nginx client_max_body_size](https://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size)는 기본값 `1m`, 설정 범위 `http/server/location`, 초과 응답 `413`을 정의한다.
+
+### DB 지연 시 worker 재시작 정책
+
+`apps/server/src/worker.ts`는 시작 시 `queue.recover()`를 호출하며 이 단계의 DB 연결 실패는 루프의 오류 처리 밖이다. 단순 `After=`는 DB 연결 준비를 보장하지 않는다. 프로세스 실패 후 **10초 간격으로 재시작하고 시작 횟수 제한을 해제**하여 DB가 나중에 준비되면 다음 시작에서 복구하게 한다. 앱의 작업별 자동 재시도 횟수·예산 정책은 바꾸지 않는다.
+
+TASK-114에서 보고된 사용자 서비스 기준 drop-in 위치:
+`~/.config/systemd/user/daily-log-worker.service.d/db-wait.conf` (서비스를 소유한 사용자의 홈). 관리자가 기존 파일을 보존한 뒤 다음 내용을 병합한다.
+
+```ini
+[Unit]
+StartLimitIntervalSec=0
+
+[Service]
+Restart=on-failure
+RestartSec=10s
+```
+
+`StartLimitIntervalSec`는 `[Unit]`, `Restart`와 `RestartSec`는 `[Service]`에 둔다. 기존 `Restart=always`도 허용한다. `RestartPreventExitStatus`가 DB 실패 종료 코드를 막고 있거나 다른 drop-in이 위 값을 덮어쓰는 경우를 제거/조정해야 한다. 서비스 본체의 `ExecStart`, 환경 파일, 작업 디렉터리는 기존 검증된 값을 보존한다.
+
+관리자 적용 명령(사용자 서비스 소유자로 실행):
+
+```sh
+systemctl --user daemon-reload
+systemctl --user reset-failed daily-log-worker.service
+systemctl --user restart daily-log-worker.service
+```
+
+시스템 서비스로 설치했다면 경로는 `/etc/systemd/system/daily-log-worker.service.d/db-wait.conf`이고 위 명령과 아래 점검 명령에서 `--user`를 뺀다. 두 manager에 같은 worker를 중복 기동하지 않는다. 사용자 서비스의 부팅 시 실행은 관리자에게 enable 및 linger 상태를 별도로 확인받는다. 이 문서의 기존 백업·롤백 예시는 시스템 서비스 기준이므로 실제 설치 유형에 맞춰 일관되게 선택한다.
+
+이 정책은 DB 지연에 대한 재시작을 지속하지만 잘못된 자격 증명·마이그레이션·설정 오류도 반복할 수 있다. 재시작 횟수가 계속 증가하면 관리자가 원인을 조사하며 정상 복구로 기록하지 않는다. 수동 stop은 자동 재시작 대상으로 간주하지 않는다. 공식 기준: [systemd 시작 제한](https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html#StartLimitIntervalSec=interval), [Restart/RestartSec](https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html#Restart=).
+
+### 릴리스 전 읽기 전용 체크리스트 (필수)
+
+`release.mjs status`는 승인 JSON을 검사할 뿐 nginx/systemd 실효 설정을 검사하지 않는다. `READY_FOR_ADMIN_SWITCH`만으로 아래 항목을 통과 처리하지 않는다. 단순 문자열 검색은 다른 vhost·주석·덮어쓴 drop-in을 오인할 수 있어 이 단계는 관리자가 실효 설정을 대조하는 체크리스트로 제공한다. 파일을 읽을 수 없거나 설정 범위를 확인하지 못하면 **NOT_RUN**, 누락·기준 미달이면 **FAIL**로 기록하고 릴리스를 보류한다.
+
+- [ ] **업로드 한도**: 해당 HTTPS vhost 및 업로드 경로에 적용되는 include/location을 읽고 `client_max_body_size 11m;`가 실효 값인지 확인한다. 명시값이 없으면 상위 상속까지 추적한다. 모든 범위에서 누락이면 기본 `1m`이므로 FAIL; `10m` 이하 또는 무제한 `0`도 이 기준에서는 FAIL. 값·적용 범위만 기록하고 전체 nginx 설정 출력은 보고서에 붙이지 않는다.
+- [ ] **worker 정책**: 아래 읽기 전용 명령의 실효 값이 `Restart=on-failure`(또는 `always`), `RestartUSec=10s`, `StartLimitIntervalUSec=0`인지 확인한다. 서비스 미설치(`LoadState`가 `loaded` 아님), `Restart=no`, 시작 제한이 0이 아님, 재시작 간격 누락/기준 불일치, DB 실패를 막는 `RestartPreventExitStatus`가 있으면 FAIL로 기록하고 위 drop-in 절차를 안내한다. `StartLimitBurst`만 늘리는 것으로 대체하지 않는다.
+
+```sh
+systemctl --user show daily-log-worker.service \
+  -p LoadState -p Restart -p RestartUSec -p StartLimitIntervalUSec \
+  -p RestartPreventExitStatus -p ActiveState -p SubState -p NRestarts
+```
+
+- [ ] **관리자 적용 후 확인**: nginx 검사/reload 결과, 실효 worker 정책 재조회 결과를 기록한다. 설정 변경 전 체크리스트와 구분한다. 설정이나 환경 전체를 출력하는 `systemctl show`/`cat` 또는 `nginx -T` 출력을 공유하지 않는다.
+- [ ] **별도 검증 환경 재현**: 유료 제작을 비활성화한 격리 환경에서 DB 미기동 상태로 worker를 시작하고, 기존 5회 실패를 넘도록 60초 이상 재시작이 지속되는지 확인한 뒤 DB를 기동한다. worker가 수동 reset 없이 active 상태를 유지하고 DB 복구가 완료되는지 확인한다. 시각·종료 코드·재시작 횟수만 기록한다. 운영 DB를 이 시험 때문에 정지하지 않는다.
+- [ ] **업로드 실사용 확인**: 관리자 시험 계정으로 유효한 약 3.2MiB 및 10MiB 사진을 업로드해 nginx 413이 사라지고 앱 저장에 성공하는지 확인한다. 10MiB 초과 파일은 앱에서 거부되어야 한다. 인증/형식 오류는 성공 증거가 아니다. 개인 사진·쿠키·토큰은 증거에 포함하지 않는다.
+
+체크리스트 기록 양식: `commit / 설치 유형(user 또는 system) / 항목 / PASS·FAIL·NOT_RUN / 실효 값 또는 비민감 결과 / 확인자·시각`. TASK-127의 저장소 문서 검증은 이 운영 확인을 대신하지 않는다.
+
 ## 버전 고정 묶음과 실행 전제
 
 ```sh
