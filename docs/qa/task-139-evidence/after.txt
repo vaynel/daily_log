@@ -1,0 +1,14 @@
+
+ RUN  v4.1.11 /workspace/apps/server
+
+ ✓ src/retention/task139.test.ts > TASK139 AC1: other allowed account cannot read four file paths 223ms
+ ✓ src/retention/task139.test.ts > TASK139 AC2: owner approved files work; rejected video is blocked 81ms
+ ✓ src/retention/task139.test.ts > TASK139 AC3: immediate purge removes only ended matching transcripts 35ms
+ ✓ src/retention/task139.test.ts > TASK139 AC3: expired purge removes only ended matching transcripts 33ms
+ ✓ src/retention/task139.test.ts > TASK139 AC3: processing job/session deferred then retried, custom session directory 46ms
+ ✓ src/retention/task139.test.ts > TASK139: stale/rejected previous versions and trashed files cannot bypass record routes 50ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  12:00:29
+   Duration  1.51s (transform 482ms, setup 0ms, import 676ms, tests 663ms, environment 0ms)

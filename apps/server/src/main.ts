@@ -49,7 +49,7 @@ const app = buildApp({
   sessionSecret: config.sessionSecret,
   fileStorageDir: config.fileStorageDir,
   records: new RecordStore(pool),
-  retention: new RetentionService({ pool, fileStorageDir: config.fileStorageDir, backup }),
+  retention: new RetentionService({ pool, fileStorageDir: config.fileStorageDir, backup, sessionDir: process.env.DAILY_LOG_VOICE_SESSION_DIR?.trim() || undefined }),
   briefing: { infer: briefingInfer, rules: new PgRuleStore(pool) },
   entries: { list: async () => (await pool.query('SELECT id, entry_date, body FROM sample_entries ORDER BY entry_date DESC')).rows },
   interview: {

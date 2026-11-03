@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type pg from 'pg';
+import { displayStatus, resultFileName, resultVersionState } from './view.js';
 import { LIMITS } from '../attachments/policy.js';
 import { addCalendarMonthSeoul, addTrashPeriod, isValidDate, seoulDate, suggestLifeDate } from './time.js';
 
@@ -123,6 +124,31 @@ export interface RecordListRow { id: string; lifeDate: string; status: Interview
 
 export class RecordStore {
   constructor(private readonly pool: pg.Pool, private readonly opts: StoreOptions = {}) {}
+
+  /** 일반 파일 URL도 기록별 URL과 같은 소유권·삭제·검수 규칙을 적용한다. */
+  async canReadFile(ownerId: string, kind: 'attachments' | 'videos', name: string): Promise<boolean> {
+    if (kind === 'attachments') {
+      return (await this.pool.query(
+        `SELECT 1 FROM attachment_refs a JOIN interviews i ON i.id = a.interview_id
+         WHERE a.storage_key = $1 AND i.owner_id = $2 AND a.deleted_at IS NULL
+           AND i.deleted_at IS NULL AND i.server_purged_at IS NULL AND i.server_cleaned_at IS NULL LIMIT 1`,
+        [name, ownerId])).rows.length > 0;
+    }
+    const candidates = await this.pool.query(
+      `SELECT DISTINCT i.id FROM record_versions v JOIN interviews i ON i.id = v.interview_id
+       WHERE v.kind = 'RESULT' AND v.content->>'file' = $1 AND i.owner_id = $2
+         AND i.deleted_at IS NULL AND i.server_purged_at IS NULL`, [name, ownerId]);
+    for (const { id } of candidates.rows) {
+      const snap = await this.loadById(ownerId, id, new Date());
+      if (!snap) continue;
+      const versions = await this.listResultVersions(ownerId, id);
+      if (versions.some((v, idx) => resultFileName(v.content) === name && resultVersionState({
+        isLatest: idx === versions.length - 1, superseded: v.superseded, wasPassed: v.wasPassed,
+        status: displayStatus(snap.interview.status, snap.pipeline, true),
+      }).downloadable)) return true;
+    }
+    return false;
+  }
 
   private async tx<T>(fn: (c: Q) => Promise<T>): Promise<T> {
     const c = await this.pool.connect();

@@ -4,6 +4,7 @@ import path from 'node:path';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { DRIVE_SCOPE, LOGIN_SCOPE, type AuthConfig } from './config.js';
 import { b64url, challengeOf, OidcClient, OidcError } from './oidc.js';
+import type { RecordStore } from '../records/store.js';
 import type { DriveConnectionStore } from '../backup/connections.js';
 import { parseCookies, serializeCookie, sign, verify, type SessionClaims } from './session.js';
 
@@ -30,6 +31,7 @@ export interface AuthPluginOptions {
   sessionSecret: string;
   fileStorageDir: string;
   entries: EntryStore;
+  records?: Pick<RecordStore, 'canReadFile'>;
   fetchImpl?: typeof fetch;
   /** 있으면 Drive 갱신 토큰을 암호화 저장하고 연결 상태를 이 저장소 기준으로 보여 준다(없으면 세션 표시만). */
   drive?: DriveConnectionStore;
@@ -192,6 +194,8 @@ export function registerAuth(app: FastifyInstance, opts: AuthPluginOptions) {
       const name = (req.params as { name: string }).name;
       // 파일명 한 단계만 허용: 경로 구분자·상위 이동·숨김 파일 차단
       if (!/^[\w][\w.-]*$/.test(name) || name.includes('..')) return reply.code(400).send({ error: 'invalid_name' });
+      const user = (req as FastifyRequest & { user: SessionClaims }).user;
+      if (!opts.records || !(await opts.records.canReadFile(user.sub, route, name))) return reply.code(404).header('cache-control', 'private, no-store').send();
       const full = path.join(opts.fileStorageDir, dir, name);
       const st = await stat(full).catch(() => null);
       if (!st?.isFile()) return reply.code(404).send({ error: 'not_found' });

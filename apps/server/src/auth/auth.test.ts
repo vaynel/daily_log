@@ -83,12 +83,12 @@ describe('AC-1 허용 계정 로그인 후 개인 기록 접근 (인증 E2E, 모
     expect(entries.headers['cache-control']).toContain('no-store');
 
     const file = await app.inject({ url: '/api/attachments/photo.png', headers: withSession(session) });
-    expect(file.statusCode).toBe(200);
-    expect(file.body).toBe('PNGDATA');
-    expect(file.headers['content-type']).toBe('image/png');
+    // 인증만으로는 소유 기록에 연결되지 않은 디스크 파일을 읽을 수 없다.
+    expect(file.statusCode).toBe(404);
+    expect(file.body).toBe('');
     const video = await app.inject({ url: '/api/videos/day1.mp4', headers: withSession(session) });
-    expect(video.statusCode).toBe(200);
-    expect(video.headers['content-type']).toBe('video/mp4');
+    expect(video.statusCode).toBe(404);
+    expect(video.body).toBe('');
 
     const out = await app.inject({ method: 'POST', url: '/auth/logout' });
     expect(String(out.headers['set-cookie'])).toContain('Max-Age=0');

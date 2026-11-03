@@ -243,6 +243,8 @@ describe.skipIf(!url)('Google Drive 일일 백업 (실제 PostgreSQL 임시 스�
 
   it('AC-3 Drive 가 계속 실패해도 서버 원본·기록 상태·영상 열람은 그대로다', async () => {
     const w = await world();
+    // 열람 가능한 완성본을 준비한다. 검수 없는 영상은 TASK-139부터 일반 URL에서도 차단된다.
+    await w.store.setPipeline(w.owner, w.interview.id, { production: 'DONE', review: 'PASSED' }, NOW);
     const before = await serverSnapshot(w);
     drive.state.failUploads = 99;
     const r = await w.run();

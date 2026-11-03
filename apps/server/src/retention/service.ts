@@ -1,4 +1,4 @@
-import { rm } from 'node:fs/promises';
+import { readdir, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import type pg from 'pg';
 import { buildBackupPlan } from '../backup/plan.js';
@@ -14,6 +14,7 @@ export type CleanupBlock = 'PROCESSING' | 'CHANGED_DURING_CHECK' | 'BACKUP_NOT_C
 export interface RetentionDeps {
   pool: pg.Pool;
   fileStorageDir: string;
+  sessionDir?: string;
   /** 서버 사본 정리 가능 여부의 유일한 판정자. 판정 로직을 여기에 복제하지 않는다. */
   backup: Pick<BackupService, 'cleanupReadiness'>;
   now?: () => Date;
@@ -206,6 +207,32 @@ export class RetentionService {
     }
   }
 
+  /** DB의 영구 삭제 표식을 재시도 근거로 사용한다. 활성 세션·다른 기록·진행 중 작업은 보존한다. */
+  async purgeTranscripts(): Promise<{ deleted: number; failed: number }> {
+    const dir = this.d.sessionDir ?? path.join(this.d.fileStorageDir, 'live-sessions');
+    const names = await readdir(dir).catch((e: NodeJS.ErrnoException) => {
+      if (e.code === 'ENOENT') return [];
+      throw e;
+    });
+    let deleted = 0, failed = 0;
+    for (const name of names) {
+      if (!/^live-[\w-]+\.json$/.test(name)) continue;
+      try {
+        const file = path.join(dir, name);
+        const session = JSON.parse(await readFile(file, 'utf8')) as { interviewId?: string; endedAt?: string | null; processing?: boolean };
+        if (!session.interviewId || !session.endedAt || session.processing) continue;
+        const eligible = await this.d.pool.query(
+          `SELECT 1 FROM interviews i WHERE i.id::text = $1 AND i.server_purged_at IS NOT NULL
+           AND NOT EXISTS (SELECT 1 FROM jobs j WHERE j.subject_id = i.id::text AND j.state IN ('QUEUED', 'RUNNING', 'WAITING'))`,
+          [session.interviewId]);
+        if (!eligible.rowCount) continue;
+        await rm(file, { force: true });
+        deleted++;
+      } catch { failed++; } // 다음 훑기에서 재시도, 전사/경로는 로그에 남기지 않는다.
+    }
+    return { deleted, failed };
+  }
+
   // ---- 파일 삭제 대기열 ----
   /**
    * 대기열의 첨부 파일을 지운다. 파일 키별 잠금 아래에서 참조를 다시 확인하므로, 같은 내용을 새로 올리는 요청(같은 키 잠금)과 겹쳐도
@@ -233,7 +260,8 @@ export class RetentionService {
       });
       if (res === 'deleted') deleted++; else if (res === 'kept') kept++; else failed++;
     }
-    return { deleted, kept, failed };
+    const transcripts = await this.purgeTranscripts();
+    return { deleted: deleted + transcripts.deleted, kept, failed: failed + transcripts.failed };
   }
 
   /** 한 번의 훑기: 음성 → 휴지통 만료 → 한 달 정리 → 파일 대기열. 단계 하나가 실패해도 나머지는 계속한다. */

@@ -1,4 +1,4 @@
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, readFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import Fastify, { type FastifyInstance } from 'fastify';
@@ -41,14 +41,15 @@ async function rig(o: { mock?: Partial<MockLiveOptions>; limits?: InterviewLimit
     if ('status' in r) return reply.code(r.status).send({ error: r.code });
     (req as unknown as { user: SessionClaims }).user = r.user;
   });
-  registerInterview(app, {
-    records, usage, live: o.disabled ? null : loadLiveConfig(KEY, { DAILY_LOG_VOICE_LIVE_URL: mock.url }), sessionDir: mkdtempSync(path.join(os.tmpdir(), 'dl-iv-')),
+  const sessionDir = mkdtempSync(path.join(os.tmpdir(), 'dl-iv-'));
+  const live = registerInterview(app, {
+    records, usage, live: o.disabled ? null : loadLiveConfig(KEY, { DAILY_LOG_VOICE_LIVE_URL: mock.url }), sessionDir,
     limits: o.limits, authenticate,
   });
   await app.listen({ port: 0, host: '127.0.0.1' });
   cleanups.push(() => app.close());
   const base = `127.0.0.1:${(app.server.address() as { port: number }).port}`;
-  return { mock, records, usage, app, base };
+  return { mock, records, usage, app, base, live, sessionDir };
 }
 
 class Client {
@@ -125,6 +126,8 @@ describe('AC-1/3/5 연속 대화·저장·일시정지 후 이어하기·다른 
     c.ws.send(JSON.stringify({ type: 'pause' }));
     const stopped = await c.wait('stopped');
     expect(stopped.reason).toBe('USER_PAUSE');
+    await vi.waitFor(() => expect(r.live.store.get(stopped.sessionId as string)).toMatchObject({ interviewId: ID, processing: false }));
+    expect(JSON.parse(readFileSync(path.join(r.sessionDir, `live-${stopped.sessionId}.json`), 'utf8'))).toMatchObject({ interviewId: ID, processing: false, turns: expect.arrayContaining([expect.objectContaining({ userText: expect.stringContaining('사용자 발화 1') })]) });
     await new Promise((x) => setTimeout(x, 100));
     const u1 = await r.usage.get(ME, ID);
     expect(u1).toMatchObject({ status: 'OPEN', connections: 1 });

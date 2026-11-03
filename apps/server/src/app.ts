@@ -51,6 +51,7 @@ export function buildApp(opts: AppOptions = {}) {
     entries: opts.entries ?? { list: async () => [] },
     fetchImpl: opts.fetchImpl,
     drive: opts.drive,
+    records: opts.records,
   });
   if (opts.records) {
     registerRecordRoutes(app, { store: opts.records, attachments: new AttachmentService(opts.records, opts.fileStorageDir ?? ''), now: opts.now });

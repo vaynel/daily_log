@@ -117,6 +117,9 @@ export interface LiveTurn {
 export interface LiveSessionRecord {
   id: string;
   kind: 'live';
+  interviewId?: string;
+  /** 종료 뒤 DB 전사 저장까지 끝나야 삭제할 수 있다. */
+  processing?: boolean;
   model: string;
   startedAt: string;
   endedAt: string | null;
@@ -131,14 +134,14 @@ export interface LiveSessionRecord {
   pricingNote: string;
 }
 
-/** 세션 기록(JSON, 0600). 원문 음성은 저장하지 않는다. 전사 텍스트는 이 파일에만 있다. */
+/** 세션 기록(JSON, 0600). 원문 음성은 저장하지 않는다. 제품 모드의 전사는 DB에도 저장되며 기록 삭제 시 파일도 정리한다. */
 export class LiveSessionStore {
   private readonly cache = new Map<string, LiveSessionRecord>();
   constructor(private readonly dir: string) { mkdirSync(dir, { recursive: true, mode: 0o700 }); }
   private file(id: string) { return path.join(this.dir, `live-${id}.json`); }
-  create(model: string, budgetKrw: number, compression: LiveConfig['compression'], now: Date): LiveSessionRecord {
+  create(model: string, budgetKrw: number, compression: LiveConfig['compression'], now: Date, interviewId?: string): LiveSessionRecord {
     const s: LiveSessionRecord = {
-      id: randomUUID(), kind: 'live', model, startedAt: now.toISOString(), endedAt: null, budgetKrw, estimatedCostKrw: 0,
+      id: randomUUID(), kind: 'live', interviewId, processing: !!interviewId, model, startedAt: now.toISOString(), endedAt: null, budgetKrw, estimatedCostKrw: 0,
       totals: { inputTokens: 0, outputTokens: 0, maxInputTokens: 0 }, compression, interrupts: 0, turns: [], notices: [], stoppedReason: null,
       pricingNote: '추정 비용(usageMetadata 토큰 × 설정 단가). 실제 청구액 아님',
     };
@@ -179,6 +182,7 @@ const rmsOf = (buf: Buffer) => {
 
 /** 제품 인터뷰 모드(TASK-17): 세션 상한·마무리 전환·전사 저장·이어하기. 없으면 시험 도구 동작 그대로. */
 export interface ProductSession {
+  interviewId: string;
   purpose: Purpose;
   limits: InterviewLimits;
   /** 같은 생활일 앞선 연결에서 이미 쓴 시간·추정 비용(이어하기에서 합산). */
@@ -263,7 +267,7 @@ export class LiveRun {
       this.c.instruction = buildInterviewInstruction({ base: this.c.instruction, history: pr.history, attachments: pr.attachments });
       this.c.maxSessionMs = Math.max(1000, pr.limits.maxMs - pr.priorUsedMs);
     }
-    this.rec = d.store.create(this.c.model, d.ledger.limitKrw, this.c.compression, (d.clock ?? (() => new Date()))());
+    this.rec = d.store.create(this.c.model, d.ledger.limitKrw, this.c.compression, (d.clock ?? (() => new Date()))(), pr?.interviewId);
   }
 
   private send(ev: ClientEvent) { if (this.client.readyState === WebSocket.OPEN) this.client.send(JSON.stringify(ev)); }
@@ -580,7 +584,10 @@ export class LiveRun {
     const pr = this.d.product;
     if (pr) {
       const info = { usedMs: Math.round(this.connUsedMs()), costKrw: this.rec.estimatedCostKrw, reason };
-      void this.persistChain.then(() => pr.onEnd(info)).catch(() => {});
+      void this.persistChain.then(() => pr.onEnd(info)).catch(() => {}).finally(() => {
+        this.rec.processing = false;
+        this.d.store.save(this.rec);
+      });
     }
     this.d.log.info({ sessionId: this.rec.id, reason, turns: this.rec.turns.length }, 'live session ended');
   }

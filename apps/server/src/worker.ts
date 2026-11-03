@@ -34,7 +34,7 @@ handlers[BACKUP_KIND] = backup.handlers();
 const sweepEveryMs = Number(process.env.BACKUP_SWEEP_INTERVAL_MS ?? '3600000');
 let lastSweep = 0;
 // 수명 훑기(음성 삭제·휴지통 만료·한 달 서버 사본 정리·파일 삭제 재시도). Drive 에는 읽기 확인만 하고 삭제 요청은 없다.
-const retention = new RetentionService({ pool, fileStorageDir: config.fileStorageDir, backup });
+const retention = new RetentionService({ pool, fileStorageDir: config.fileStorageDir, backup, sessionDir: process.env.DAILY_LOG_VOICE_SESSION_DIR?.trim() || undefined });
 const retentionEveryMs = Number(process.env.RETENTION_SWEEP_INTERVAL_MS ?? '900000');
 let lastRetention = 0;
 

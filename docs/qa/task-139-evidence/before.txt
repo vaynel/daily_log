@@ -1,0 +1,154 @@
+
+ RUN  v4.1.11 /workspace/apps/server
+
+ ❯ src/retention/task139.test.ts (4 tests | 4 failed) 404ms
+   × TASK139 AC1: other allowed account cannot read four file paths 192ms
+   × TASK139 AC2: owner approved files work; rejected video is blocked 30ms
+   × TASK139 AC3: immediate purge removes only ended matching transcripts 33ms
+   × TASK139 AC3: expired purge removes only ended matching transcripts 35ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/retention/task139.test.ts > TASK139 AC1: other allowed account cannot read four file paths
+AssertionError: /api/attachments/8a83d94d44b74afe4f81305048bf6e5b3f5f5ba22a2947652fdcf5b83290fc8c.md: expected 200 to be 404 // Object.is equality
+
+- Expected
++ Received
+
+- 404
++ 200
+
+ ❯ src/retention/task139.test.ts:46:38
+     44|     for (const url of [`/api/attachments/${w.att.storageKey}`, `/api/v…
+     45|       const r = await w.app.inject({ url, headers: cookie('other') });
+     46|       expect.soft(r.statusCode, url).toBe(404);
+       |                                      ^
+     47|       expect.soft(r.body, url).not.toContain('synthetic');
+     48|       if (!url.startsWith('/api/records/')) expect.soft(r.body, url).t…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/9]⎯
+
+ FAIL  src/retention/task139.test.ts > TASK139 AC1: other allowed account cannot read four file paths
+AssertionError: /api/attachments/8a83d94d44b74afe4f81305048bf6e5b3f5f5ba22a2947652fdcf5b83290fc8c.md: expected 'synthetic-1' not to contain 'synthetic'
+
+Expected: "synthetic"
+Received: "synthetic-1"
+
+ ❯ src/retention/task139.test.ts:47:36
+     45|       const r = await w.app.inject({ url, headers: cookie('other') });
+     46|       expect.soft(r.statusCode, url).toBe(404);
+     47|       expect.soft(r.body, url).not.toContain('synthetic');
+       |                                    ^
+     48|       if (!url.startsWith('/api/records/')) expect.soft(r.body, url).t…
+     49|     }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/9]⎯
+
+ FAIL  src/retention/task139.test.ts > TASK139 AC1: other allowed account cannot read four file paths
+AssertionError: /api/attachments/8a83d94d44b74afe4f81305048bf6e5b3f5f5ba22a2947652fdcf5b83290fc8c.md: expected 'synthetic-1' to be '' // Object.is equality
+
+- Expected
++ Received
+
++ synthetic-1
+
+ ❯ src/retention/task139.test.ts:48:70
+     46|       expect.soft(r.statusCode, url).toBe(404);
+     47|       expect.soft(r.body, url).not.toContain('synthetic');
+     48|       if (!url.startsWith('/api/records/')) expect.soft(r.body, url).t…
+       |                                                                      ^
+     49|     }
+     50|   } finally { await w.app.close(); }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/9]⎯
+
+ FAIL  src/retention/task139.test.ts > TASK139 AC1: other allowed account cannot read four file paths
+AssertionError: /api/videos/result-1.mp4: expected 200 to be 404 // Object.is equality
+
+- Expected
++ Received
+
+- 404
++ 200
+
+ ❯ src/retention/task139.test.ts:46:38
+     44|     for (const url of [`/api/attachments/${w.att.storageKey}`, `/api/v…
+     45|       const r = await w.app.inject({ url, headers: cookie('other') });
+     46|       expect.soft(r.statusCode, url).toBe(404);
+       |                                      ^
+     47|       expect.soft(r.body, url).not.toContain('synthetic');
+     48|       if (!url.startsWith('/api/records/')) expect.soft(r.body, url).t…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/9]⎯
+
+ FAIL  src/retention/task139.test.ts > TASK139 AC1: other allowed account cannot read four file paths
+AssertionError: /api/videos/result-1.mp4: expected 'synthetic-video' not to contain 'synthetic'
+
+Expected: "synthetic"
+Received: "synthetic-video"
+
+ ❯ src/retention/task139.test.ts:47:36
+     45|       const r = await w.app.inject({ url, headers: cookie('other') });
+     46|       expect.soft(r.statusCode, url).toBe(404);
+     47|       expect.soft(r.body, url).not.toContain('synthetic');
+       |                                    ^
+     48|       if (!url.startsWith('/api/records/')) expect.soft(r.body, url).t…
+     49|     }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/9]⎯
+
+ FAIL  src/retention/task139.test.ts > TASK139 AC1: other allowed account cannot read four file paths
+AssertionError: /api/videos/result-1.mp4: expected 'synthetic-video' to be '' // Object.is equality
+
+- Expected
++ Received
+
++ synthetic-video
+
+ ❯ src/retention/task139.test.ts:48:70
+     46|       expect.soft(r.statusCode, url).toBe(404);
+     47|       expect.soft(r.body, url).not.toContain('synthetic');
+     48|       if (!url.startsWith('/api/records/')) expect.soft(r.body, url).t…
+       |                                                                      ^
+     49|     }
+     50|   } finally { await w.app.close(); }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/9]⎯
+
+ FAIL  src/retention/task139.test.ts > TASK139 AC2: owner approved files work; rejected video is blocked
+AssertionError: expected [ 404, 409 ] to include 200
+ ❯ src/retention/task139.test.ts:58:23
+     56|     await store.setPipeline(w.owner, w.interview.id, { review: 'REJECT…
+     57|     const r = await w.app.inject({ url: `/api/videos/${w.name}`, heade…
+     58|     expect([404,409]).toContain(r.statusCode);
+       |                       ^
+     59|     expect(r.body).not.toContain('synthetic-video');
+     60|   } finally { await w.app.close(); }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/9]⎯
+
+ FAIL  src/retention/task139.test.ts > TASK139 AC3: immediate purge removes only ended matching transcripts
+ FAIL  src/retention/task139.test.ts > TASK139 AC3: expired purge removes only ended matching transcripts
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ src/retention/task139.test.ts:69:63
+     67|   if (mode === 'immediate') await retention.purgeNow(w.owner, { scope:…
+     68|   else { await store.trashRecord(w.owner, w.interview.id, new Date(now…
+     69|   expect.soft(await stat(files[0]!).then(()=>true,()=>false)).toBe(fal…
+       |                                                               ^
+     70|   for (const f of files.slice(1)) expect(await stat(f).then(()=>true,(…
+     71| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/9]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed (4)
+   Start at  11:45:22
+   Duration  1.32s (transform 564ms, setup 0ms, import 760ms, tests 404ms, environment 0ms)
