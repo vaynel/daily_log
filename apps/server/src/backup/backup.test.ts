@@ -74,7 +74,7 @@ describe.skipIf(!url)('Google Drive 일일 백업 (실제 PostgreSQL 임시 스�
   const vault = () => new TokenVault(SECRET);
 
   /** 소유자 한 명 분량의 기록(대화·요약·첨부·영상·음성)과 백업 서비스를 만든다. */
-  async function world(opts: { connect?: boolean } = {}) {
+  async function world(opts: { connect?: boolean; confirm?: boolean } = {}) {
     const n = ++seq;
     const owner = `owner-${n}`;
     const store = new RecordStore(pool);
@@ -102,7 +102,7 @@ describe.skipIf(!url)('Google Drive 일일 백업 (실제 PostgreSQL 임시 스�
     await writeFile(path.join(dir, 'videos', videoName), videoBytes);
     await store.appendVersion(owner, interview.id, 'RESULT', { file: videoName }, NOW);
     await store.saveAudioSegment(owner, interview.id, 'audio1', NOW);
-    await store.confirm(owner, interview.id, NOW);
+    if (opts.confirm !== false) await store.confirm(owner, interview.id, NOW);
     const drain = async () => { for (let i = 0; i < 10 && (await queue.tick()); i++); };
     const run = async () => {
       const r = (await backup.enqueueInterview(interview.id))!;
@@ -139,7 +139,7 @@ describe.skipIf(!url)('Google Drive 일일 백업 (실제 PostgreSQL 임시 스�
     expect(snap.items.map((i: { body: string }) => i.body)).toEqual([`오늘 무슨 일이 있었나요? #${w.n}`, `테스트 답변 ${w.n}`]);
     expect(snap.versions.map((v: { kind: string; version: number }) => `${v.kind}:${v.version}`).sort()).toEqual(['RESULT:1', 'SUMMARY:1']);
     // 대응 버전 정보: 파일 속성과 DB 행
-    expect(byKind.RECORD!.appProperties.dlVersion).toMatch(/^rev\d+\.s1\.p0\.r1$/);
+    expect(byKind.RECORD!.appProperties.dlVersion).toMatch(/^rev\d+\.s1\.p0\.r1\.sha[a-f0-9]{64}$/);
     expect(byKind.VIDEO!.appProperties.dlVersion).toBe('result.v1');
     expect(byKind.ATTACHMENT!.appProperties.dlVersion).toMatch(/^sha[a-f0-9]{12}$/);
     const rows = (await pool.query(`SELECT item_kind, version_label, status, drive_md5, size_bytes, content_sha256 FROM backup_items WHERE interview_id=$1 ORDER BY item_kind`, [w.interview.id])).rows;
@@ -170,6 +170,61 @@ describe.skipIf(!url)('Google Drive 일일 백업 (실제 PostgreSQL 임시 스�
     const records = driveFilesOf(w).filter((f) => f.appProperties.dlKind === 'RECORD');
     expect(records.map((f) => f.appProperties.dlVersion).sort()).toEqual([expect.stringMatching(/\.s1\./), expect.stringMatching(/\.s2\./)]);
     expect(records[0]!.id).not.toBe(records[1]!.id);
+  });
+
+  it.each(['conversation', 'memo', 'attachment-list'] as const)('TASK-128 %s 변경은 revision 증가 없이 새 버전이며 재백업은 멱등이다', async (change) => {
+    const w = await world({ confirm: false });
+    const first = await w.run();
+    expect(first.now).toMatchObject({ state: 'SUCCEEDED' });
+    const oldFiles = structuredClone(driveFilesOf(w));
+    const oldRecord = oldFiles.find((f) => f.appProperties.dlKind === 'RECORD')!;
+    const uploads = drive.state.uploads;
+    if (change === 'conversation') {
+      await w.store.saveItem(w.owner, w.interview.id, 'a2', 'ANSWER', '추가 대화', NOW);
+    } else if (change === 'attachment-list') {
+      await w.store.trashAttachment(w.owner, w.interview.id, w.att.id, NOW);
+    } else {
+      // 메모 파일의 내용 추가를 검증한다.
+      await new AttachmentService(w.store, dir).upload({
+        ownerId: w.owner, interviewId: w.interview.id, key: 'att2', kind: 'MARKDOWN',
+        name: 'another-note.md', now: NOW,
+        bytes: Buffer.from('# 추가 메모'),
+      });
+    }
+    const changed = await w.run();
+    expect(changed.now).toMatchObject({ state: 'SUCCEEDED' });
+    expect(changed.plan.revision).toBe(first.plan.revision);
+    const records = driveFilesOf(w).filter((f) => f.appProperties.dlKind === 'RECORD');
+    expect(records).toHaveLength(2);
+    const latest = records.find((f) => f.id !== oldRecord.id)!;
+    expect(latest.appProperties.dlVersion).not.toBe(oldRecord.appProperties.dlVersion);
+    expect(drive.state.uploads).toBe(uploads + (change === 'memo' ? 2 : 1));
+    const row = (await pool.query("SELECT version_label FROM backup_items WHERE drive_file_id=$1", [latest.id])).rows[0];
+    expect(row.version_label).toBe(latest.appProperties.dlVersion);
+    const repeated = await w.run();
+    expect(repeated.job).toBeNull();
+    expect(repeated.plan.items.find((i) => i.kind === 'RECORD')!.label).toBe(latest.appProperties.dlVersion);
+    expect(drive.state.uploads).toBe(uploads + (change === 'memo' ? 2 : 1));
+    expect(structuredClone(driveFilesOf(w).filter((f) => oldFiles.some((old) => old.id === f.id)))).toEqual(oldFiles);
+    expect(drive.log.filter((l) => l.method === 'DELETE' || l.method === 'PATCH' || l.method === 'PUT' && !l.path.startsWith('/upload/session/'))).toEqual([]);
+  });
+
+  it('TASK-128 이전 형식의 검증된 백업은 표시를 갱신하거나 다시 업로드하지 않는다', async () => {
+    const w = await world();
+    await w.run();
+    const record = driveFilesOf(w).find((f) => f.appProperties.dlKind === 'RECORD')!;
+    // 이전 릴리스가 저장한 메타데이터를 재현한다. 파일 바이트와 내용 키는 동일하다.
+    const legacyLabel = 'rev1.s1.p0.r1';
+    record.appProperties.dlVersion = legacyLabel;
+    await pool.query('UPDATE backup_items SET version_label=$2 WHERE drive_file_id=$1', [record.id, legacyLabel]);
+    const before = structuredClone(driveFilesOf(w));
+    const uploads = drive.state.uploads;
+    const repeated = await w.run();
+    expect(repeated.job).toBeNull();
+    expect(drive.state.uploads).toBe(uploads);
+    expect(structuredClone(driveFilesOf(w))).toEqual(before);
+    expect((await pool.query('SELECT version_label FROM backup_items WHERE drive_file_id=$1', [record.id])).rows[0].version_label).toBe(legacyLabel);
+    expect(await w.backup.cleanupReadiness(w.owner, w.interview.id, { live: true })).toMatchObject({ backedUp: true, ready: true });
   });
 
   it('AC-2 음성은 대상 목록·스냅샷·Drive 파일·DB 어디에도 없다', async () => {
