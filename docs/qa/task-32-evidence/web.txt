@@ -1,0 +1,12 @@
+
+> @daily-log/web@0.0.0 test
+> vitest run --passWithNoTests --no-file-parallelism --maxWorkers=1
+
+
+ RUN  v4.1.11 /workspace/apps/web
+
+
+ Test Files  6 passed (6)
+      Tests  39 passed (39)
+   Start at  11:33:24
+   Duration  1.30s (transform 184ms, setup 0ms, import 358ms, tests 196ms, environment 1ms)

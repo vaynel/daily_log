@@ -1,0 +1,14 @@
+[
+  {
+    "profile": "desktop",
+    "dbItemsAfterPurge": 0,
+    "sessionFilesWithTranscriptAfterPurge": 1,
+    "result": "FAIL"
+  },
+  {
+    "profile": "pixel7",
+    "dbItemsAfterPurge": 0,
+    "sessionFilesWithTranscriptAfterPurge": 1,
+    "result": "FAIL"
+  }
+]

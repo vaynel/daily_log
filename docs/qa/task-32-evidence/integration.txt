@@ -1,0 +1,33 @@
+desktop: attachment stored; starting voice
+desktop: voice/reload/briefing reached; confirm then render
+desktop: draining production queue
+desktop: queue [{"state":"SUCCEEDED","error":null,"wait":null}]
+desktop: draining production queue
+desktop: revised download verified; backing up
+{"profile":"desktop","result":"PASS","originalItems":4,"resultVersions":2,"downloadSha256":"ff7cc8cd8dc9ba3d95b8475cdd2eb480a04b673757b23e58d720a6991bef148d","backup":"VERIFIED","directAccess":"401/403","externalRequests":0}
+pixel7: attachment stored; starting voice
+pixel7: voice/reload/briefing reached; confirm then render
+pixel7: draining production queue
+pixel7: queue [{"state":"SUCCEEDED","error":null,"wait":null}]
+pixel7: draining production queue
+pixel7: revised download verified; backing up
+{"profile":"pixel7","result":"PASS","originalItems":4,"resultVersions":2,"downloadSha256":"ff7cc8cd8dc9ba3d95b8475cdd2eb480a04b673757b23e58d720a6991bef148d","backup":"VERIFIED","directAccess":"401/403","externalRequests":0}
+PRIVACY [{"profile":"desktop","dbItemsAfterPurge":0,"sessionFilesWithTranscriptAfterPurge":1,"result":"FAIL"},{"profile":"pixel7","dbItemsAfterPurge":0,"sessionFilesWithTranscriptAfterPurge":1,"result":"FAIL"}]
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: transcript remains after permanent purge
+
+2 !== 0
+
+    at file:///workspace/scripts/task138-e2e.mjs:183:8 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 2,
+  expected: 0,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.23.3

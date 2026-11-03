@@ -1,0 +1,41 @@
+desktop: attachment stored; starting voice
+desktop: voice/reload/briefing reached; confirm then render
+desktop: draining production queue
+desktop: AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ 'PENDING'
+- 'PASSED'
+
+    at file:///workspace/scripts/task138-e2e.mjs:100:14
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+pixel7: attachment stored; starting voice
+pixel7: voice/reload/briefing reached; confirm then render
+pixel7: draining production queue
+pixel7: AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ 'PENDING'
+- 'PASSED'
+
+    at file:///workspace/scripts/task138-e2e.mjs:100:14
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+PRIVACY [{"profile":"desktop","dbItemsAfterPurge":0,"sessionFilesWithTranscriptAfterPurge":1,"result":"FAIL"},{"profile":"pixel7","dbItemsAfterPurge":0,"sessionFilesWithTranscriptAfterPurge":1,"result":"FAIL"}]
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: integration failures
+
+2 !== 0
+
+    at file:///workspace/scripts/task138-e2e.mjs:172:8 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 2,
+  expected: 0,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.23.3

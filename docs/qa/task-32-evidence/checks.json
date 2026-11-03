@@ -1,0 +1,65 @@
+[
+  {
+    "name": "build",
+    "code": 0,
+    "signal": null,
+    "start": "2026-11-03T11:27:00.147Z",
+    "end": "2026-11-03T11:27:13.943Z"
+  },
+  {
+    "name": "server",
+    "code": 0,
+    "signal": null,
+    "start": "2026-11-03T11:27:13.946Z",
+    "end": "2026-11-03T11:33:23.549Z"
+  },
+  {
+    "name": "web",
+    "code": 0,
+    "signal": null,
+    "start": "2026-11-03T11:33:23.551Z",
+    "end": "2026-11-03T11:33:25.392Z"
+  },
+  {
+    "name": "records-crash",
+    "code": 0,
+    "signal": null,
+    "start": "2026-11-03T11:33:25.393Z",
+    "end": "2026-11-03T11:33:25.994Z"
+  },
+  {
+    "name": "queue-restart",
+    "code": 0,
+    "signal": null,
+    "start": "2026-11-03T11:33:25.995Z",
+    "end": "2026-11-03T11:33:29.903Z"
+  },
+  {
+    "name": "pipeline-restart",
+    "code": 0,
+    "signal": null,
+    "start": "2026-11-03T11:33:29.904Z",
+    "end": "2026-11-03T11:33:54.700Z"
+  },
+  {
+    "name": "quality-restart",
+    "code": 0,
+    "signal": null,
+    "start": "2026-11-03T11:33:54.701Z",
+    "end": "2026-11-03T11:33:55.182Z"
+  },
+  {
+    "name": "lint",
+    "code": 0,
+    "signal": null,
+    "start": "2026-11-03T11:33:55.183Z",
+    "end": "2026-11-03T11:34:03.070Z"
+  },
+  {
+    "name": "typecheck",
+    "code": 0,
+    "signal": null,
+    "start": "2026-11-03T11:34:03.071Z",
+    "end": "2026-11-03T11:34:15.020Z"
+  }
+]

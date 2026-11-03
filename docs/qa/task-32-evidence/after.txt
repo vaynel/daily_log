@@ -1,0 +1,18 @@
+TASK-138 AFTER / REPRODUCTION — actual command results
+Baseline: edfca7ac3ffbb98f51158e7ff9aea50be3e872ff
+server: 38 files / 523 PASS; web: 6 files / 39 PASS
+build, lint, typecheck: exit 0
+records-crash, queue-restart, pipeline-restart, quality-restart: exit 0
+SIGKILL: original preserved, duplicate paid retransmissions 0,
+processing retry=1 and quality regeneration=1 persist.
+Desktop + Pixel 7: voice -> attachment -> briefing -> production
+-> button revision -> second MP4 download/hash -> fake Drive VERIFIED: PASS
+Anonymous 401 / disallowed 403: PASS
+access.mjs exit 1: other allowed account receives private file (P1),
+rejected video bypass via generic route (P2).
+integration.mjs exit 1: permanent purge leaves transcript JSON (P1).
+Both profiles: DB conversation rows 0; transcript session files 1.
+Wiki09 original cross-check NOT_RUN (not accessible).
+Real devices deferred to TASK-33; paid APIs / deployment NOT_RUN.
+Release verdict: BLOCKED — 2 P1 + 1 P2 unresolved.
+Product code unchanged. Defects recorded for separate PM tasks.

@@ -1,0 +1,22 @@
+[
+  {
+    "profile": "desktop",
+    "result": "PASS",
+    "originalItems": 4,
+    "resultVersions": 2,
+    "downloadSha256": "ff7cc8cd8dc9ba3d95b8475cdd2eb480a04b673757b23e58d720a6991bef148d",
+    "backup": "VERIFIED",
+    "directAccess": "401/403",
+    "externalRequests": 0
+  },
+  {
+    "profile": "pixel7",
+    "result": "PASS",
+    "originalItems": 4,
+    "resultVersions": 2,
+    "downloadSha256": "ff7cc8cd8dc9ba3d95b8475cdd2eb480a04b673757b23e58d720a6991bef148d",
+    "backup": "VERIFIED",
+    "directAccess": "401/403",
+    "externalRequests": 0
+  }
+]

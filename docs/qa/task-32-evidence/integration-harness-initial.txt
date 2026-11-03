@@ -1,0 +1,31 @@
+desktop: locator.waitFor: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for locator('[data-testid=attach-item][data-status=done]') to be visible[22m
+[2m    23 × locator resolved to hidden <li data-status="done" data-testid="attach-item">…</li>[22m
+
+    at /workspace/scripts/task138-e2e.mjs:76:73
+pixel7: locator.waitFor: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for locator('[data-testid=attach-item][data-status=done]') to be visible[22m
+[2m    22 × locator resolved to hidden <li data-status="done" data-testid="attach-item">…</li>[22m
+
+    at /workspace/scripts/task138-e2e.mjs:76:73
+PRIVACY [{"profile":"desktop","dbItemsAfterPurge":0,"sessionFilesWithTranscriptAfterPurge":0,"result":"PASS"},{"profile":"pixel7","dbItemsAfterPurge":0,"sessionFilesWithTranscriptAfterPurge":0,"result":"PASS"}]
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: integration failures
+
+2 !== 0
+
+    at file:///workspace/scripts/task138-e2e.mjs:171:8 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 2,
+  expected: 0,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.23.3

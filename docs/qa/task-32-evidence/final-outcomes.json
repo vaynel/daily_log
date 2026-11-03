@@ -1,0 +1,16 @@
+{
+  "access": {
+    "exitCode": 1,
+    "reason": "Q138-01/02 authorization/review bypass"
+  },
+  "integration": {
+    "exitCode": 1,
+    "normalFlow": {
+      "desktop": "PASS",
+      "pixel7": "PASS"
+    },
+    "privacy": "FAIL: Q138-03 transcript remains after purge"
+  },
+  "release": "BLOCKED",
+  "wiki09OriginalCrosscheck": "NOT_RUN"
+}

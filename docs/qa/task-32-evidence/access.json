@@ -1,0 +1,98 @@
+[
+  {
+    "actor": "anonymous",
+    "path": "/api/records/<record>/result/file",
+    "status": 401,
+    "privateBytes": false
+  },
+  {
+    "actor": "anonymous",
+    "path": "/api/records/<record>/results/1/file",
+    "status": 401,
+    "privateBytes": false
+  },
+  {
+    "actor": "anonymous",
+    "path": "/api/videos/rejected.mp4",
+    "status": 401,
+    "privateBytes": false
+  },
+  {
+    "actor": "anonymous",
+    "path": "/api/attachments/private.md",
+    "status": 401,
+    "privateBytes": false
+  },
+  {
+    "actor": "disallowed",
+    "path": "/api/records/<record>/result/file",
+    "status": 403,
+    "privateBytes": false
+  },
+  {
+    "actor": "disallowed",
+    "path": "/api/records/<record>/results/1/file",
+    "status": 403,
+    "privateBytes": false
+  },
+  {
+    "actor": "disallowed",
+    "path": "/api/videos/rejected.mp4",
+    "status": 403,
+    "privateBytes": false
+  },
+  {
+    "actor": "disallowed",
+    "path": "/api/attachments/private.md",
+    "status": 403,
+    "privateBytes": false
+  },
+  {
+    "actor": "owner",
+    "path": "/api/records/<record>/result/file",
+    "status": 409,
+    "privateBytes": false
+  },
+  {
+    "actor": "owner",
+    "path": "/api/records/<record>/results/1/file",
+    "status": 409,
+    "privateBytes": false
+  },
+  {
+    "actor": "owner",
+    "path": "/api/videos/rejected.mp4",
+    "status": 200,
+    "privateBytes": true
+  },
+  {
+    "actor": "owner",
+    "path": "/api/attachments/private.md",
+    "status": 200,
+    "privateBytes": true
+  },
+  {
+    "actor": "other-allowed",
+    "path": "/api/records/<record>/result/file",
+    "status": 404,
+    "privateBytes": false
+  },
+  {
+    "actor": "other-allowed",
+    "path": "/api/records/<record>/results/1/file",
+    "status": 404,
+    "privateBytes": false
+  },
+  {
+    "actor": "other-allowed",
+    "path": "/api/videos/rejected.mp4",
+    "status": 200,
+    "privateBytes": true
+  },
+  {
+    "actor": "other-allowed",
+    "path": "/api/attachments/private.md",
+    "status": 200,
+    "privateBytes": true
+  }
+]

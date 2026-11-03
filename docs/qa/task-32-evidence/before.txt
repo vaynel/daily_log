@@ -1,0 +1,6 @@
+TASK-138 BEFORE / REPRODUCTION
+Baseline: edfca7ac3ffbb98f51158e7ff9aea50be3e872ff
+Initial git status: clean, origin https://github.com/vaynel/daily_log.git
+Task branch: task-138-qa
+This run: integration, fault injection and authorization tests NOT_RUN yet.
+No production changes or deployment. Synthetic inputs and isolated DB only.
