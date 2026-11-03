@@ -1,0 +1,83 @@
+Fastify JSON request logs omitted; test runner output retained.
+
+> @daily-log/server@0.0.0 test
+> vitest run src/backup/restore.test.ts src/backup/backup.test.ts src/retention/retention.test.ts --no-file-parallelism --maxWorkers=1 --reporter=verbose
+
+
+ RUN  v4.1.11 /workspace/apps/server
+
+ ✓ src/backup/backup.test.ts > TokenVault > 갱신 토큰은 암호화되고 다른 키·다른 소유자 문맥·변조로는 복호화되지 않는다 5ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > AC-1 기록·첨부·완성 영상이 대응 버전 정보와 함께 Drive 에 올라가고 크기·MD5 가 일치한다 305ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > AC-1 같은 내용은 다시 올리지 않고(중복 방지), 내용이 바뀌면 새 버전 파일을 추가하며 이전 버전은 유지한다 226ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > TASK-128 conversation 변경은 revision 증가 없이 새 버전이며 재백업은 멱등이다 232ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > TASK-128 memo 변경은 revision 증가 없이 새 버전이며 재백업은 멱등이다 239ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > TASK-128 attachment-list 변경은 revision 증가 없이 새 버전이며 재백업은 멱등이다 224ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > TASK-128 이전 형식의 검증된 백업은 표시를 갱신하거나 다시 업로드하지 않는다 155ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > AC-2 음성은 대상 목록·스냅샷·Drive 파일·DB 어디에도 없다 124ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > AC-3 Drive 가 계속 실패해도 서버 원본·기록 상태·영상 열람은 그대로다 297ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > AC-3 인증 만료·원본 파일 문제에서도 서버 쪽 파일은 지워지지 않고 Drive 쪽 삭제 요청도 없다 70ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > AC-4 Drive 미연결은 권한 대기이며 완료로 표시되지 않고 아무것도 올리지 않는다. 연결하면 이어서 완료된다 325ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > AC-4 인증 철회·만료(invalid_grant)는 연결을 AUTH_EXPIRED 로 바꾸고 완료로 표시하지 않는다 260ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > AC-4/AC-6 여유 용량이 부족하면 하나도 올리지 않고 실패로 남기며 기존 백업을 지우지 않는다 642ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > AC-4/AC-6 업로드 중 Drive 가 용량 초과(403)로 거절해도 실패로 남고 기존 파일은 유지된다 169ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > AC-4 Drive 에 올린 파일이 원본과 다르면(MD5 불일치) 완료로 표시하지 않는다 204ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > AC-4 서버 파일이 기록된 해시와 다르면(손상) 그 항목은 백업하지 않고 나머지는 올리되 완료로 표시하지 않는다 302ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > AC-5 일시 오류는 작업당 자동 재시도 1회만: 계속 실패하면 업로드 시도 2번 후 FAILED 411ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > AC-5 첫 일시 오류는 재시도 대기(RETRYING)로 표시되고 재시도에서 성공하면 완료된다 365ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > AC-5 응답이 유실된 업로드는 재시도에서 같은 파일을 찾아 이어받고 중복 파일을 만들지 않는다 271ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > AC-6 정리 가능 여부: 최신 버전 백업·무결성 확인 후에만 ready, 새 버전·Drive 변조가 생기면 다시 false 285ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > AC-6 서버 원본이 사라져도(만료·사용자 삭제) Drive 백업과 백업 기록은 유지되고 삭제로 전파되지 않는다 336ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > AC-6 서버 원본이 이미 정리됐어도 검증된 백업이 있으면 같은 내용으로 다시 올리지 않는다 153ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > GoogleDriveClient: 폴더는 재사용하고 429/5xx 는 일시, 401 은 인증, 400 은 재시도 불가로 분류한다 5ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > Drive 연결(로그인과 분리): 동의하면 갱신 토큰이 암호화 저장되고, 해제하면 토큰만 지워지며 백업은 남는다 63ms
+ ✓ src/backup/backup.test.ts > Google Drive 일일 백업 (실제 PostgreSQL 임시 스키마 + 가짜 Drive/발급자) > API: 상태·정리 가능 여부·수동 재시도(명령 키 필수·소유자 확인) 315ms
+ ✓ src/backup/restore.test.ts > TASK-31 isolated restore drill > backs up stable item links, timestamps and review state without audio or mutable backup status 45ms
+stdout | src/backup/restore.test.ts > TASK-31 isolated restore drill > restores into a fresh schema/directory; real app APIs return content and identical file bytes, rejecting strangers
+DRILL {"result":"PASS","sourceSchema":"t11_d1b17af53a09","restoredSchema":"restore_drill_22551183fb7a4e3fa4187afb0876a7d7","sourceDir":"/workspace/data/task31/source-iRg2EV","restoredDir":"/workspace/data/task31/targets-H5WYht/restore-drill-XrRnHz","api":{"record":200,"attachment":200,"video":200,"unauthenticated":401,"wrongOwner":404},"hashes":{"record":"cefae4e6d0a68380e825ede2894cd0777ab07793b0155826fe44fc0f5f851a55","attachment":"c41ca6c465a629d51fb9164a65e193dcd2014f5524822b3def82d401fbed130b","video":"8b74329ecc86fe3f1afecc228ed38ddf149ecf70b1b30fa8cb5e379f3fdb57c9","sourceDatabaseBefore":"ad1ba3fd4b0476f0b05b07b5cd9a4e0d620e650f0327607d475d5fd8c2b0bbf2","sourceDatabaseAfter":"ad1ba3fd4b0476f0b05b07b5cd9a4e0d620e650f0327607d475d5fd8c2b0bbf2"},"sourceUnchanged":true,"video":"ffmpeg 64x64 blue 0.2s H.264, no audio","manifest":{"ownerId":"synthetic-restore-owner","interviewId":"994a2e62-96f3-4ff2-9ea6-dddceb8ed502","items":[{"kind":"RECORD","key":"record.json","version":"rev1.s1.p0.r1.shacefae4e6d0a68380e825ede2894cd0777ab07793b0155826fe44fc0f5f851a55","sha256":"cefae4e6d0a68380e825ede2894cd0777ab07793b0155826fe44fc0f5f851a55","md5":"b447fed0b727e0a4d5f24679439f5059","size":1375,"fileId":"94a892bf-7124-4c20-bfe7-65cfd2db7cb2"},{"kind":"ATTACHMENT","key":"c41ca6c465a629d51fb9164a65e193dcd2014f5524822b3def82d401fbed130b.md","version":"shac41ca6c465a6","sha256":"c41ca6c465a629d51fb9164a65e193dcd2014f5524822b3def82d401fbed130b","md5":"6263422d67dc1ef4efb2bedfa35a9c24","size":46,"fileId":"41209a97-a21b-46a6-af27-a8a802f5bbc8"},{"kind":"VIDEO","key":"synthetic.mp4","version":"result.v1","sha256":"8b74329ecc86fe3f1afecc228ed38ddf149ecf70b1b30fa8cb5e379f3fdb57c9","md5":"40ac1c15ff1fa35279dafce4b84bd312","size":1716,"fileId":"817dbf94-1d88-4231-8132-4055fd2e11af"}]}}
+
+ ✓ src/backup/restore.test.ts > TASK-31 isolated restore drill > restores into a fresh schema/directory; real app APIs return content and identical file bytes, rejecting strangers 793ms
+ ✓ src/backup/restore.test.ts > TASK-31 isolated restore drill > fails closed for missing backup; no successful target remains 29ms
+ ✓ src/backup/restore.test.ts > TASK-31 isolated restore drill > fails closed for truncated backup; no successful target remains 12ms
+ ✓ src/backup/restore.test.ts > TASK-31 isolated restore drill > fails closed for short-download backup; no successful target remains 22ms
+ ✓ src/backup/restore.test.ts > TASK-31 isolated restore drill > fails closed for corrupt-download backup; no successful target remains 18ms
+ ✓ src/backup/restore.test.ts > TASK-31 isolated restore drill > fails closed for md5 backup; no successful target remains 16ms
+ ✓ src/backup/restore.test.ts > TASK-31 isolated restore drill > fails closed for sha256 backup; no successful target remains 13ms
+ ✓ src/backup/restore.test.ts > TASK-31 isolated restore drill > rejects missing manifest dependencies, unsafe paths, source overlap and real Drive 8ms
+ ✓ src/backup/restore.test.ts > TASK-31 isolated restore drill > rejects legacy snapshots and rolls back schemas/files on write failure 18ms
+ ✓ src/backup/restore.test.ts > TASK-31 isolated restore drill > rejects invalid-date snapshots and rolls back schemas/files on write failure 125ms
+ ✓ src/backup/restore.test.ts > TASK-31 isolated restore drill > preserves rejected video restrictions instead of approving restored results 461ms
+ ✓ src/backup/restore.test.ts > TASK-31 isolated restore drill > preserves superseded video restrictions instead of approving restored results 377ms
+ ✓ src/backup/restore.test.ts > TASK-31 isolated restore drill > restores only the drill after real source purge; leaves source deletion and Drive/video hashes intact 626ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-1/AC-6 음성 수명 > TASK-31: 중단·미변환 음성은 Drive 연결 해제 뒤 달력 만료되고 정상 음성은 조기 삭제되며 백업·영상 해시가 유지된다 1207ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-1/AC-6 음성 수명 > 전사·요약이 저장된 PROCESSED 음성은 바로 삭제되고, 처리 전 음성은 달력 한 달 전에는 남는다 272ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-1/AC-6 음성 수명 > PROCESSED 라도 요약이 없으면 조기 삭제하지 않는다 155ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-1/AC-6 음성 수명 > 미변환 음성 말일 1/31 → 2/28: 만료 1ms 전에는 남고 만료 시각에 삭제된다 185ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-1/AC-6 음성 수명 > 미변환 음성 윤년 1/31 → 2/29: 만료 1ms 전에는 남고 만료 시각에 삭제된다 139ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-1/AC-6 음성 수명 > 미변환 음성 12/31 → 1/31: 만료 1ms 전에는 남고 만료 시각에 삭제된다 123ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-1/AC-6 음성 수명 > 미변환 음성 일반 10/15 → 11/15: 만료 1ms 전에는 남고 만료 시각에 삭제된다 84ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-1/AC-6 음성 수명 > 재접속(이어하기)해도 만료 시각은 늘어나지 않고, Drive 미연결이어도 Drive 확인 없이 삭제된다 133ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-1/AC-6 음성 수명 > 처리 중인 작업이 그 기록을 참조하는 동안은 미루고 종료 후 정리한다 114ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-1/AC-6 음성 수명 > 삭제된 음성은 처리 상태를 바꿀 수 없고, 백업 대상 목록에는 어떤 상태의 음성도 없다 602ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-2 휴지통 30일 복구 (주입 시계) > 삭제 후 30일 − 1ms 까지 복구되고 정확히 30일에는 복구되지 않는다. 재삭제는 보관 기간을 늘리지 않는다 296ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-2 휴지통 30일 복구 (주입 시계) > 휴지통의 기록은 목록·상세·쓰기·재시작에서 막히고 타 소유자는 만질 수 없다 243ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-2 휴지통 30일 복구 (주입 시계) > 항목을 지우면 연결된 첨부도 함께 지워지고, 항목 복구 때 같이 돌아온다. 일부 삭제는 하루 기록을 그대로 둔다 418ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-3/AC-5 삭제 반영 범위 (데이터 추적) > 즉시 영구 삭제: 대화·첨부·요약·음성은 지우고 완성 영상·Drive 백업·백업 기록은 그대로 둔다 979ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-3/AC-5 삭제 반영 범위 (데이터 추적) > 30일 만료 삭제: 29일 23시간에는 남고 30일에 같은 범위가 지워진다 783ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-3/AC-5 삭제 반영 범위 (데이터 추적) > 항목 만료 삭제: 지운 항목과 그 첨부만 사라지고 나머지는 남는다 222ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-3/AC-5 삭제 반영 범위 (데이터 추적) > 복구 경쟁: 잠금 뒤 복구된 기록은 만료 훑기가 지우지 않는다 136ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-4 공유 첨부 > 같은 파일을 두 기록이 가리킬 때 한쪽을 지워도 다른 기록의 첨부 파일은 남고, 마지막 참조가 사라지면 파일도 지워진다 222ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-4 공유 첨부 > 삭제하려는 사이 같은 내용이 새로 첨부되면 파일을 지우지 않는다(대기열 재확인) 135ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-4 공유 첨부 > 파일 삭제가 실패하면 대기열에 남겨 다음 훑기에서 다시 시도한다 182ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-5 한 달 서버 사본 정리 > 최신 백업이 검증되면 서버 텍스트·첨부 사본만 정리하고 Drive 파일 해시·완성 영상은 그대로다 655ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-5 한 달 서버 사본 정리 > 백업이 없거나 최신이 아니면 원본을 보존하고 대기 사유를 남긴다 1192ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-5 한 달 서버 사본 정리 > Drive 파일이 변조되거나 접근할 수 없으면(백업 장애) 원본을 보존한다 603ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-5 한 달 서버 사본 정리 > Drive 미연결이면 정리하지 않는다 191ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-5 한 달 서버 사본 정리 > 진행 중인 작업이 있거나 휴지통에 있는 기록은 정리하지 않는다 434ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > AC-5 한 달 서버 사본 정리 > 확인하는 사이 내용이 바뀌면 지우지 않는다 311ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > HTTP 명령 > 삭제 → 목록에서 사라짐 → 휴지통 목록(범위 안내) → 복구, 영구 삭제는 확인이 있어야 하며 타 소유자는 404 370ms
+ ✓ src/retention/retention.test.ts > 휴지통·복구·영구 삭제·보관 수명 (실제 PostgreSQL 임시 스키마 + 가짜 Drive) > HTTP 명령 > RecordError 코드는 상태 코드로 구분된다 11ms
+
+ Test Files  3 passed (3)
+      Tests  67 passed (67)
+   Start at  10:35:04
+   Duration  26.15s (transform 861ms, setup 0ms, import 2.81s, tests 22.37s, environment 0ms)

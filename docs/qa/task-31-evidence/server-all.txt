@@ -1,0 +1,13 @@
+Fastify JSON request logs omitted; test runner output retained.
+
+> @daily-log/server@0.0.0 test
+> vitest run --no-file-parallelism --maxWorkers=1
+
+
+ RUN  v4.1.11 /workspace/apps/server
+
+
+ Test Files  34 passed (34)
+      Tests  494 passed (494)
+   Start at  10:27:37
+   Duration  442.02s (transform 2.46s, setup 0ms, import 10.74s, tests 423.93s, environment 6ms)

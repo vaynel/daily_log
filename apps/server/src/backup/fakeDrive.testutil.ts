@@ -3,7 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-export interface FakeFile { id: string; name: string; mimeType: string; parents: string[]; appProperties: Record<string, string>; bytes: Buffer; trashed: boolean; md5Override?: string }
+export interface FakeFile { id: string; name: string; mimeType: string; parents: string[]; appProperties: Record<string, string>; bytes: Buffer; trashed: boolean; md5Override?: string; mediaOverride?: Buffer }
 
 export async function startFakeDrive() {
   const files = new Map<string, FakeFile>();
@@ -83,6 +83,9 @@ export async function startFakeDrive() {
       const one = /^\/drive\/v3\/files\/([^/]+)$/.exec(url.pathname);
       if (one && req.method === 'GET') {
         const f = files.get(decodeURIComponent(one[1]!));
+        if (f && !f.trashed && url.searchParams.get('alt') === 'media') {
+          res.writeHead(200, { 'content-type': f.mimeType }); res.end(f.mediaOverride ?? f.bytes); return;
+        }
         return f ? json(view(f)) : err(404, 'notFound');
       }
       return err(404, 'notFound');

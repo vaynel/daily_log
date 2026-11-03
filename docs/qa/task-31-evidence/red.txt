@@ -1,0 +1,36 @@
+
+> @daily-log/server@0.0.0 test
+> vitest run src/backup/restore.test.ts --no-file-parallelism --maxWorkers=1
+
+
+ RUN  v4.1.11 /workspace/apps/server
+
+ ❯ src/backup/restore.test.ts (0 test)
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/backup/restore.test.ts [ src/backup/restore.test.ts ]
+Error: Cannot find module './restore.js' imported from /workspace/apps/server/src/backup/restore.test.ts
+ ❯ src/backup/restore.test.ts:16:1
+     14| import { startFakeDrive } from './fakeDrive.testutil.js';
+     15| import { GoogleDriveClient } from './drive.js';
+     16| import { restoreDrill, type RestoreManifest } from './restore.js';
+       | ^
+     17|
+     18| const hash = (b: Buffer, alg = 'sha256') => createHash(alg).update(b).…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  10:24:15
+   Duration  1.05s (transform 609ms, setup 0ms, import 0ms, tests 0ms, environment 0ms)
+
+npm error Lifecycle script `test` failed with error:
+npm error code 1
+npm error path /workspace/apps/server
+npm error workspace @daily-log/server@0.0.0
+npm error location /workspace/apps/server
+npm error command failed
+npm error command sh -c vitest run src/backup/restore.test.ts --no-file-parallelism --maxWorkers=1

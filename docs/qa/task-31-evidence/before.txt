@@ -1,0 +1,5 @@
+REPRODUCTION — TASK-31 baseline
+HEAD 7c7fc423bcd0c584e6b3ffb56878f34831247999
+Git status: ?? .npm-cache/
+Tracked restore tool paths: none (복원 도구 없음)
+Synthetic fixture / local fake Drive only; no production access.

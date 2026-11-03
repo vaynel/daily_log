@@ -1,0 +1,33 @@
+{
+  "ownerId": "synthetic-restore-owner",
+  "interviewId": "994a2e62-96f3-4ff2-9ea6-dddceb8ed502",
+  "items": [
+    {
+      "kind": "RECORD",
+      "key": "record.json",
+      "version": "rev1.s1.p0.r1.shacefae4e6d0a68380e825ede2894cd0777ab07793b0155826fe44fc0f5f851a55",
+      "sha256": "cefae4e6d0a68380e825ede2894cd0777ab07793b0155826fe44fc0f5f851a55",
+      "md5": "b447fed0b727e0a4d5f24679439f5059",
+      "size": 1375,
+      "fileId": "94a892bf-7124-4c20-bfe7-65cfd2db7cb2"
+    },
+    {
+      "kind": "ATTACHMENT",
+      "key": "c41ca6c465a629d51fb9164a65e193dcd2014f5524822b3def82d401fbed130b.md",
+      "version": "shac41ca6c465a6",
+      "sha256": "c41ca6c465a629d51fb9164a65e193dcd2014f5524822b3def82d401fbed130b",
+      "md5": "6263422d67dc1ef4efb2bedfa35a9c24",
+      "size": 46,
+      "fileId": "41209a97-a21b-46a6-af27-a8a802f5bbc8"
+    },
+    {
+      "kind": "VIDEO",
+      "key": "synthetic.mp4",
+      "version": "result.v1",
+      "sha256": "8b74329ecc86fe3f1afecc228ed38ddf149ecf70b1b30fa8cb5e379f3fdb57c9",
+      "md5": "40ac1c15ff1fa35279dafce4b84bd312",
+      "size": 1716,
+      "fileId": "817dbf94-1d88-4231-8132-4055fd2e11af"
+    }
+  ]
+}

@@ -57,13 +57,15 @@ const SHA = /^[a-f0-9]{64}$/;
  */
 export async function buildBackupPlan(pool: pg.Pool, fileStorageDir: string, interviewId: string): Promise<BackupPlan | null> {
   const iv = (await pool.query(
-    `SELECT id, owner_id, to_char(life_date,'YYYY-MM-DD') AS life_date, status, revision, deleted_at FROM interviews WHERE id=$1 AND server_purged_at IS NULL AND server_cleaned_at IS NULL`, [interviewId])).rows[0];
+    `SELECT id, owner_id, to_char(life_date,'YYYY-MM-DD') AS life_date, status, revision, started_at, created_at, deleted_at FROM interviews WHERE id=$1 AND server_purged_at IS NULL AND server_cleaned_at IS NULL`, [interviewId])).rows[0];
   // 영구 삭제·한 달 정리로 서버 사본이 없는 기록은 비어 있는 스냅샷을 새 버전으로 올리지 않도록 백업 대상에서 뺀다(기존 Drive 백업은 그대로).
   if (!iv) return null;
-  const [items, atts, vers] = await Promise.all([
+  const [items, atts, vers, pipeline, marks] = await Promise.all([
     pool.query('SELECT id, seq, kind, body FROM conversation_items WHERE interview_id=$1 AND deleted_at IS NULL ORDER BY seq', [interviewId]),
     pool.query(`SELECT id, item_id, storage_key, checksum, kind, original_name, mime_type, size_bytes FROM attachment_refs WHERE interview_id=$1 AND deleted_at IS NULL ORDER BY saved_at, id`, [interviewId]),
     pool.query('SELECT kind, version, content FROM record_versions WHERE interview_id=$1 ORDER BY kind, version', [interviewId]),
+    pool.query('SELECT production, review FROM pipeline_states WHERE interview_id=$1', [interviewId]),
+    pool.query('SELECT version, was_passed, superseded_at, superseded_by_revision FROM result_version_marks WHERE interview_id=$1 ORDER BY version', [interviewId]),
   ]);
   const lifeDate = iv.life_date as string;
   const maxOf = (k: string) => Math.max(0, ...vers.rows.filter((v) => v.kind === k).map((v) => Number(v.version)));
@@ -77,9 +79,14 @@ export async function buildBackupPlan(pool: pg.Pool, fileStorageDir: string, int
 
   // 1) 기록 스냅샷. 시각처럼 실행마다 달라지는 값은 넣지 않아 내용이 같으면 해시도 같다(중복 업로드 방지).
   const snapshot = {
-    schema: 1,
+    // v2 preserves facts needed by the app after an explicit isolated restore.
+    // Do not include backup state: uploading this snapshot changes that state.
+    schema: 2,
     interviewId, lifeDate, status: iv.status, revision: Number(iv.revision),
-    items: items.rows.map((x) => ({ seq: x.seq, kind: x.kind, body: x.body })),
+    startedAt: iv.started_at, createdAt: iv.created_at,
+    pipeline: pipeline.rows[0] ?? { production: 'NONE', review: 'NONE' },
+    resultMarks: marks.rows,
+    items: items.rows.map((x) => ({ id: x.id, seq: x.seq, kind: x.kind, body: x.body })),
     attachments: atts.rows.map((x) => ({ storageKey: x.storage_key, checksum: x.checksum, kind: x.kind, name: x.original_name, mime: x.mime_type, size: x.size_bytes === null ? null : Number(x.size_bytes), itemId: x.item_id })),
     versions: vers.rows.map((x) => ({ kind: x.kind, version: x.version, content: x.content })),
   };

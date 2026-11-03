@@ -111,6 +111,27 @@ describe.skipIf(!url)('휴지통·복구·영구 삭제·보관 수명 (실제 P
   const interviewRow = async (w: World) => (await pool.query('SELECT * FROM interviews WHERE id=$1', [w.interview.id])).rows[0];
 
   describe('AC-1/AC-6 음성 수명', () => {
+    it('TASK-31: 중단·미변환 음성은 Drive 연결 해제 뒤 달력 만료되고 정상 음성은 조기 삭제되며 백업·영상 해시가 유지된다', async () => {
+      const w = await world({ at: iso('2026-01-31T10:00:00+09:00') });
+      const interrupted = await w.store.saveAudioSegment(w.owner, w.interview.id, 'interrupted', w.at);
+      await w.store.setAudioStatus(w.owner, w.interview.id, interrupted.id, 'INTERRUPTED', w.at);
+      const processed = await w.store.saveAudioSegment(w.owner, w.interview.id, 'processed', w.at);
+      await w.store.setAudioStatus(w.owner, w.interview.id, processed.id, 'PROCESSED', w.at);
+      await w.runBackup();
+      const files = drive.uploaded().filter(f => f.appProperties.dlInterview === w.interview.id);
+      expect(files.map(f => f.appProperties.dlKind).sort()).toEqual(['ATTACHMENT', 'RECORD', 'VIDEO']);
+      const hashes = files.map(f => [f.id, sha(f.bytes)]);
+      await pool.query('DELETE FROM drive_connections WHERE owner_id=$1', [w.owner]);
+      const logLength = drive.log.length;
+      expect((await w.retention.sweepAudio(new Date(w.at.getTime() + 1000))).early).toBe(1);
+      const expiry = iso('2026-02-28T10:00:00+09:00');
+      expect((await w.retention.sweepAudio(new Date(expiry.getTime() - 1))).expired).toBe(0);
+      expect((await w.retention.sweepAudio(expiry)).expired).toBe(2);
+      expect((await pool.query('SELECT delete_reason FROM audio_segments WHERE interview_id=$1 ORDER BY delete_reason', [w.interview.id])).rows.map(r => r.delete_reason)).toEqual(['EARLY_PROCESSED', 'MONTH_EXPIRED', 'MONTH_EXPIRED']);
+      expect(drive.log.length).toBe(logLength);
+      expect(files.map(f => [f.id, sha(f.bytes)])).toEqual(hashes);
+      expect(sha(await readFile(path.join(dir, 'videos', w.videoName)))).toBe(sha(w.videoBytes));
+    });
     it('전사·요약이 저장된 PROCESSED 음성은 바로 삭제되고, 처리 전 음성은 달력 한 달 전에는 남는다', async () => {
       const w = await world();
       await w.store.setAudioStatus(w.owner, w.interview.id, w.audio.id, 'PROCESSED', w.at);

@@ -1,0 +1,31 @@
+REPRODUCTION — actual synthetic restore/API and test output
+
+server-all.txt
+ Test Files  34 passed (34)
+      Tests  494 passed (494)
+   Duration  442.02s (transform 2.46s, setup 0ms, import 10.74s, tests 423.93s, environment 6ms)
+
+targeted-final.txt
+ Test Files  3 passed (3)
+      Tests  67 passed (67)
+   Duration  26.15s (transform 861ms, setup 0ms, import 2.81s, tests 22.37s, environment 0ms)
+
+App API: {"record": 200, "attachment": 200, "video": 200, "unauthenticated": 401, "wrongOwner": 404}
+Source schema: t11_d1b17af53a09
+Restored schema: restore_drill_22551183fb7a4e3fa4187afb0876a7d7
+Source files: /workspace/data/task31/source-iRg2EV
+Restored files: /workspace/data/task31/targets-H5WYht/restore-drill-XrRnHz
+
+record SHA-256
+cefae4e6d0a68380e825ede2894cd0777ab07793b0155826fe44fc0f5f851a55
+attachment SHA-256
+c41ca6c465a629d51fb9164a65e193dcd2014f5524822b3def82d401fbed130b
+video SHA-256
+8b74329ecc86fe3f1afecc228ed38ddf149ecf70b1b30fa8cb5e379f3fdb57c9
+sourceDatabaseBefore SHA-256
+ad1ba3fd4b0476f0b05b07b5cd9a4e0d620e650f0327607d475d5fd8c2b0bbf2
+sourceDatabaseAfter SHA-256
+ad1ba3fd4b0476f0b05b07b5cd9a4e0d620e650f0327607d475d5fd8c2b0bbf2
+
+Synthetic mp4: ffmpeg 64x64 blue 0.2s H.264, no audio
+No real Drive / production DB / deployment.
