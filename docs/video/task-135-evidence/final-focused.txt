@@ -1,0 +1,13 @@
+
+> @daily-log/server@0.0.0 test
+> vitest run src/video/qualityEvidence.test.ts src/video/qualityEvidence.integration.test.ts src/video/pipelineRuntime.test.ts src/video/narration.test.ts --maxWorkers=1 --no-file-parallelism
+
+
+ RUN  v4.1.11 /workspace/apps/server
+
+
+ Test Files  4 passed (4)
+      Tests  44 passed (44)
+   Start at  10:37:03
+   Duration  12.80s (transform 556ms, setup 0ms, import 959ms, tests 11.21s, environment 1ms)
+

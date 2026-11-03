@@ -1,0 +1,14 @@
+$ npm test -w apps/web -- --maxWorkers=1 --no-file-parallelism
+
+> @daily-log/web@0.0.0 test
+> vitest run --passWithNoTests --maxWorkers=1 --no-file-parallelism
+
+
+ RUN  v4.1.11 /workspace/apps/web
+
+
+ Test Files  6 passed (6)
+      Tests  39 passed (39)
+   Start at  10:39:18
+   Duration  1.97s (transform 284ms, setup 0ms, import 495ms, tests 252ms, environment 1ms)
+

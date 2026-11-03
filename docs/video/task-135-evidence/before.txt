@@ -1,0 +1,5 @@
+7c7fc423bcd0c584e6b3ffb56878f34831247999
+?? docs/video/task-135-evidence/
+apps/server/src/video/pipeline.ts:334:      if (!d.quality) throw new NonRetryableError('QUALITY_EVIDENCE_UNAVAILABLE');
+apps/server/src/video/pipelineRuntime.ts:23: * 품질 검수의 전사·사실/그림/학습/가독성 근거 제공자는 아직 연결되지 않아 quality 는 QUALITY_EVIDENCE_UNAVAILABLE 로 실패한다(통과로 추정 금지).
+apps/server/src/video/pipelineRuntime.ts:56:    quality: null,

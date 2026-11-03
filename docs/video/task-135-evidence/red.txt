@@ -1,0 +1,77 @@
+
+> @daily-log/server@0.0.0 test
+> vitest run src/video/pipelineRuntime.test.ts --maxWorkers=1 --no-file-parallelism
+
+
+ RUN  v4.1.11 /workspace/apps/server
+
+ ❯ src/video/pipelineRuntime.test.ts (1 test | 1 failed) 12ms
+   × quality waits for Pro before database reads or budget reservations when providers are absent 10ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/video/pipelineRuntime.test.ts > quality waits for Pro before database reads or budget reservations when providers are absent
+AssertionError: expected [Function] to throw error including 'PRO_UNAVAILABLE' but got 'QUALITY_EVIDENCE_UNAVAILABLE'
+
+Expected: "PRO_UNAVAILABLE"
+Received: "QUALITY_EVIDENCE_UNAVAILABLE"
+
+ ❯ src/video/pipelineRuntime.test.ts:13:130
+     11|   const runtime = await buildVideoRuntime({ config: { fileStorageDir: …
+     12|     pool: { query } as unknown as pg.Pool, ledger: { reserve } as unkn…
+     13|   await expect(runtime.handlers.quality!.execute({ subjectId: 'absent'…
+       |                                                                                                                                  ^
+     14|   expect(query).not.toHaveBeenCalled();
+     15|   expect(reserve).not.toHaveBeenCalled();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  10:24:59
+   Duration  853ms (transform 549ms, setup 0ms, import 695ms, tests 12ms, environment 0ms)
+
+npm error Lifecycle script `test` failed with error:
+npm error code 1
+npm error path /workspace/apps/server
+npm error workspace @daily-log/server@0.0.0
+npm error location /workspace/apps/server
+npm error command failed
+npm error command sh -c vitest run src/video/pipelineRuntime.test.ts --maxWorkers=1 --no-file-parallelism
+
+> @daily-log/server@0.0.0 test
+> vitest run src/video/qualityEvidence.test.ts --maxWorkers=1 --no-file-parallelism
+
+
+ RUN  v4.1.11 /workspace/apps/server
+
+ ❯ src/video/qualityEvidence.test.ts (0 test)
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/video/qualityEvidence.test.ts [ src/video/qualityEvidence.test.ts ]
+Error: Cannot find module './qualityEvidence.js' imported from /workspace/apps/server/src/video/qualityEvidence.test.ts
+ ❯ src/video/qualityEvidence.test.ts:7:1
+      5| import { MonthlyLedger } from '../budget/ledger.js';
+      6| import { pcmToWav } from '../voice/transports.js';
+      7| import { createQualityEvidence, DEFAULT_QUALITY_PRICING, type Assessme…
+       | ^
+      8| import { inspectQuality } from './quality.js';
+      9|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  10:25:50
+   Duration  354ms (transform 124ms, setup 0ms, import 0ms, tests 0ms, environment 0ms)
+
+npm error Lifecycle script `test` failed with error:
+npm error code 1
+npm error path /workspace/apps/server
+npm error workspace @daily-log/server@0.0.0
+npm error location /workspace/apps/server
+npm error command failed
+npm error command sh -c vitest run src/video/qualityEvidence.test.ts --maxWorkers=1 --no-file-parallelism
