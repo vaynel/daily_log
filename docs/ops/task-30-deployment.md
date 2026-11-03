@@ -222,3 +222,32 @@ node scripts/ops/release.mjs switch /srv/daily-log 5680ca374afe6cd8065a3e43402b8
 관리자: 별도 네트워크에서 실제 PC/Android 로그인, 허용/비허용/비로그인 앱·첨부·영상 직접 URL, 로그아웃/만료, HTTPS/리디렉션/쿠키, WebSocket, 실제 영상 재생, 기존 push-test 및 다른 vhost 무영향을 기록한다. 원본 파일은 정적 경로로 노출되지 않는지 별도로 검증한다. 미확인 상태에서는 VPN/LAN 접근을 유지하며 개통 완료로 표시하지 않는다.
 
 재현 명령과 실제 결과·한계는 [evidence.md](evidence.md)에 기록한다. Wiki07/08/09 및 Flowchart 원문은 scoped MCP에 읽기 도구가 없어 미열람이며, Task 패킷 scopeRevision7과 저장소 구현을 기준으로 작성했다.
+
+## TASK-132 읽기 전용 자동 사전 점검
+
+- [ ] 검토된 도구 checkout에서 자동 점검 JSON과 종료 코드를 기록한다. 기본 nginx 경로는 `/etc/nginx/conf.d/daily-log.conf`이며 worker는 `systemctl --user show daily-log-worker`의 제한된 속성만 읽는다. 서비스 상태 변경·설정 수정은 하지 않는다.
+
+```sh
+node scripts/ops/preflight.mjs
+# 별도 파일을 검사할 때 (설정 원문이나 비밀값은 결과에 출력하지 않음)
+node scripts/ops/preflight.mjs --nginx-config /path/to/daily-log.conf \
+  --worker-properties /path/to/worker-properties.txt
+# 조회에도 같은 인자를 사용할 수 있다. 인자를 생략하면 위 기본 소스를 읽는다.
+node scripts/ops/release.mjs status /srv/daily-log <40자리-commit> \
+  --nginx-config /path/to/daily-log.conf --worker-properties /path/to/worker-properties.txt
+```
+
+`worker-properties.txt`는 `systemctl --user show daily-log-worker -p Restart -p RestartUSec -p StartLimitIntervalUSec -p LoadState` 출력 형식이다. 임의의 예제 파일은 실제 운영 검증 근거가 아니며, 관리자는 해당 서버의 최신 출력인지 확인한다.
+
+- nginx: 앱 `policy.ts`의 `photoBytes + 1024`(현재 10,486,784바이트)보다 **큰 유한값**을 요구한다. `11m`은 PASS, 누락·`1m`·`10m`·`0`은 FAIL이다. HTTPS server와 모든 하위 블록의 상속 및 location 재정의를 검사하며, 여러 HTTPS server가 있으면 모두 통과해야 한다. 업로드와 무관한 location도 보수적으로 검사한다. 주석·따옴표를 구분하지만 완전한 `nginx -t` 대체 도구는 아니다.
+- 외부 `include`는 자동으로 펼치지 않는다. include 존재·HTTPS server 부재·구문/앱 정책 해석 불가는 NOT_RUN이며 실효 설정을 별도로 확인한다. 확인된 한도 위반은 NOT_RUN보다 우선하여 FAIL이다.
+- worker: `Restart=on-failure|always`, 유한한 `RestartUSec>0`, `StartLimitIntervalUSec=0`을 요구한다. 지속 복구를 위해 유한한 시작 제한은 크기와 무관하게 FAIL이다. 입력에 LoadState가 있으면 loaded여야 한다. 기존 체크리스트의 `RestartPreventExitStatus`와 실제 DB 복구 시험은 별도 수동 확인 항목이다.
+- 파일 없음·읽기 권한 없음·systemctl 조회 불가는 NOT_RUN이다. 결과는 `{checks:[{id,result,detail}]}`이며 단독 점검은 FAIL이 하나라도 있으면 종료 코드 1, 그 외 0이다. **종료 코드 0만으로 모든 항목 PASS를 판단하지 않는다.**
+- release `status`/`switch`에는 `preflight` 결과가 포함된다. FAIL이면 `WAITING_PREFLIGHT`(종료 코드 2)로 거부하며 `current`는 바뀌지 않는다. NOT_RUN은 자동 차단하지 않지만 출력에 남고, 기존 관리자 승인·외부 확인 게이트는 계속 적용한다. switch의 선택 인자는 status와 같다. 실제 전환은 기존 관리자 전용 절차를 따른다.
+
+회귀 시험은 순차 실행한다:
+
+```sh
+mkdir -p /workspace/data/task30
+node --test --test-concurrency=1 scripts/ops/*.test.mjs
+```
