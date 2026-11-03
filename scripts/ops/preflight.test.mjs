@@ -16,6 +16,15 @@ test('nginx rejects missing/small/unlimited limits and accepts sizes strictly ab
   }
 });
 
+test('nginx accepts equivalent GiB units while rejecting zero, malformed and unsafe sizes', () => {
+  for (const value of ['1g', '1G', '1024m', '1024M', '1048576k', '1048576K', '1073741824']) {
+    assert.equal(checkNginx(https(`client_max_body_size ${value};`)).result, 'PASS', value);
+  }
+  for (const value of ['0g', '0G', '1gb', '1.5g', '1t', '8388608g']) {
+    assert.equal(checkNginx(https(`client_max_body_size ${value};`)).result, 'FAIL', value);
+  }
+});
+
 test('nginx respects comments, quoted braces, HTTP inheritance and nested location overrides', () => {
   assert.equal(checkNginx(https('# client_max_body_size 11m;\n')).result, 'FAIL');
   assert.equal(checkNginx(https('client_max_body_size 11m; # client_max_body_size 1m;\nlocation /api { client_max_body_size 1m; }')).result, 'FAIL');

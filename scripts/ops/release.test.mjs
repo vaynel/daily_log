@@ -51,6 +51,16 @@ test('preflight FAIL blocks status/switch without changing current; NOT_RUN stay
     assert.equal(valid.status, 0);
     assert.deepEqual(JSON.parse(valid.stdout).preflight.checks.map(c => c.result), ['PASS','PASS']);
     assert.equal(readlinkSync(join(root, 'current')), `releases/${commit}`);
+    for (const value of ['1g', '1G']) {
+      writeFileSync(nginx, `server { listen 443 ssl; client_max_body_size ${value}; }`);
+      rmSync(join(root, 'current'));
+      symlinkSync('releases/previous', join(root, 'current'));
+      const result = call('switch');
+      assert.equal(result.status, 0, value);
+      assert.equal(JSON.parse(result.stdout).status, 'SWITCHED_PENDING_VERIFICATION');
+      assert.deepEqual(JSON.parse(result.stdout).preflight.checks.map(c => c.result), ['PASS','PASS']);
+      assert.equal(readlinkSync(join(root, 'current')), `releases/${commit}`);
+    }
     chmodSync(root,0o755); chmodSync(nginx,0o000); chmodSync(worker,0o000);
     const denied = spawnSync(process.execPath, ['scripts/ops/release.mjs', 'status', root, commit, '--nginx-config', nginx, '--worker-properties', worker], { encoding:'utf8', ...(process.getuid()===0 ? {uid:65534,gid:65534} : {}) });
     assert.equal(denied.status,0,denied.stderr);

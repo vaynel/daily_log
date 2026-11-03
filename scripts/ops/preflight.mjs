@@ -64,8 +64,8 @@ export function checkNginx(source) {
     const limits = node.children.filter(c => c.args[0] === 'client_max_body_size');
     let limit = inherited;
     if (limits.length) {
-      const match = limits.length === 1 && limits[0].args.length === 2 && /^(\d+)([kKmM]?)$/.exec(limits[0].args[1]);
-      limit = match ? Number(match[1]) * ({k:1024,m:1024*1024}[match[2].toLowerCase()] ?? 1) : NaN;
+      const match = limits.length === 1 && limits[0].args.length === 2 && /^(\d+)([kKmMgG]?)$/.exec(limits[0].args[1]);
+      limit = match ? Number(match[1]) * ({k:1024,m:1024*1024,g:1024*1024*1024}[match[2].toLowerCase()] ?? 1) : NaN;
     }
     if (node.args[0] === 'server') {
       inHttps = node.children.some(c => c.args[0] === 'listen' && (c.args.includes('ssl') || /(?:^|:)443$/.test(c.args[1] ?? '')));

@@ -80,7 +80,7 @@ systemctl --user restart daily-log-worker.service
 
 ### 릴리스 전 읽기 전용 체크리스트 (필수)
 
-`release.mjs status`는 승인 JSON을 검사할 뿐 nginx/systemd 실효 설정을 검사하지 않는다. `READY_FOR_ADMIN_SWITCH`만으로 아래 항목을 통과 처리하지 않는다. 단순 문자열 검색은 다른 vhost·주석·덮어쓴 drop-in을 오인할 수 있어 이 단계는 관리자가 실효 설정을 대조하는 체크리스트로 제공한다. 파일을 읽을 수 없거나 설정 범위를 확인하지 못하면 **NOT_RUN**, 누락·기준 미달이면 **FAIL**로 기록하고 릴리스를 보류한다.
+`release.mjs status`는 승인 JSON과 아래 TASK-132 자동 사전 점검을 실행한다. 외부 include와 실제 서비스의 모든 실효 설정까지 검증하지는 않는다. `READY_FOR_ADMIN_SWITCH`만으로 아래 항목을 통과 처리하지 않는다. 단순 문자열 검색은 다른 vhost·주석·덮어쓴 drop-in을 오인할 수 있어 이 단계는 관리자가 실효 설정을 대조하는 체크리스트로 제공한다. 파일을 읽을 수 없거나 설정 범위를 확인하지 못하면 **NOT_RUN**, 누락·기준 미달이면 **FAIL**로 기록하고 릴리스를 보류한다.
 
 - [ ] **업로드 한도**: 해당 HTTPS vhost 및 업로드 경로에 적용되는 include/location을 읽고 `client_max_body_size 11m;`가 실효 값인지 확인한다. 명시값이 없으면 상위 상속까지 추적한다. 모든 범위에서 누락이면 기본 `1m`이므로 FAIL; `10m` 이하 또는 무제한 `0`도 이 기준에서는 FAIL. 값·적용 범위만 기록하고 전체 nginx 설정 출력은 보고서에 붙이지 않는다.
 - [ ] **worker 정책**: 아래 읽기 전용 명령의 실효 값이 `Restart=on-failure`(또는 `always`), `RestartUSec=10s`, `StartLimitIntervalUSec=0`인지 확인한다. 서비스 미설치(`LoadState`가 `loaded` 아님), `Restart=no`, 시작 제한이 0이 아님, 재시작 간격 누락/기준 불일치, DB 실패를 막는 `RestartPreventExitStatus`가 있으면 FAIL로 기록하고 위 drop-in 절차를 안내한다. `StartLimitBurst`만 늘리는 것으로 대체하지 않는다.
@@ -239,7 +239,7 @@ node scripts/ops/release.mjs status /srv/daily-log <40자리-commit> \
 
 `worker-properties.txt`는 `systemctl --user show daily-log-worker -p Restart -p RestartUSec -p StartLimitIntervalUSec -p LoadState` 출력 형식이다. 임의의 예제 파일은 실제 운영 검증 근거가 아니며, 관리자는 해당 서버의 최신 출력인지 확인한다.
 
-- nginx: 앱 `policy.ts`의 `photoBytes + 1024`(현재 10,486,784바이트)보다 **큰 유한값**을 요구한다. `11m`은 PASS, 누락·`1m`·`10m`·`0`은 FAIL이다. HTTPS server와 모든 하위 블록의 상속 및 location 재정의를 검사하며, 여러 HTTPS server가 있으면 모두 통과해야 한다. 업로드와 무관한 location도 보수적으로 검사한다. 주석·따옴표를 구분하지만 완전한 `nginx -t` 대체 도구는 아니다.
+- nginx: 앱 `policy.ts`의 `photoBytes + 1024`(현재 10,486,784바이트)보다 **큰 유한값**을 요구한다. `11m`과 `1g`/`1G`는 PASS이며, 바이트 및 k/K/m/M/g/G 단위를 지원한다. 누락·`1m`·`10m`·`0`은 FAIL이다. HTTPS server와 모든 하위 블록의 상속 및 location 재정의를 검사하며, 여러 HTTPS server가 있으면 모두 통과해야 한다. 업로드와 무관한 location도 보수적으로 검사한다. 주석·따옴표를 구분하지만 완전한 `nginx -t` 대체 도구는 아니다.
 - 외부 `include`는 자동으로 펼치지 않는다. include 존재·HTTPS server 부재·구문/앱 정책 해석 불가는 NOT_RUN이며 실효 설정을 별도로 확인한다. 확인된 한도 위반은 NOT_RUN보다 우선하여 FAIL이다.
 - worker: `Restart=on-failure|always`, 유한한 `RestartUSec>0`, `StartLimitIntervalUSec=0`을 요구한다. 지속 복구를 위해 유한한 시작 제한은 크기와 무관하게 FAIL이다. 입력에 LoadState가 있으면 loaded여야 한다. 기존 체크리스트의 `RestartPreventExitStatus`와 실제 DB 복구 시험은 별도 수동 확인 항목이다.
 - 파일 없음·읽기 권한 없음·systemctl 조회 불가는 NOT_RUN이다. 결과는 `{checks:[{id,result,detail}]}`이며 단독 점검은 FAIL이 하나라도 있으면 종료 코드 1, 그 외 0이다. **종료 코드 0만으로 모든 항목 PASS를 판단하지 않는다.**
