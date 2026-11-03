@@ -123,6 +123,12 @@ export class MonthlyLedger {
     return r.rowCount === 1;
   }
 
+  /** Recovery must inspect durable settlement, never infer it from elapsed time. */
+  async entryState(id: string): Promise<EntryState | null> {
+    const r = await this.pool.query<{ state: EntryState }>('SELECT state FROM budget_entries WHERE id=$1', [id]);
+    return r.rows[0]?.state ?? null;
+  }
+
   /**
    * 불명 항목을 제공자 사용량 확인 후 정산한다. 확인 근거(evidence)가 없으면 거부한다.
    * NOT_CHARGED 만 환급(0원)이고, CHARGED 는 확인된 금액으로 확정한다.

@@ -80,3 +80,56 @@ it('QA: verified NOT_CHARGED reconciliation permits a safe retry',async()=>{
   expect(restarted.fetcher).toHaveBeenCalledTimes(1);
   expect((await ledger.snapshot()).reservedKrw).toBe(0);
 });
+
+it('QA: verified CHARGED without cached evidence must not issue another call',async()=>{
+  const failed=setup({fail:true});
+  await expect(failed.provider.transcribe(audio,'audio/wav','s1')).rejects.toThrow('QUALITY_EXTERNAL_UNKNOWN');
+  const [entry]=await ledger.listUnknown();
+  expect(await ledger.resolveUnknown(entry!.id,{charged:true,actualKrw:100,evidence:'fake provider confirms charged'})).toBe(true);
+  const restarted=setup();
+  await expect(restarted.provider.transcribe(audio,'audio/wav','s1')).rejects.toThrow('QUALITY_EXTERNAL_UNKNOWN');
+  expect(restarted.fetcher).not.toHaveBeenCalled();
+  expect((await ledger.snapshot()).confirmedKrw).toBe(100);
+});
+it('QA: released attempt still requires available monthly budget',async()=>{
+  const failed=setup({fail:true});
+  await expect(failed.provider.transcribe(audio,'audio/wav','s1')).rejects.toThrow('QUALITY_EXTERNAL_UNKNOWN');
+  const [entry]=await ledger.listUnknown();
+  await ledger.resolveUnknown(entry!.id,{charged:false,evidence:'fake provider confirms unsent'});
+  await ledger.recordCarryover(ledger.currentMonth(),50000,'full','test');
+  const restarted=setup();
+  await expect(restarted.provider.transcribe(audio,'audio/wav','s1')).rejects.toThrow('BUDGET_EXCEEDED');
+  expect(restarted.fetcher).not.toHaveBeenCalled();
+  expect((await ledger.snapshot()).committedKrw).toBe(50000);
+  expect((await ledger.snapshot()).reservedKrw).toBe(0);
+});
+it('QA: concurrent recovery after multiple releases issues only one new external call',async()=>{
+  for(let n=0;n<2;n++) {
+    const failed=setup({fail:true});
+    await expect(failed.provider.transcribe(audio,'audio/wav','s1')).rejects.toThrow('QUALITY_EXTERNAL_UNKNOWN');
+    const [entry]=await ledger.listUnknown();
+    expect(entry).toBeDefined();
+    await ledger.resolveUnknown(entry!.id,{charged:false,evidence:'fake provider confirms not processed'});
+  }
+  let finish!: () => void;
+  let entered!: () => void;
+  const pending = new Promise<void>(resolve=>{finish=resolve;});
+  const started = new Promise<void>(resolve=>{entered=resolve;});
+  const first=createQualityEvidence({ledger,cacheDir:dir,key:'fake',reference:Buffer.from('ref'),pricing:DEFAULT_QUALITY_PRICING,
+    infer:async()=>({state:'SUCCEEDED',text:''}),fetchImpl:async()=>{entered();await pending;return response('오늘 걸었다.');}});
+  const result=first.transcribe(audio,'audio/wav','s1');
+  try {
+    await started;
+    const second=setup();
+    await expect(second.provider.transcribe(audio,'audio/wav','s1')).rejects.toThrow('QUALITY_EXTERNAL_UNKNOWN');
+    expect(second.fetcher).not.toHaveBeenCalled();
+  } finally { finish(); }
+  await expect(result).resolves.toBe('오늘 걸었다.');
+  const restarted=setup();
+  await expect(restarted.provider.transcribe(audio,'audio/wav','s1')).resolves.toBe('오늘 걸었다.');
+  expect(restarted.fetcher).not.toHaveBeenCalled();
+  const rows=(await pool.query('SELECT state FROM budget_entries')).rows;
+  expect(rows.filter(r=>r.state==='RELEASED')).toHaveLength(2);
+  expect(rows.filter(r=>r.state==='CONFIRMED')).toHaveLength(1);
+  expect((await ledger.snapshot()).reservedKrw).toBe(0);
+});

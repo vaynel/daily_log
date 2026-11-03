@@ -100,9 +100,19 @@ export function createQualityEvidence(o: { ledger: MonthlyLedger; cacheDir: stri
     let retry=0;
     try { const c=JSON.parse(await readFile(file,'utf8')) as { text?:string; sha?:string; retry?:number }; if(typeof c.text==='string' && hash(c.text)===c.sha) return c.text; if(Number.isSafeInteger(c.retry) && c.retry!>0) retry=c.retry!; } catch { /* missing or invalid evidence: ledger still prevents replay */ }
     await mkdir(o.cacheDir,{recursive:true});
-    const r=await o.ledger.reserve({provider:operation==='pro'?'pro-subscription':'gemini',operation:`quality:${operation}`,purpose:'PRODUCT',estimateKrw:estimate,idempotencyKey:`${baseKey}:${retry}`});
-    if(!r.ok) throw new BudgetWaitError('BUDGET_EXCEEDED');
-    if(r.duplicate) throw new ExternalUnknownError('QUALITY_EXTERNAL_UNKNOWN');
+    let r;
+    for (;;) {
+      r=await o.ledger.reserve({provider:operation==='pro'?'pro-subscription':'gemini',operation:`quality:${operation}`,purpose:'PRODUCT',estimateKrw:estimate,idempotencyKey:`${baseKey}:${retry}`});
+      if(!r.ok) throw new BudgetWaitError('BUDGET_EXCEEDED');
+      if(!r.duplicate) break;
+      // The prior worker may have stopped after reserve or after sending. Keep
+      // the amount held as UNKNOWN until explicit provider reconciliation.
+      await o.ledger.markUnknown(r.id,'QUALITY_EXTERNAL_UNKNOWN');
+      if(await o.ledger.entryState(r.id)!=='RELEASED') throw new ExternalUnknownError('QUALITY_EXTERNAL_UNKNOWN');
+      // Only a durable release permits another attempt. Deterministic keys keep
+      // concurrent restarts from issuing two calls; reserve rechecks the budget.
+      retry++;
+    }
     let text: string;
     try { text=await call(); }
     catch(e) {
