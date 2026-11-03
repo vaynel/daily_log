@@ -1,0 +1,26 @@
+
+> @daily-log/server@0.0.0 test
+> vitest run src/video/qualityEvidence.review.test.ts --maxWorkers=1 --no-file-parallelism --reporter=verbose
+
+
+ RUN  v4.1.11 /workspace/apps/server
+
+ ✓ src/video/qualityEvidence.review.test.ts > QA: learning false propagates to LEARNING/zooms while other evidence is valid 253ms
+ ✓ src/video/qualityEvidence.review.test.ts > QA: external boundary http never passes and leaves no RESERVED entry 135ms
+ ✓ src/video/qualityEvidence.review.test.ts > QA: external boundary truncated never passes and leaves no RESERVED entry 162ms
+ ✓ src/video/qualityEvidence.review.test.ts > QA: external boundary empty never passes and leaves no RESERVED entry 290ms
+ ✓ src/video/qualityEvidence.review.test.ts > QA: external boundary malformed-image never passes and leaves no RESERVED entry 160ms
+stdout | src/video/qualityEvidence.review.test.ts > QA: restart after reservation and before cache must classify stranded reservation UNKNOWN
+QA_CRASH_SNAPSHOT {"reserved":0,"unknown":136.8814}
+
+ ✓ src/video/qualityEvidence.review.test.ts > QA: restart after reservation and before cache must classify stranded reservation UNKNOWN 178ms
+ ✓ src/video/qualityEvidence.review.test.ts > QA: verified NOT_CHARGED reconciliation permits a safe retry 202ms
+ ✓ src/video/qualityEvidence.review.test.ts > QA: verified CHARGED without cached evidence must not issue another call 201ms
+ ✓ src/video/qualityEvidence.review.test.ts > QA: released attempt still requires available monthly budget 219ms
+ ✓ src/video/qualityEvidence.review.test.ts > QA: concurrent recovery after multiple releases issues only one new external call 232ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  10:56:09
+   Duration  2.59s (transform 316ms, setup 0ms, import 414ms, tests 2.03s, environment 0ms)
+

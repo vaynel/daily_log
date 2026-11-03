@@ -1,0 +1,15 @@
+[Synthetic HTTP request logs omitted; test command and test runner output preserved.]
+$ npm test -w apps/server -- --exclude src/video/** --maxWorkers=1 --no-file-parallelism
+
+> @daily-log/server@0.0.0 test
+> vitest run --exclude src/video/** --maxWorkers=1 --no-file-parallelism
+
+
+ RUN  v4.1.11 /workspace/apps/server
+
+
+ Test Files  24 passed (24)
+      Tests  360 passed (360)
+   Start at  10:38:10
+   Duration  68.07s (transform 1.13s, setup 0ms, import 4.00s, tests 60.38s, environment 3ms)
+

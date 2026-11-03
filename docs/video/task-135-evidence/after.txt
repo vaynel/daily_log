@@ -1,0 +1,28 @@
+TASK-135 AFTER — actual sequential check output
+Video: 10 passing files / 120 tests in red-extended.txt;
+the 2 initially failing files pass in final-focused.txt (17 + 1 tests).
+Final focused run also repeats narration + runtime: 44 PASS.
+
+final-focused:
+Test Files  4 passed (4)
+Tests  44 passed (44)
+server-rest:
+Test Files  24 passed (24)
+Tests  360 passed (360)
+web:
+Test Files  6 passed (6)
+Tests  39 passed (39)
+siwc:
+# tests 41
+# pass 37
+# fail 0
+# skipped 4
+server-rest exit=0
+web exit=0
+siwc exit=0
+lint exit=0
+typecheck exit=0
+build exit=0
+
+Paid API calls: 0 (fake transports). Deployment: NOT RUN.
+3 scenes / 180s: 1103.70 KRW per quality pass; 2207.40 KRW with one remake.

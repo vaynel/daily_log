@@ -1,0 +1,40 @@
+
+> @daily-log/server@0.0.0 test
+> vitest run src/video/qualityEvidence.review.test.ts src/video/qualityEvidence.test.ts --maxWorkers=1 --no-file-parallelism --reporter=verbose
+
+
+ RUN  v4.1.11 /workspace/apps/server
+
+ ✓ src/video/qualityEvidence.test.ts > real evidence provider uses audio/frame/reference/source, reserves and settles, reuses on restart 184ms
+ ✓ src/video/qualityEvidence.test.ts > absent configuration stops before reservation: {"pro":false} 132ms
+ ✓ src/video/qualityEvidence.test.ts > absent configuration stops before reservation: {"key":false} 138ms
+ ✓ src/video/qualityEvidence.test.ts > lost response is UNKNOWN, sanitized, and never called twice 176ms
+ ✓ src/video/qualityEvidence.test.ts > budget refuses before external call 166ms
+ ✓ src/video/qualityEvidence.test.ts > quality rejects transcript with component for repair 150ms
+ ✓ src/video/qualityEvidence.test.ts > quality rejects facts with component for repair 159ms
+ ✓ src/video/qualityEvidence.test.ts > quality rejects image with component for repair 156ms
+ ✓ src/video/qualityEvidence.test.ts > quality rejects readability with component for repair 152ms
+ ✓ src/video/qualityEvidence.test.ts > Pro wait has zero charge and can resume; no paid vision fallback 181ms
+ ✓ src/video/qualityEvidence.test.ts > malformed Pro evidence never passes: {} 130ms
+ ✓ src/video/qualityEvidence.test.ts > malformed Pro evidence never passes: {"facts":{"passed":"true","evidence":"x"},"learning":{}} 171ms
+ ✓ src/video/qualityEvidence.test.ts > malformed Pro evidence never passes: not json 145ms
+ ✓ src/video/qualityEvidence.test.ts > missing source and invalid zoom layout cannot be inferred as PASS 166ms
+ ✓ src/video/qualityEvidence.test.ts > accepts a full 180-second narration and rejects over-duration audio before reservation 232ms
+ ✓ src/video/qualityEvidence.test.ts > readability measures contrast and rejects altered or oversized learning display 165ms
+ ✓ src/video/qualityEvidence.test.ts > daily captions must cover narration and provide reading time 153ms
+ ✓ src/video/qualityEvidence.review.test.ts > QA: learning false propagates to LEARNING/zooms while other evidence is valid 227ms
+ ✓ src/video/qualityEvidence.review.test.ts > QA: external boundary http never passes and leaves no RESERVED entry 183ms
+ ✓ src/video/qualityEvidence.review.test.ts > QA: external boundary truncated never passes and leaves no RESERVED entry 197ms
+ ✓ src/video/qualityEvidence.review.test.ts > QA: external boundary empty never passes and leaves no RESERVED entry 299ms
+ ✓ src/video/qualityEvidence.review.test.ts > QA: external boundary malformed-image never passes and leaves no RESERVED entry 282ms
+stdout | src/video/qualityEvidence.review.test.ts > QA: restart after reservation and before cache must classify stranded reservation UNKNOWN
+QA_CRASH_SNAPSHOT {"reserved":0,"unknown":136.8814}
+
+ ✓ src/video/qualityEvidence.review.test.ts > QA: restart after reservation and before cache must classify stranded reservation UNKNOWN 202ms
+ ✓ src/video/qualityEvidence.review.test.ts > QA: verified NOT_CHARGED reconciliation permits a safe retry 203ms
+
+ Test Files  2 passed (2)
+      Tests  24 passed (24)
+   Start at  10:55:49
+   Duration  5.13s (transform 304ms, setup 0ms, import 483ms, tests 4.36s, environment 0ms)
+

@@ -12,6 +12,7 @@ import { loadPricing } from '../voice/pricing.js';
 import { geminiNarrationTts, loadVoiceConfig } from './narration.js';
 import { chromiumOverlay, type OverlayRenderer } from './overlay.js';
 import { createVideoHandlers, pipelineOnStopped, type PipelineDeps } from './pipeline.js';
+import { createQualityEvidence, loadQualityPricing } from './qualityEvidence.js';
 import { RenderGate } from './renderGate.js';
 import { geminiImage } from './sceneAssets.js';
 
@@ -20,7 +21,7 @@ const REPO_ASSETS = path.resolve(import.meta.dirname, '../../../../assets');
 /**
  * 운영 작업기(worker.ts)용 제작 처리기. 설정이 없는 제공자는 "없는 척 성공"하지 않고, 해당 단계가 호출 전에
  * PERMISSION 대기(예: TTS_NOT_CONFIGURED)로 멈춘다. 이때 예산 예약·외부 호출은 일어나지 않는다.
- * 품질 검수의 전사·사실/그림/학습/가독성 근거 제공자는 아직 연결되지 않아 quality 는 QUALITY_EVIDENCE_UNAVAILABLE 로 실패한다(통과로 추정 금지).
+ * 품질 검수는 원장을 거친 Gemini 전사·비전, Pro 사실·학습 검수와 결정적 배치 검사를 사용한다.
  */
 export async function buildVideoRuntime(o: { config: Config; pool: pg.Pool; ledger: MonthlyLedger; env?: NodeJS.ProcessEnv }) {
   const env = o.env ?? process.env;
@@ -53,7 +54,11 @@ export async function buildVideoRuntime(o: { config: Config; pool: pg.Pool; ledg
     render: { overlay, workDir: path.join(o.config.fileStorageDir, 'pipeline', 'render-work') },
     gate: new RenderGate(o.pool),
     rules: new PgRuleStore(o.pool),
-    quality: null,
+    quality: createQualityEvidence({ ledger: o.ledger, key, infer,
+      reference: await readFile(path.join(REPO_ASSETS, 'character/A-ref-v1.jpg')),
+      cacheDir: path.join(o.config.fileStorageDir, 'pipeline', 'quality-evidence'),
+      pricing: loadQualityPricing(env), model: env.DAILY_LOG_QUALITY_MODEL?.trim() || undefined,
+    }),
     heartbeatMs: 15_000,
   };
   const handlers = createVideoHandlers(deps);
@@ -64,5 +69,6 @@ export async function buildVideoRuntime(o: { config: Config; pool: pg.Pool; ledg
   handlers.scene_plan = guard(handlers.scene_plan!, missing.pro, 'PRO_UNAVAILABLE');
   handlers.narration = guard(handlers.narration!, missing.tts, 'TTS_NOT_CONFIGURED');
   handlers.assets = guard(handlers.assets!, missing.image, 'IMAGE_NOT_CONFIGURED');
+  handlers.quality = guard(guard(handlers.quality!, missing.tts, 'QUALITY_GEMINI_UNAVAILABLE'), missing.pro, 'PRO_UNAVAILABLE');
   return { handlers, onStopped: pipelineOnStopped(o.pool), close: async () => { await chromium?.close(); } };
 }

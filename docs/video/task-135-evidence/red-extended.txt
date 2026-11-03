@@ -1,0 +1,97 @@
+
+> @daily-log/server@0.0.0 test
+> vitest run src/video --maxWorkers=1 --no-file-parallelism
+
+
+ RUN  v4.1.11 /workspace/apps/server
+
+ ❯ src/video/qualityEvidence.integration.test.ts (1 test | 1 failed) 10081ms
+   × production evidence through actual render/quality: PASS, then each defect identifies repair stages 10078ms
+ ❯ src/video/qualityEvidence.test.ts (16 tests | 3 failed) 3229ms
+   × real evidence provider uses audio/frame/reference/source, reserves and settles, reuses on restart 284ms
+   × accepts a full 180-second narration and rejects over-duration audio before reservation 159ms
+   × readability measures contrast and rejects altered or oversized learning display 164ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/video/qualityEvidence.integration.test.ts > production evidence through actual render/quality: PASS, then each defect identifies repair stages
+Error: QUALITY_EXTERNAL_UNKNOWN
+ ❯ charged src/video/qualityEvidence.ts:89:27
+
+ ❯ Object.assess src/video/qualityEvidence.ts:139:18
+ ❯ Object.loadInput src/video/pipeline.ts:355:26
+ ❯ Object.execute src/video/qualityStage.ts:29:19
+ ❯ Object.execute src/video/pipeline.ts:375:19
+ ❯ src/video/qualityEvidence.integration.test.ts:47:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  src/video/qualityEvidence.test.ts > real evidence provider uses audio/frame/reference/source, reserves and settles, reuses on restart
+AssertionError: expected { maxOutputTokens: 2048, …(2) } to deeply equal { maxOutputTokens: 2048, …(1) }
+
+- Expected
++ Received
+
+  {
+    "maxOutputTokens": 2048,
++   "temperature": 0,
+    "thinkingConfig": {
+-     "thinkingLevel": "LOW",
++     "thinkingBudget": 0,
+    },
+  }
+
+ ❯ src/video/qualityEvidence.test.ts:40:33
+     38|   expect(infer.mock.calls.length).toBe(1);
+     39|   const body=JSON.parse(String(fetcher.mock.calls[1]![1]?.body));
+     40|   expect(body.generationConfig).toEqual({maxOutputTokens:2048,thinking…
+       |                                 ^
+     41|   expect(body.contents[0].parts.filter((p:{inlineData?:unknown})=>p.in…
+     42|   const restarted=setup();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  src/video/qualityEvidence.test.ts > accepts a full 180-second narration and rejects over-duration audio before reservation
+AssertionError: promise rejected "Error: QUALITY_INPUT_TOO_LARGE { …(1) }" instead of resolving
+ ❯ src/video/qualityEvidence.test.ts:100:91
+     98| it('accepts a full 180-second narration and rejects over-duration audi…
+     99|   const {provider}=setup();
+    100|   await expect(provider.transcribe(pcmToWav(Buffer.alloc(24000*2*180))…
+       |                                                                                           ^
+    101|   const count=(await pool.query('SELECT count(*) FROM budget_entries')…
+    102|   await expect(provider.transcribe(pcmToWav(Buffer.alloc(24000*2*181))…
+
+Caused by: Error: QUALITY_INPUT_TOO_LARGE
+ ❯ gemini src/video/qualityEvidence.ts:109:106
+ ❯ Object.transcribe src/video/qualityEvidence.ts:129:21
+ ❯ src/video/qualityEvidence.test.ts:100:25
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'QUALITY_INPUT_TOO_LARGE' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  src/video/qualityEvidence.test.ts > readability measures contrast and rejects altered or oversized learning display
+TypeError: actual value must be number or bigint, received "string"
+ ❯ src/video/qualityEvidence.test.ts:108:36
+    106| it('readability measures contrast and rejects altered or oversized lea…
+    107|   const i=input(); const evidence=JSON.parse(assessReadability(i).evid…
+    108|   expect(evidence.captionContrast).toBeGreaterThanOrEqual(4.5); expect…
+       |                                    ^
+    109|   i.scene.type='LEARNING';
+    110|   i.zoomPlans=[{sceneKey:'s1',kind:'NOTE',chunks:[{original:'원문',displ…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  2 failed | 10 passed (12)
+      Tests  4 failed | 133 passed (137)
+   Start at  10:29:54
+   Duration  394.90s (transform 1.12s, setup 0ms, import 3.18s, tests 389.16s, environment 2ms)
+
+npm error Lifecycle script `test` failed with error:
+npm error code 1
+npm error path /workspace/apps/server
+npm error workspace @daily-log/server@0.0.0
+npm error location /workspace/apps/server
+npm error command failed
+npm error command sh -c vitest run src/video --maxWorkers=1 --no-file-parallelism

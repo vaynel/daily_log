@@ -14,6 +14,7 @@ import type { TtsResult } from '../voice/transports.js';
 import { AssetStore } from './assetStore.js';
 import { narrationKey, type NarrationCache, type NarrationSegment, type NarrationTts, type VoiceConfig } from './narration.js';
 import { runNarrationStage } from './narrationStage.js';
+import type { AssessmentInput } from './qualityEvidence.js';
 import type { QualityComponent, QualityInput, QualityScene } from './quality.js';
 import { createQualityHandler } from './qualityStage.js';
 import type { RenderDeps, RenderInput } from './render.js';
@@ -21,7 +22,7 @@ import type { RenderGate } from './renderGate.js';
 import { createRenderHandler } from './renderStage.js';
 import { composeFrame, generateBackground, generatePose, type Action, type AssetDeps, type AssetResult, type Expression, type ImageProvider } from './sceneAssets.js';
 import { latestScenePlan, runScenePlanStage, type SceneRecords } from './sceneStage.js';
-import type { Scene, ScenePlan } from './scenePlan.js';
+import type { ScenePlan } from './scenePlan.js';
 import type { SubtitleCue } from './subtitles.js';
 import type { LearningMaterial, ZoomPlan } from './zoom.js';
 
@@ -47,7 +48,7 @@ export interface QualityEvidence {
   /** 합성 음성을 전사한다(검수용). 유료라면 호출자가 예산 원장을 거쳐야 한다. */
   transcribe(audio: Buffer, mime: string, sceneKey: string): Promise<string>;
   /** 장면별 사실·그림·학습·가독성 검수 근거. 근거 없는 통과는 만들지 않는다. */
-  assess(i: { scene: Scene; frame: Buffer; subtitles: string[]; zooms: string[] }): Promise<Pick<QualityScene, 'facts' | 'image' | 'learning' | 'readability'>>;
+  assess(i: AssessmentInput): Promise<Pick<QualityScene, 'facts' | 'image' | 'learning' | 'readability'>>;
 }
 
 export interface PipelineDeps {
@@ -338,6 +339,7 @@ export function createVideoHandlers(d: PipelineDeps): Record<string, StageHandle
       const n = await readJson<NarrationManifest>(path.join(root(ctx.subjectId), 'narration.json'));
       const a = await readJson<AssetsManifest>(path.join(root(ctx.subjectId), 'assets.json'));
       if (!rendered || !n || !a) throw new NonRetryableError('QUALITY_INPUT_MISSING');
+      if (n.scriptVersion !== sp.version || a.scriptVersion !== sp.version || rendered.scriptVersion !== sp.version) throw new NonRetryableError('QUALITY_VERSION_MISMATCH');
       const c = cache(ctx.subjectId);
       const scenes: QualityScene[] = [];
       for (const scene of sp.plan.scenes) {
@@ -348,8 +350,14 @@ export function createVideoHandlers(d: PipelineDeps): Record<string, StageHandle
         const subtitles = n.subtitles.filter((s) => s.sceneKey === scene.key).map((s) => s.text);
         const zooms = n.zooms.filter((z) => z.sceneKey === scene.key).flatMap((z) => z.chunks.map((k) => k.original));
         const frame = await readFile(path.join(root(ctx.subjectId), 'frames', fr.file));
+        if (sha(frame) !== fr.sha256) throw new NonRetryableError('QUALITY_FRAME_CHANGED');
         const transcript = await d.quality.transcribe(audio.audio, audio.mime, scene.key);
-        const assessed = await d.quality.assess({ scene, frame, subtitles, zooms });
+        const assessed = await d.quality.assess({ scene, frame, subtitles, zooms,
+          briefing: briefingOf(snap, sp.plan.briefingVersion)?.items ?? [],
+          originals: snap.items.filter(i => i.kind === 'ANSWER').map(i => i.body),
+          cues: n.subtitles.filter(s => s.sceneKey === scene.key), zoomPlans: n.zooms.filter(z => z.sceneKey === scene.key),
+          window: { startSec: seg.startSec, endSec: seg.endSec },
+        });
         // 버전은 각 산출물이 실제로 만들어진 대본 버전이다: 낡은 산출물이 섞이면 VERSION_MISMATCH 로 걸린다.
         scenes.push({
           key: scene.key, script: scene.narration, visual: scene.visual, transcript, subtitles, zooms,

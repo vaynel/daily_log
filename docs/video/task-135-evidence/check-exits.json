@@ -1,0 +1,26 @@
+[
+  {
+    "check": "server-rest",
+    "exit": 0
+  },
+  {
+    "check": "web",
+    "exit": 0
+  },
+  {
+    "check": "siwc",
+    "exit": 0
+  },
+  {
+    "check": "lint",
+    "exit": 0
+  },
+  {
+    "check": "typecheck",
+    "exit": 0
+  },
+  {
+    "check": "build",
+    "exit": 0
+  }
+]

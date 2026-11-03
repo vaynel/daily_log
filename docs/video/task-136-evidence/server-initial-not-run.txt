@@ -1,0 +1,12 @@
+
+> @daily-log/server@0.0.0 test
+> vitest run --maxWorkers=1 --no-file-parallelism
+
+sh: 1: vitest: not found
+npm error Lifecycle script `test` failed with error:
+npm error code 127
+npm error path /workspace/apps/server
+npm error workspace @daily-log/server@0.0.0
+npm error location /workspace/apps/server
+npm error command failed
+npm error command sh -c vitest run --maxWorkers=1 --no-file-parallelism

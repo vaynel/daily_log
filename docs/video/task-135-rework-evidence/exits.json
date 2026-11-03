@@ -1,0 +1,9 @@
+{
+  "server": 0,
+  "web": 0,
+  "siwc": 0,
+  "lint": 0,
+  "typecheck": 0,
+  "build": 0,
+  "secrets": 0
+}
