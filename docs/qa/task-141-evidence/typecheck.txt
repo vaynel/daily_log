@@ -1,0 +1,11 @@
+
+> daily-log@0.0.0 typecheck
+> npm run typecheck -ws
+
+
+> @daily-log/server@0.0.0 typecheck
+> tsc --noEmit
+
+
+> @daily-log/web@0.0.0 typecheck
+> tsc --noEmit

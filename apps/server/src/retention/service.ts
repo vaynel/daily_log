@@ -1,5 +1,6 @@
 import { readdir, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
+import { purgeLegacyLive } from './legacy-live.js';
 import type pg from 'pg';
 import { buildBackupPlan } from '../backup/plan.js';
 import type { BackupService } from '../backup/service.js';
@@ -100,7 +101,7 @@ export class RetentionService {
       if (target.scope === 'RECORD') return this.purgeRecordTx(c, target.interviewId, now);
       await this.purgeChild(c, target.scope, target.interviewId, target.id);
     });
-    await this.drainFileQueue();
+    await this.drainFileQueue(now);
   }
 
   private async purgeChild(c: Q, scope: 'ITEM' | 'ATTACHMENT', interviewId: string, id: string) {
@@ -149,7 +150,7 @@ export class RetentionService {
         if (k.scope === 'ITEM') items++; else attachments++;
       });
     }
-    await this.drainFileQueue();
+    await this.drainFileQueue(now);
     return { records, items, attachments };
   }
 
@@ -201,14 +202,14 @@ export class RetentionService {
         await this.queueUnreferenced(c, keys);
         await c.query('UPDATE interviews SET server_cleaned_at = $2, cleanup_blocked_reason = NULL, cleanup_checked_at = $2, updated_at = $2 WHERE id = $1', [id, now]);
         return 'CLEANED' as const;
-      }).then(async (res) => { if (res === 'CLEANED') { await this.drainFileQueue(); return res; } return this.block(id, res, now); });
+      }).then(async (res) => { if (res === 'CLEANED') { await this.drainFileQueue(now); return res; } return this.block(id, res, now); });
     } catch {
       return this.block(id, 'CHECK_FAILED', now); // 오류 내용(경로·토큰 가능성)은 남기지 않는다
     }
   }
 
   /** DB의 영구 삭제 표식을 재시도 근거로 사용한다. 활성 세션·다른 기록·진행 중 작업은 보존한다. */
-  async purgeTranscripts(): Promise<{ deleted: number; failed: number }> {
+  async purgeTranscripts(now = this.now()): Promise<{ deleted: number; failed: number }> {
     const dir = this.d.sessionDir ?? path.join(this.d.fileStorageDir, 'live-sessions');
     const names = await readdir(dir).catch((e: NodeJS.ErrnoException) => {
       if (e.code === 'ENOENT') return [];
@@ -230,7 +231,8 @@ export class RetentionService {
         deleted++;
       } catch { failed++; } // 다음 훑기에서 재시도, 전사/경로는 로그에 남기지 않는다.
     }
-    return { deleted, failed };
+    const legacy = await purgeLegacyLive(dir, { now, apply: true });
+    return { deleted: deleted + legacy.deleted, failed: failed + legacy.failed };
   }
 
   // ---- 파일 삭제 대기열 ----
@@ -238,7 +240,7 @@ export class RetentionService {
    * 대기열의 첨부 파일을 지운다. 파일 키별 잠금 아래에서 참조를 다시 확인하므로, 같은 내용을 새로 올리는 요청(같은 키 잠금)과 겹쳐도
    * 새 참조가 생긴 파일은 지우지 않는다. 지우기에 실패한 항목은 대기열에 남겨 다음 훑기에서 다시 시도한다.
    */
-  async drainFileQueue(): Promise<{ deleted: number; kept: number; failed: number }> {
+  async drainFileQueue(now = this.now()): Promise<{ deleted: number; kept: number; failed: number }> {
     const keys = (await this.d.pool.query('SELECT storage_key FROM purge_file_queue ORDER BY created_at, storage_key')).rows.map((r) => r.storage_key as string);
     let deleted = 0, kept = 0, failed = 0;
     for (const key of keys) {
@@ -260,14 +262,14 @@ export class RetentionService {
       });
       if (res === 'deleted') deleted++; else if (res === 'kept') kept++; else failed++;
     }
-    const transcripts = await this.purgeTranscripts();
+    const transcripts = await this.purgeTranscripts(now);
     return { deleted: deleted + transcripts.deleted, kept, failed: failed + transcripts.failed };
   }
 
   /** 한 번의 훑기: 음성 → 휴지통 만료 → 한 달 정리 → 파일 대기열. 단계 하나가 실패해도 나머지는 계속한다. */
   async sweepAll(now = this.now()) {
     const out: Record<string, unknown> = {};
-    for (const [name, fn] of [['audio', () => this.sweepAudio(now)], ['trash', () => this.sweepTrash(now)], ['monthly', () => this.sweepMonthly(now)], ['files', () => this.drainFileQueue()]] as const) {
+    for (const [name, fn] of [['audio', () => this.sweepAudio(now)], ['trash', () => this.sweepTrash(now)], ['monthly', () => this.sweepMonthly(now)], ['files', () => this.drainFileQueue(now)]] as const) {
       out[name] = await fn().catch((e) => ({ error: e instanceof Error ? e.name : 'ERROR' }));
     }
     return out;

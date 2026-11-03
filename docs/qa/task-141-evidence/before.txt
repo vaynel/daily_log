@@ -1,0 +1,40 @@
+
+ RUN  v4.1.11 /workspace/apps/server
+
+ ❯ src/retention/task141.test.ts (5 tests | 5 failed) 234ms
+   × TASK141 legacy transcript expires at calendar month: 2024-01-31T15:30:00Z 41ms
+   × TASK141 legacy transcript expires at calendar month: 2024-01-30T15:30:00Z 23ms
+   × TASK141 legacy transcript expires at calendar month: 2025-01-31T03:00:00Z 8ms
+   × TASK141 legacy transcript expires at calendar month: 2026-03-31T03:00:00Z 9ms
+   × TASK141 legacy transcript expires at calendar month: 2026-12-31T03:00:00Z 9ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/retention/task141.test.ts > TASK141 legacy transcript expires at calendar month: 2024-01-31T15:30:00Z
+ FAIL  src/retention/task141.test.ts > TASK141 legacy transcript expires at calendar month: 2024-01-30T15:30:00Z
+ FAIL  src/retention/task141.test.ts > TASK141 legacy transcript expires at calendar month: 2025-01-31T03:00:00Z
+ FAIL  src/retention/task141.test.ts > TASK141 legacy transcript expires at calendar month: 2026-03-31T03:00:00Z
+ FAIL  src/retention/task141.test.ts > TASK141 legacy transcript expires at calendar month: 2026-12-31T03:00:00Z
+AssertionError: expired legacy transcript must be deleted: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ src/retention/task141.test.ts:35:75
+     33|   clock = new Date(deadline!);
+     34|   await service.sweepAll(clock);
+     35|   expect(await exists(file), 'expired legacy transcript must be delete…
+       |                                                                           ^
+     36| });
+     37|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  5 failed (5)
+   Start at  12:37:17
+   Duration  852ms (transform 347ms, setup 0ms, import 422ms, tests 234ms, environment 0ms)

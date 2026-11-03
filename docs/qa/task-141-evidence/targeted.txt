@@ -1,0 +1,8 @@
+
+ RUN  v4.1.11 /workspace/apps/server
+
+
+ Test Files  2 passed (2)
+      Tests  12 passed (12)
+   Start at  12:45:40
+   Duration  2.34s (transform 573ms, setup 0ms, import 849ms, tests 1.16s, environment 0ms)

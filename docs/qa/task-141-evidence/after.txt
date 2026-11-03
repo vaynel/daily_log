@@ -1,0 +1,76 @@
+TASK-141 / AFTER / actual synthetic regression output
+
+
+targeted
+
+ RUN  v4.1.11 /workspace/apps/server
+
+
+ Test Files  2 passed (2)
+      Tests  12 passed (12)
+   Start at  12:45:40
+   Duration  2.34s (transform 573ms, setup 0ms, import 849ms, tests 1.16s, environment 0ms)
+
+
+
+cli
+
+> daily-log@0.0.0 test:retention-ops
+> node --test scripts/ops/purge-legacy-live.test.mjs
+
+TAP version 13
+# Subtest: default dry-run is private and read-only; apply deletes only expired ended legacy files
+ok 1 - default dry-run is private and read-only; apply deletes only expired ended legacy files
+  ---
+  duration_ms: 320.09251
+  type: 'test'
+  ...
+# Subtest: corrupt transcripts stay private and preserved while valid expired files are cleaned
+ok 2 - corrupt transcripts stay private and preserved while valid expired files are cleaned
+  ---
+  duration_ms: 107.115656
+  type: 'test'
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 490.546538
+
+
+server-all
+
+
+ Test Files  40 passed (40)
+      Tests  535 passed (535)
+   Start at  12:39:30
+   Duration  355.42s (transform 1.52s, setup 0ms, import 5.92s, tests 343.72s, environment 5ms)
+
+
+web
+
+
+ Test Files  6 passed (6)
+      Tests  39 passed (39)
+   Start at  12:45:45
+   Duration  1.41s (transform 202ms, setup 0ms, import 348ms, tests 174ms, environment 1ms)
+
+
+server-all: exit 0 (separate sequential run)
+targeted: exit 0 | npm exec -w apps/server -- vitest run src/retention/task141.test.ts src/retention/task139.test.ts --no-file-parallelism --maxWorkers=1
+cli-initial (wildcard selection error): exit 1 | npm run test:retention-ops
+web: exit 0 | npm test -w apps/web -- --no-file-parallelism --maxWorkers=1
+lint: exit 0 | npm run lint
+typecheck: exit 0 | npm run typecheck
+build: exit 0 | npm run build
+siwc: exit 0 | npm run test:siwc
+spike: exit 0 | npm run test:spike
+records-crash: exit 0 | npm run test:records-crash
+queue-restart: exit 0 | npm run test:queue-restart
+notify-e2e: exit 0 | npm run test:notify-e2e
+secrets: exit 0 | npm run scan:secrets
+cli-final: exit 0 | npm run test:retention-ops (exact purge-legacy-live.test.mjs; 2 PASS)

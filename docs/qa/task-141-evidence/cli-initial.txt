@@ -1,0 +1,134 @@
+
+> daily-log@0.0.0 test:retention-ops
+> node --test scripts/ops/*.test.mjs
+
+TAP version 13
+# Subtest: bundle pins exact source commit and lockfile, hashes archive and rejects symbolic revisions
+not ok 1 - bundle pins exact source commit and lockfile, hashes archive and rejects symbolic revisions
+  ---
+  duration_ms: 1.127594
+  type: 'test'
+  location: '/workspace/scripts/ops/bundle.test.mjs:7:1'
+  failureType: 'testCodeFailure'
+  error: "ENOENT: no such file or directory, mkdtemp '/workspace/data/task30/bundle-test-XXXXXX'"
+  code: 'ENOENT'
+  stack: |-
+    mkdtempSync (node:fs:3054:18)
+    TestContext.<anonymous> (file:///workspace/scripts/ops/bundle.test.mjs:8:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: nginx rejects missing/small/unlimited limits and accepts sizes strictly above photoBytes + 1024
+ok 2 - nginx rejects missing/small/unlimited limits and accepts sizes strictly above photoBytes + 1024
+  ---
+  duration_ms: 4.922805
+  type: 'test'
+  ...
+# Subtest: nginx accepts equivalent GiB units while rejecting zero, malformed and unsafe sizes
+ok 3 - nginx accepts equivalent GiB units while rejecting zero, malformed and unsafe sizes
+  ---
+  duration_ms: 3.298634
+  type: 'test'
+  ...
+# Subtest: nginx respects comments, quoted braces, HTTP inheritance and nested location overrides
+ok 4 - nginx respects comments, quoted braces, HTTP inheritance and nested location overrides
+  ---
+  duration_ms: 1.350885
+  type: 'test'
+  ...
+# Subtest: nginx cannot claim PASS for unresolved includes, absent HTTPS, or malformed config
+ok 5 - nginx cannot claim PASS for unresolved includes, absent HTTPS, or malformed config
+  ---
+  duration_ms: 0.868218
+  type: 'test'
+  ...
+# Subtest: worker requires restart policy, positive finite delay and disabled start limit
+ok 6 - worker requires restart policy, positive finite delay and disabled start limit
+  ---
+  duration_ms: 1.245448
+  type: 'test'
+  ...
+# Subtest: CLI returns JSON and exit 1 for FAIL, missing files NOT_RUN; permission denied never leaks file contents
+not ok 7 - CLI returns JSON and exit 1 for FAIL, missing files NOT_RUN; permission denied never leaks file contents
+  ---
+  duration_ms: 3.586451
+  type: 'test'
+  location: '/workspace/scripts/ops/preflight.test.mjs:56:1'
+  failureType: 'testCodeFailure'
+  error: "ENOENT: no such file or directory, mkdtemp '/workspace/data/task30/preflight-cli-XXXXXX'"
+  code: 'ENOENT'
+  stack: |-
+    mkdtempSync (node:fs:3054:18)
+    TestContext.<anonymous> (file:///workspace/scripts/ops/preflight.test.mjs:57:16)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: systemctl unavailability is NOT_RUN and its stderr is never published
+ok 8 - systemctl unavailability is NOT_RUN and its stderr is never published
+  ---
+  duration_ms: 0.762694
+  type: 'test'
+  ...
+# Subtest: default dry-run is private and read-only; apply deletes only expired ended legacy files
+ok 9 - default dry-run is private and read-only; apply deletes only expired ended legacy files
+  ---
+  duration_ms: 583.816227
+  type: 'test'
+  ...
+# Subtest: corrupt transcripts stay private and preserved while valid expired files are cleaned
+ok 10 - corrupt transcripts stay private and preserved while valid expired files are cleaned
+  ---
+  duration_ms: 132.068637
+  type: 'test'
+  ...
+# Subtest: switch denies missing, stale, wrong-release and incomplete approval; valid approval changes only release pointer
+not ok 11 - switch denies missing, stale, wrong-release and incomplete approval; valid approval changes only release pointer
+  ---
+  duration_ms: 1.175428
+  type: 'test'
+  location: '/workspace/scripts/ops/release.test.mjs:7:1'
+  failureType: 'testCodeFailure'
+  error: "ENOENT: no such file or directory, mkdtemp '/workspace/data/task30/gate-XXXXXX'"
+  code: 'ENOENT'
+  stack: |-
+    mkdtempSync (node:fs:3054:18)
+    TestContext.<anonymous> (file:///workspace/scripts/ops/release.test.mjs:8:16)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: preflight FAIL blocks status/switch without changing current; NOT_RUN stays visible and does not block
+not ok 12 - preflight FAIL blocks status/switch without changing current; NOT_RUN stays visible and does not block
+  ---
+  duration_ms: 0.355696
+  type: 'test'
+  location: '/workspace/scripts/ops/release.test.mjs:27:1'
+  failureType: 'testCodeFailure'
+  error: "ENOENT: no such file or directory, mkdtemp '/workspace/data/task30/preflight-XXXXXX'"
+  code: 'ENOENT'
+  stack: |-
+    mkdtempSync (node:fs:3054:18)
+    TestContext.<anonymous> (file:///workspace/scripts/ops/release.test.mjs:28:16)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 8
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1088.211862

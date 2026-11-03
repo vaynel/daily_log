@@ -1,0 +1,14 @@
+server-all: exit 0 (separate sequential run)
+targeted: exit 0 | npm exec -w apps/server -- vitest run src/retention/task141.test.ts src/retention/task139.test.ts --no-file-parallelism --maxWorkers=1
+cli-initial (wildcard selection error): exit 1 | npm run test:retention-ops
+web: exit 0 | npm test -w apps/web -- --no-file-parallelism --maxWorkers=1
+lint: exit 0 | npm run lint
+typecheck: exit 0 | npm run typecheck
+build: exit 0 | npm run build
+siwc: exit 0 | npm run test:siwc
+spike: exit 0 | npm run test:spike
+records-crash: exit 0 | npm run test:records-crash
+queue-restart: exit 0 | npm run test:queue-restart
+notify-e2e: exit 0 | npm run test:notify-e2e
+secrets: exit 0 | npm run scan:secrets
+cli-final: exit 0 | npm run test:retention-ops (exact purge-legacy-live.test.mjs; 2 PASS)

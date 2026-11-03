@@ -1,0 +1,39 @@
+
+> daily-log@0.0.0 typecheck
+> npm run typecheck -ws
+
+
+> @daily-log/server@0.0.0 typecheck
+> tsc --noEmit
+
+src/retention/task141.test.ts(28,31): error TS2769: No overload matches this call.
+  Overload 1 of 5, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 5, '(vd: VarDate): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'VarDate'.
+      Type 'undefined' is not assignable to type 'VarDate'.
+  Overload 3 of 5, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+src/retention/task141.test.ts(28,50): error TS2769: No overload matches this call.
+  Overload 1 of 5, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 5, '(vd: VarDate): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'VarDate'.
+      Type 'undefined' is not assignable to type 'VarDate'.
+  Overload 3 of 5, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+npm error Lifecycle script `typecheck` failed with error:
+npm error code 2
+npm error path /workspace/apps/server
+npm error workspace @daily-log/server@0.0.0
+npm error location /workspace/apps/server
+npm error command failed
+npm error command sh -c tsc --noEmit
+
+
+> @daily-log/web@0.0.0 typecheck
+> tsc --noEmit
