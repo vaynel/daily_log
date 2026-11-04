@@ -146,8 +146,8 @@ export function applyCorrection(items: BriefingItem[], c: Correction, rules: Exc
     const reason = classifyExclusion(text) ?? (matchRule(text, rules) ? 'RULE' : null);
     next = { ...target, kind: target.kind === 'MATERIAL' || target.kind === 'UNCERTAIN' ? 'FACT' : target.kind, source: 'USER', text, excludedReason: reason, ...(isSecurityLearning(text) ? { topic: 'SECURITY' as const } : { topic: undefined }) };
   } else {
-    // 되돌리기: 정책 제외·첨부 자료·불확실 항목은 사용자가 되살려도 공개 입력에 넣지 않는다.
-    if (target.kind === 'UNCERTAIN' || target.kind === 'MATERIAL' || classifyExclusion(target.text) || matchRule(target.text, rules)) return { ok: false, code: 'NOT_ALLOWED' };
+    // 비방 키워드 오탐은 사용자가 복원할 수 있다. 다른 정책·반복 제외 규칙은 유지한다.
+    if (target.kind === 'UNCERTAIN' || target.kind === 'MATERIAL' || classifyExclusion(target.text, { ignoreDefamation: true }) || matchRule(target.text, rules)) return { ok: false, code: 'NOT_ALLOWED' };
     next = { ...target, excludedReason: null };
   }
   const items2 = selectVideo(items.map((i) => (i.id === next.id ? next : i)));

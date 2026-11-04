@@ -84,7 +84,7 @@ export function BriefingPanel({ recordId }: { recordId: string }) {
               <ul data-testid="br-excluded">
                 {data.excluded.map((x) => (
                   <li key={x.id}>{x.text} <span className="meta">— {x.label}</span>{' '}
-                    {x.reason === 'USER' && !data.confirmed && <button data-testid="br-restore" disabled={busy} onClick={() => void correct(x.id, 'INCLUDE')}>다시 넣기</button>}
+                    {(x.reason === 'USER' || x.reason === 'DEFAMATION') && !data.confirmed && <button data-testid="br-restore" disabled={busy} onClick={() => void correct(x.id, 'INCLUDE')}>다시 넣기</button>}
                   </li>
                 ))}
               </ul>

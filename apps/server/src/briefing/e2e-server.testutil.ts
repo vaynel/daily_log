@@ -17,6 +17,10 @@ const MODEL_OUT = JSON.stringify([
   { kind: 'UNCERTAIN', source: 'USER', text: '원인은 캐시 같기도 하다' },
   { kind: 'FACT', source: 'USER', text: 'SQL 인젝션 예방 방법을 공부했다' },
   { kind: 'FACT', source: 'USER', text: '여당 대표 발언 때문에 짜증났다' },
+  ...(process.env.BR_E2E_SCENARIO === 'defamation' ? [
+    { kind: 'FACT', source: 'USER', text: '쓰레기 코드를 리팩터링했다' },
+    { kind: 'FACT', source: 'USER', text: '멍청한 녀석이라고 쓴 테스트 문구를 읽었다' },
+  ] : []),
 ]);
 let proCalls = 0;
 const infer: ProInfer = async () => { proCalls++; return { state: 'SUCCEEDED', text: MODEL_OUT }; };

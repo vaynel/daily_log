@@ -35,7 +35,7 @@ export interface BriefingRouteOptions {
   now?: () => Date;
 }
 
-interface StoredBriefing { kind: 'BRIEFING'; items: BriefingItem[]; diary: string }
+interface StoredBriefing { kind: 'BRIEFING'; items: BriefingItem[]; diary: string; correction?: { itemId: string; action: Correction['action']; previousExcludedReason: BriefingItem['excludedReason'] } }
 
 export const latestBriefing = (snap: Snapshot): { version: number; items: BriefingItem[] } | null => {
   const v = snap.versions.filter((x) => x.kind === 'SUMMARY' && (x.content as StoredBriefing | null)?.kind === 'BRIEFING').sort((a, b) => b.version - a.version)[0];
@@ -125,7 +125,9 @@ export function registerBriefing(app: FastifyInstance, o: BriefingRouteOptions) 
     if (cur.version !== b.version) return reply.code(409).send({ error: 'STALE_BRIEFING', message: '화면의 브리핑이 최신이 아닙니다. 새로 불러오세요.' });
     const res = applyCorrection(cur.items, { itemId: b.itemId, action: b.action, text: b.text as string | undefined } satisfies Correction, o.rules ? await o.rules.list(ownerId) : []);
     if (!res.ok) return reply.code(res.code === 'NOT_FOUND' ? 404 : 422).send({ error: res.code });
-    const saved = await o.records.appendVersion(ownerId, id, 'SUMMARY', briefingContent(res.items), now());
+    const content = briefingContent(res.items);
+    content.correction = { itemId: b.itemId, action: b.action, previousExcludedReason: cur.items.find((i) => i.id === b.itemId)!.excludedReason };
+    const saved = await o.records.appendVersion(ownerId, id, 'SUMMARY', content, now());
     // 응답은 바뀐 항목과 짧은 안내만 음성으로 쓰게 한다. 전체 브리핑 안내문(speech)은 화면 표시용 값으로만 함께 준다.
     return { ...present(snap, { version: saved.version, items: res.items }), changed: { id: res.changed.id, text: res.changed.text, inVideo: res.changed.inVideo, excludedReason: res.changed.excludedReason }, correctionSpeech: res.speech, repeatsFullBriefing: false };
   });

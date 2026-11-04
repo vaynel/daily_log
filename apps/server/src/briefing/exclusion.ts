@@ -12,6 +12,15 @@ const RULES: [ExclusionReason, RegExp][] = [
   ['GOSSIP', /뒷담|험담|카더라|소문|들은\s*얘기인데|뒷얘기|씹었|말이\s*많/],
 ];
 
+// 기술 명사가 있는 문장 전체가 아니라 대상이 명확한 구간만 비방 검사에서 뺀다.
+// 같은 문장의 별도 사람 비방과 코드 작성자 등을 향한 표현은 계속 검사한다.
+const TECHNICAL_NOUN = '(?:코드|설계|구조|로직|함수|버그|커밋|쿼리|테스트|데이터|수집기|수집)';
+const TECHNICAL_PHRASE = new RegExp(
+  `(?:멍청한|무능한|한심한|쓰레기)\\s*${TECHNICAL_NOUN}(?=[은는이가을를의에도와과]|[^가-힣]|$)(?!\\s*(?:작성자|개발자|설계자|담당자|만든|작성한|짠|사람|놈))` +
+  `|${TECHNICAL_NOUN}(?:은|는|이|가)\\s*(?:(?:정말|진짜|너무|참)\\s*)?(?:멍청|무능|한심|쓰레기)`,
+  'g',
+);
+
 const SECURITY_LEARNING = /보안|취약점|해킹\s*(?:예방|방어|대응)|피싱|랜섬웨어|CVE|XSS|CSRF|SQL\s*인젝션|인젝션|침해\s*(?:사고\s*)?(?:예방|대응)|암호화|인증\s*(?:보안|강화)|방화벽|모의\s*해킹/i;
 
 /** 보안 예방 학습 문장인지. 제외 분류에는 쓰이지 않고 표시용 주제 표지로만 쓰인다. */
@@ -20,8 +29,12 @@ export function isSecurityLearning(text: string): boolean {
 }
 
 /** 제외 사유를 돌려준다. 없으면 null. 보안 학습 문장은 해당 사유 키워드가 없는 한 제외하지 않는다. */
-export function classifyExclusion(text: string): ExclusionReason | null {
-  for (const [reason, re] of RULES) if (re.test(text)) return reason;
+export function classifyExclusion(text: string, options: { ignoreDefamation?: boolean } = {}): ExclusionReason | null {
+  for (const [reason, re] of RULES) {
+    if (reason === 'DEFAMATION' && options.ignoreDefamation) continue;
+    const candidate = reason === 'DEFAMATION' ? text.replace(TECHNICAL_PHRASE, '') : text;
+    if (re.test(candidate)) return reason;
+  }
   return null;
 }
 

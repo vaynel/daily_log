@@ -43,9 +43,9 @@ describe('형사 사건 제외 경계(AC-5)와 알려진 한계', () => {
     expect(classifyExclusion('보안 사고로 회사가 고소를 당했다')).toBe('CRIMINAL');
     expect(classifyExclusion('해킹 사건 재판 결과를 봤다')).toBe('CRIMINAL');
   });
-  it('키워드 기반 한계(TASK-20 QA 관찰) 현재 동작을 기록한다: 오탐 1건·미탐 1건', () => {
-    // 오탐: 사람을 겨냥하지 않은 표현. 개선 전까지 사용자는 브리핑에서 되살릴 수 없고 기록에는 남는다.
-    expect(classifyExclusion('쓰레기 코드를 리팩터링했다')).toBe('DEFAMATION');
+  it('기술 대상 오탐을 교정하며 키워드 없는 비방의 한계는 기록한다', () => {
+    // TASK-145: 사람을 겨냥하지 않은 기술 표현은 제외하지 않는다.
+    expect(classifyExclusion('쓰레기 코드를 리팩터링했다')).toBeNull();
     // 미탐: 키워드 없이 돌려 말한 비방.
     expect(classifyExclusion('걔랑 일하면 속이 터진다')).toBeNull();
   });

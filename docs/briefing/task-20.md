@@ -5,7 +5,7 @@
 2. Pro(주입된 `ProInfer`, 구독 경로 `runtime.infer` 와 같은 모양)로 `ORGANIZE_INSTRUCTION` 정리 → `parseStatements` 검증(첨부→사실 둔갑 거절, 형식 오류만 1회 재호출). Pro 대기·한도면 `PRO_WAITING`(503)으로 끝내고 유료 모델로 바꾸지 않는다.
 3. `buildItems`: UNCERTAIN·MATERIAL(첨부 내용)·정책 제외(정치·비방·뒷담화·형사 사건, `exclusion.ts`)는 영상에서 제외. 사실·의견 중 강조 항목 우선으로 최대 6개 선정. 보안 예방 학습(취약점·피싱·SQL 인젝션 예방 등)은 일괄 제외하지 않는다. 제외 항목은 기록에 남고 영상 입력에서만 빠진다.
 4. 하루 요약·영상 핵심·제외 목록·음성 안내문(`speech`)을 한 응답/한 화면(`BriefingPanel`)에 제시. 브리핑은 `record_versions(SUMMARY, kind=BRIEFING)` 에 버전으로 누적한다(마이그레이션 없음).
-5. 정정 `POST /correct {version,itemId,action}`: 해당 항목만 EXCLUDE/REPLACE/INCLUDE 하고 새 버전 저장. 응답의 `correctionSpeech` 는 바뀐 부분만 말하며 전체를 반복하지 않는다(`repeatsFullBriefing:false`). Pro 재호출 없음. 정책 제외·불확실·첨부 항목은 되살릴 수 없고, 고친 문장도 필터를 다시 거친다.
+5. 정정 `POST /correct {version,itemId,action}`: 해당 항목만 EXCLUDE/REPLACE/INCLUDE 하고 새 버전 저장. 응답의 `correctionSpeech` 는 바뀐 부분만 말하며 전체를 반복하지 않는다(`repeatsFullBriefing:false`). Pro 재호출 없음. 정치·형사·뒷담화·불확실·첨부 항목은 되살릴 수 없고, 고친 문장도 필터를 다시 거친다. TASK-145부터 비방 키워드 오탐은 INCLUDE로 복원할 수 있으며 결정은 새 SUMMARY 버전에 기록한다([정책 근거](task-145.md)).
 6. 확인 `POST /confirm {version}`: `RecordStore.confirmBriefing` 이 한 트랜잭션에서 최신 버전 확인 → CONFIRMED·revision+1 → PRODUCTION_PLAN → pipeline QUEUED → `jobs`(VIDEO_PRODUCTION) 등록. 확인 전에는 어떤 경로에도 작업이 없다. 같은 버전 재확인은 같은 작업을 돌려주고(멱등키 `produce:<id>:<version>`), 오래된 버전은 `STALE_BRIEFING` 으로 거부한다.
 
 ## 한계·후속
